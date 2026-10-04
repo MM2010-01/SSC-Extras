@@ -15,7 +15,7 @@ dependencies {
     modImplementation files(providers.gradleProperty('sscJar').getOrElse('.work/deps/ssc.jar'))
     modImplementation fileTree('.work/deps') {
         include 'cardinal-components-base-5.2.*.jar', 'cardinal-components-entity-5.2.*.jar',
-                'apoli-*.jar', 'calio-*.jar', 'Pehkui-*.jar'
+                'apoli-*.jar', 'calio-*.jar', 'Pehkui-*.jar', 'trinkets-*.jar'
     }
     modRuntimeOnly fileTree('.work/runtime') { include '*.jar' }
 }
@@ -67,4 +67,5 @@ tasks.register('remapGametestJar', net.fabricmc.loom.task.RemapJarTask) {
     inputFile = tasks.gametestJar.archiveFile
     archiveClassifier = 'gametest'
     addNestedDependencies = false
+    classpath.from(sourceSets.main.output)
 }

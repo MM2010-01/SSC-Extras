@@ -3,10 +3,11 @@
   "id": "ssc-extras",
   "version": "${version}",
   "name": "SSC Extras",
-  "description": "Cursed-creature hits and curse potions build instinct, including in the original shifter form.",
+  "description": "Instinct progression, feralizing collars, and the Feral Effigy equipment-infusion station for SSC.",
   "authors": ["Jason"],
   "environment": "*",
-  "entrypoints": { "main": ["sscextras.SscExtras"] },
+  "entrypoints": { "main": ["sscextras.SscExtras"], "client": ["sscextras.client.SscExtrasClient"], "cardinal-components-entity": ["sscextras.effigy.InfusionComponents"] },
+  "custom": { "cardinal-components": ["ssc-extras:infusions"] },
   "mixins": ["ssc-extras.mixins.json"],
   "depends": {
     "java": ">=17",

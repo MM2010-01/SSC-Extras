@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "MMM",
+    "MLM",
+    "MMM"
+  ],
+  "key": {
+    "M": {
+      "item": "shape-shifter-curse:untreated_moondust"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    }
+  },
+  "result": {
+    "item": "ssc-extras:feralizing_collar"
+  }
+}

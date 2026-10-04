@@ -11,7 +11,17 @@
     "InstinctTickerMixin",
     "TransformEffectMixin",
     "TransformManagerMixin",
-    "FormAbilityManagerMixin"
+    "FormAbilityManagerMixin",
+    "CollarContainerMixin",
+    "CollarCureMixin",
+    "LootContextAccessor",
+    "InfusionPlayerMixin",
+    "InfusionPlayerInventoryMixin",
+    "InfusionMiningMixin",
+    "InfusionEnchantmentMixin",
+    "InfusionMendingMixin",
+    "InfusionArmorEffectsMixin",
+    "InfusionPowderSnowMixin"
   ],
   "client": ["InstinctBarRendererMixin", "TransformOverlayMixin"],
   "injectors": { "defaultRequire": 1 }

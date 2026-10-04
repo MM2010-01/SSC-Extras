@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "ssc-extras:block/feral_effigy"
+    },
+    "facing=east": {
+      "model": "ssc-extras:block/feral_effigy",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "ssc-extras:block/feral_effigy",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "ssc-extras:block/feral_effigy",
+      "y": 270
+    }
+  }
+}
