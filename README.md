@@ -100,6 +100,10 @@ rein or saddle. The uncursed recruiting rule also lets pillagers start equipping
 players and finish their missing pieces while they remain untransformed. Occupied slots
 are preserved, and manual equipping remains available.
 
+## Earthen Drake: Body Slam
+
+The permanent drake form gains **Body Slam** on SSC's primary ability key. Rush forward up to three blocks, stopping on an enemy or obstacle, then sweep enemies in front for damage equal to your maximum health. It costs one drumstick (two hunger points) and has a five-second cooldown.
+
 ## Some Other Changes
 
 Removed darkness effect during transformation.

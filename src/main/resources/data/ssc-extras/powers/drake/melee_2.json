@@ -1,5 +1,10 @@
 {
   "type": "origins:modify_damage_dealt",
+  "damage_condition": {
+    "type": "origins:name",
+    "name": "ssc-extras.body_slam",
+    "inverted": true
+  },
   "modifier": {
     "operation": "multiply_total",
     "value": 0.25

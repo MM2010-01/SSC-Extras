@@ -58,6 +58,8 @@ public final class EarthenDrake {
         DrakeInstinct.register();
         var body = DrakeBodyPower.factory();
         Registry.register(ApoliRegistries.POWER_FACTORY, body.getSerializerId(), body);
+        var bodySlam = DrakeBodySlamPower.factory();
+        Registry.register(ApoliRegistries.POWER_FACTORY, bodySlam.getSerializerId(), bodySlam);
         var bareClaws = new ConditionFactory<Entity>(id("bare_claws"), new SerializableData(),
                 (data, entity) -> entity instanceof PlayerEntity player
                         && player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()

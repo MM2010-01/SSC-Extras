@@ -21,8 +21,13 @@ public abstract class DrakeRidingPlayerMixin {
 
     @ModifyVariable(method = "travel", at = @At("HEAD"), argsOnly = true)
     private Vec3d sscExtras$riderMovement(Vec3d own) {
-        return DrakeRiding.movement((PlayerEntity)(Object)this, own);
+        var player = (PlayerEntity)(Object)this;
+        Vec3d slam = DrakeBodySlamPower.movement(player, own);
+        return slam == null ? DrakeRiding.movement(player, own) : slam;
     }
+
+    @Inject(method = "travel", at = @At("TAIL"))
+    private void sscExtras$stopBodySlam(CallbackInfo ci) { DrakeBodySlamPower.afterTravel((PlayerEntity)(Object)this); }
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void sscExtras$releasePassenger(CallbackInfo ci) {
