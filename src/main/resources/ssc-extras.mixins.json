@@ -9,9 +9,10 @@
     "TransformativeStatusMixin",
     "InstinctComponentMixin",
     "InstinctTickerMixin",
+    "TransformEffectMixin",
     "TransformManagerMixin",
     "FormAbilityManagerMixin"
   ],
-  "client": ["InstinctBarRendererMixin"],
+  "client": ["InstinctBarRendererMixin", "TransformOverlayMixin"],
   "injectors": { "defaultRequire": 1 }
 }
