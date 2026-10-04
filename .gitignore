@@ -1,0 +1,6 @@
+.gradle/
+.work/
+build/
+run/
+.idea/
+*.iml

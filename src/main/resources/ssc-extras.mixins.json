@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "sscextras.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "CursePotionMixin",
+    "TransformativeMobMixin",
+    "TransformativeStatusMixin",
+    "InstinctComponentMixin",
+    "InstinctTickerMixin",
+    "TransformManagerMixin",
+    "FormAbilityManagerMixin"
+  ],
+  "client": ["InstinctBarRendererMixin"],
+  "injectors": { "defaultRequire": 1 }
+}
