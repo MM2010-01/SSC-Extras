@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.10.5'
 }
 
-version = '1.6.3'
+version = '1.7.0'
 group = 'sscextras'
 
 repositories { mavenCentral() }

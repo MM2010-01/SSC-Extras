@@ -39,11 +39,22 @@ It can bind itself to cursed players when their necklace slot is empty, so watch
 
 Wearing one while uncursed (if you really want to) starts a random form curse, unless the collar has been infused with a specific one.
 
-A bound collar can be removed after reaching permanent form. Alternatively, use an Inhibitor while already in human form with no instinct to release it.
+A bound collar can be removed after reaching permanent form, or with a Cleansing Key. Inhibitors no longer remove collars.
 
 ### Choose your curse
 
 Craft either collar with a form curse potion to infuse it. An infused collar starts that curse when worn by an uncursed player.
+
+### Cleansing Key
+
+Use this key to unequip worn Cursed Feralizing Collars, Cursed Reins and Cursed Saddles, dropping them nearby. It has six uses and spends one per removed item, stopping when it runs out. Your current form and instinct stay unchanged.
+
+Craft it with iron ingots and a Moondust Matrix:
+
+| Iron | Iron | Iron |
+| --- | --- | --- |
+| Empty | Iron | Empty |
+| Empty | Iron | Moondust Matrix |
 
 ## Feral Effigy
 

@@ -37,6 +37,7 @@ public final class Collars {
     public static final String AWAKENING = "SscExtrasAwakening";
     public static final CollarItem FERALIZING = new CollarItem(false);
     public static final CollarItem CURSED = new CollarItem(true);
+    public static final CleansingKeyItem CLEANSING_KEY = new CleansingKeyItem();
     public static final RecipeSerializer<CollarInfusionRecipe> INFUSION_RECIPE = new SpecialRecipeSerializer<>(CollarInfusionRecipe::new);
 
     private Collars() { }
@@ -44,6 +45,7 @@ public final class Collars {
     public static void register() {
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "feralizing_collar"), FERALIZING);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cursed_feralizing_collar"), CURSED);
+        Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cleansing_key"), CLEANSING_KEY);
         Registry.register(Registries.RECIPE_SERIALIZER, new Identifier("ssc-extras", "collar_infusion"), INFUSION_RECIPE);
         CuriosCompat.register(FERALIZING, CURSED);
         if (CuriosCompat.instance != null) {
@@ -55,6 +57,7 @@ public final class Collars {
             entries.add(FERALIZING);
             entries.add(CURSED.getDefaultStack());
             entries.add(sscextras.cuffs.MetalCuffs.ITEM);
+            entries.add(CLEANSING_KEY);
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
             entries.add(sscextras.drake.DrakeEquipment.REINS);
             entries.add(sscextras.drake.DrakeEquipment.SADDLE);
@@ -206,27 +209,4 @@ public final class Collars {
         return strength * 0.05f / CreatureInstinct.costMultiplier(form);
     }
 
-    public static boolean release(PlayerEntity player) {
-        if (!(player instanceof ServerPlayerEntity) || FormAbilityManager.getForm(player) != RegPlayerForms.ORIGINAL_SHIFTER
-                || RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player).instinctValue > 0
-                || TransformManager.getPlayerTransformData(player).isTransforming) return false;
-        boolean released = false;
-        for (var slot : CollarSlots.includingLegacy(player)) {
-            ItemStack stack = slot.get(player);
-            if (!(stack.getItem() instanceof CollarItem)) continue;
-            ItemStack dropped = stack.copy();
-            slot.set(player, ItemStack.EMPTY);
-            ItemStack remaining = slot.get(player);
-            if (remaining != null && remaining.isEmpty()) {
-                player.dropItem(dropped, false);
-                released = true;
-            }
-        }
-        if (released) {
-            EffectManager.clearTransformativeEffect(player);
-            InstinctTicker.clearInstinct(player);
-            player.currentScreenHandler.sendContentUpdates();
-        }
-        return released;
-    }
 }

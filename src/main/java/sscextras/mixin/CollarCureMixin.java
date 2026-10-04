@@ -11,16 +11,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import sscextras.collar.Collars;
 import sscextras.CreatureInstinct;
 
 @Mixin(value = TransformRelatedItems.class, remap = false)
 public abstract class CollarCureMixin {
-    @Inject(method = {"OnUseCure", "OnUseCureFinal"}, at = @At("HEAD"), cancellable = true)
-    private static void sscExtras$releaseCollar(PlayerEntity player, CallbackInfo ci) {
-        if (Collars.release(player)) ci.cancel();
-    }
-
     @Inject(method = "OnUseCure", at = @At("HEAD"), cancellable = true)
     private static void sscExtras$calmStageTwo(PlayerEntity player, CallbackInfo ci) {
         if (player instanceof ServerPlayerEntity
