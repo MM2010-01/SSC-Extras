@@ -27,6 +27,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import sscextras.CreatureInstinct;
+import sscextras.SscExtrasConfig;
 
 public final class StableDrakeEntity extends PathAwareEntity implements GeoEntity {
     private static final TrackedData<Boolean> SADDLED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -180,9 +181,14 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     @Override protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {
         super.dropEquipment(source, lootingMultiplier, allowDrops);
-        if (!saddle.isEmpty() && (!naturalSaddle || allowDrops && random.nextFloat() < .085f + lootingMultiplier * .01f)) dropStack(saddle);
-        if (!reins.isEmpty() && (!naturalReins || allowDrops && random.nextFloat() < .085f + lootingMultiplier * .01f)) dropStack(reins);
+        if (!saddle.isEmpty() && (!naturalSaddle || allowDrops && dropsNaturalGear("stableDrakeSaddleDropChance", lootingMultiplier))) dropStack(saddle);
+        if (!reins.isEmpty() && (!naturalReins || allowDrops && dropsNaturalGear("stableDrakeReinsDropChance", lootingMultiplier))) dropStack(reins);
         saddle = reins = ItemStack.EMPTY;
+    }
+
+    private boolean dropsNaturalGear(String key, int lootingMultiplier) {
+        float chance = SscExtrasConfig.lootChance(key);
+        return chance > 0 && random.nextFloat() < chance + lootingMultiplier * .01f;
     }
 
     @Override public void registerControllers(AnimatableManager.ControllerRegistrar controllers) { }

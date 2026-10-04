@@ -100,5 +100,13 @@
   "trinkets.slot.feet.ankle": "脚踝",
   "curios.identifier.anklet": "脚踝",
   "message.ssc-extras.drake.hunger_collapse": "你的双腿因疲惫而颤抖，身体不由得四肢着地。你已没有足够的力气维持直立姿势！",
-  "message.ssc-extras.drake.pillager_equipped": "一名掠夺者为你装备了%s。"
+  "message.ssc-extras.drake.pillager_equipped": "一名掠夺者为你装备了%s。",
+  "gamerule.CursedCollarAutoEquipForCursedPlayers": "诅咒项圈自动装备受诅咒玩家",
+  "gamerule.CursedCollarAutoEquipForCursedPlayers.description": "背包或已打开容器中的诅咒项圈会自动装备到受诅咒玩家的空颈部栏位。永久形态不受影响。",
+  "gamerule.CursedCollarAutoEquipForUncursedPlayers": "诅咒项圈自动装备未受诅咒玩家",
+  "gamerule.CursedCollarAutoEquipForUncursedPlayers.description": "背包或已打开容器中的诅咒项圈会自动装备到未受诅咒玩家的空颈部栏位。",
+  "gamerule.PillagerMountRecruitingForDrake": "掠夺者招募地龙",
+  "gamerule.PillagerMountRecruitingForDrake.description": "掠夺者会为各阶段地龙补齐诅咒缰绳和诅咒鞍，也会为已穿戴其中一件诅咒装备的其他玩家补齐装备。",
+  "gamerule.PillagerMountRecruitingForUncursed": "掠夺者招募未受诅咒玩家",
+  "gamerule.PillagerMountRecruitingForUncursed.description": "掠夺者会为未受诅咒玩家装备诅咒缰绳和诅咒鞍，并在玩家尚未变形时补齐缺失的装备。"
 }

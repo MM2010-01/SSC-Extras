@@ -12,7 +12,6 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.loot.LootPool;
-import net.minecraft.loot.condition.RandomChanceLootCondition;
 import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.loot.function.SetPotionLootFunction;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
@@ -29,6 +28,7 @@ import net.onixary.shapeShifterCurseFabric.status_effects.RegTStatusEffect;
 import net.onixary.shapeShifterCurseFabric.status_effects.transformative_effects.TransformativeStatus;
 import net.onixary.shapeShifterCurseFabric.status_effects.transformative_effects.TransformativeStatusPotion;
 import sscextras.effigy.Infusions;
+import sscextras.ConfiguredLootChance;
 
 public final class EarthenDrake {
     public static final PlayerFormBase[] FORMS = new PlayerFormBase[4];
@@ -36,7 +36,6 @@ public final class EarthenDrake {
     public static final BaseTransformativeStatusEffect CURSE;
     public static final TransformativeStatusPotion POTION_EFFECT;
     public static final Potion POTION;
-    public static final float OUTPOST_CHANCE = 0.25f;
 
     static {
         var group = new PlayerFormGroup(id("earthen_drake"));
@@ -71,7 +70,7 @@ public final class EarthenDrake {
         LootTableEvents.MODIFY.register((resources, manager, id, builder, source) -> {
             if (id.equals(new Identifier("minecraft", "chests/pillager_outpost"))) {
                 builder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
-                        .conditionally(RandomChanceLootCondition.builder(OUTPOST_CHANCE))
+                        .conditionally(() -> new ConfiguredLootChance("drakeCursePotionLootChance"))
                         .with(ItemEntry.builder(Items.POTION).apply(SetPotionLootFunction.builder(POTION))));
             }
         });

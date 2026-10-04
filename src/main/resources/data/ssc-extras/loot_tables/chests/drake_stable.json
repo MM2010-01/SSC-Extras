@@ -3,6 +3,9 @@
   "pools": [
     {
       "rolls": 1,
+      "conditions": [
+        { "condition": "ssc-extras:configured_chance", "config": "stableReinsLootChance" }
+      ],
       "entries": [
         {
           "type": "minecraft:item",
@@ -12,6 +15,9 @@
     },
     {
       "rolls": 1,
+      "conditions": [
+        { "condition": "ssc-extras:configured_chance", "config": "stableSaddleLootChance" }
+      ],
       "entries": [
         {
           "type": "minecraft:item",

@@ -66,6 +66,38 @@ Benefit from restricted armor without physically wearing it. Attack with an infu
 
 
 
+## Config and Game Rules
+
+Edit `config/ssc-extras.properties` and restart to adjust mod loot chances. Values range
+from `0` (disabled) to `1` (guaranteed):
+
+| Setting | Default |
+| --- | --- |
+| `cursedCollarLootChance` | `0.06666667` (about 6.67% per eligible dungeon chest) |
+| `drakeCursePotionLootChance` | `0.25` (25% per pillager outpost chest) |
+| `stableReinsLootChance` | `1.0` |
+| `stableSaddleLootChance` | `1.0` |
+| `stableDrakeReinsDropChance` | `0.085` |
+| `stableDrakeSaddleDropChance` | `0.085` |
+
+Natural drake equipment retains its Looting bonus unless its chance is set to `0`.
+Player-supplied gear still drops. Existing config values and generated chest contents are preserved.
+
+Use `/gamerule <name> true` or `/gamerule <name> false` to change these world settings immediately:
+
+| Gamerule | Default |
+| --- | --- |
+| `CursedCollarAutoEquipForCursedPlayers` | `true` |
+| `CursedCollarAutoEquipForUncursedPlayers` | `false` |
+| `PillagerMountRecruitingForDrake` | `true` |
+| `PillagerMountRecruitingForUncursed` | `false` |
+
+Collar rules cover inventory and container auto-equipping, with permanent forms exempt.
+The Drake recruiting rule covers all drake stages and players already wearing a cursed
+rein or saddle. The uncursed recruiting rule also lets pillagers start equipping uncursed
+players and finish their missing pieces while they remain untransformed. Occupied slots
+are preserved, and manual equipping remains available.
+
 ## Some Other Changes
 
 Removed darkness effect during transformation.

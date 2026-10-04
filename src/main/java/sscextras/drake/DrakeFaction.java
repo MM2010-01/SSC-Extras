@@ -16,6 +16,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.onixary.shapeShifterCurseFabric.util.AttackEntityDataTracker;
 import net.onixary.shapeShifterCurseFabric.util.ModTags;
+import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
+import sscextras.SscExtrasGameRules;
+import sscextras.collar.Collars;
 import java.util.Comparator;
 import java.util.EnumSet;
 
@@ -139,7 +142,14 @@ public final class DrakeFaction {
         if (!player.isAlive() || player.isCreative() || player.isSpectator()) return null;
         boolean reins = !DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty();
         boolean saddle = !DrakeEquipment.saddle(player).isEmpty();
-        if (reins && saddle || !reins && !saddle && EarthenDrake.stage(player) != 2) return null;
+        if (reins && saddle) return null;
+        boolean cursedPiece = reins || !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty();
+        var rules = player.getWorld().getGameRules();
+        boolean drakeRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_DRAKE)
+                && (EarthenDrake.stage(player) >= 0 || cursedPiece);
+        boolean uncursedRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)
+                && (!Collars.isCursed(player) || cursedPiece && FormAbilityManager.getForm(player).getIndex() < 0);
+        if (!drakeRecruiting && !uncursedRecruiting) return null;
         if (!reins && DrakeEquipment.stacks(player, DrakeEquipment.REINS).stream().anyMatch(ItemStack::isEmpty))
             return DrakeEquipment.REINS;
         if (!saddle && DrakeEquipment.stacks(player, DrakeEquipment.SADDLE).stream().anyMatch(ItemStack::isEmpty))
@@ -160,6 +170,9 @@ public final class DrakeFaction {
 
         @Override public boolean canStart() {
             if (pillager.hasVehicle() || pillager.age < nextSearch) return false;
+            var rules = pillager.getWorld().getGameRules();
+            if (!rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_DRAKE)
+                    && !rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)) return false;
             nextSearch = pillager.age + 20;
             wearer = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12),
                     player -> missingPiece(player) != null && pillager.getVisibilityCache().canSee(player) && isNearest(player))

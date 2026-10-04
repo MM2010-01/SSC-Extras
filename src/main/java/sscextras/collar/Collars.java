@@ -29,6 +29,7 @@ import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManag
 import sscextras.CreatureInstinct;
 import java.util.List;
 import sscextras.InstinctTarget;
+import sscextras.SscExtrasGameRules;
 import sscextras.drake.DrakeEquipment;
 
 public final class Collars {
@@ -92,8 +93,7 @@ public final class Collars {
 
     public static boolean tryEquip(PlayerEntity player, ItemStack source) {
         if (!(player instanceof ServerPlayerEntity) || source.isEmpty() || !source.isOf(CURSED)
-                || !player.isAlive() || player.isSpectator() || !isCursed(player)
-                || FormAbilityManager.getForm(player).getIndex() == 3) return false;
+                || !canAutoEquip(player)) return false;
         CollarSlots.Slot destination = null;
         for (var slot : CollarSlots.get(player)) {
             if (!slot.stack().isEmpty()) return false;
@@ -112,7 +112,7 @@ public final class Collars {
     }
 
     public static void equipCarried(PlayerEntity player) {
-        if (!isCursed(player)) return;
+        if (!canAutoEquip(player)) return;
         for (int i = 0; i < player.getInventory().size(); i++) {
             if (tryEquip(player, player.getInventory().getStack(i))) {
                 player.getInventory().markDirty();
@@ -122,7 +122,7 @@ public final class Collars {
     }
 
     public static void openedContainer(ServerPlayerEntity player) {
-        if (!isCursed(player)) return;
+        if (!canAutoEquip(player)) return;
         for (Slot slot : player.currentScreenHandler.slots) {
             if (slot.inventory == player.getInventory() || !slot.canTakeItems(player)) continue;
             if (tryEquip(player, slot.getStack())) {
@@ -131,6 +131,12 @@ public final class Collars {
                 return;
             }
         }
+    }
+
+    private static boolean canAutoEquip(PlayerEntity player) {
+        return player.isAlive() && !player.isSpectator() && FormAbilityManager.getForm(player).getIndex() != 3
+                && player.getWorld().getGameRules().getBoolean(isCursed(player)
+                ? SscExtrasGameRules.COLLAR_AUTO_EQUIP_CURSED : SscExtrasGameRules.COLLAR_AUTO_EQUIP_UNCURSED);
     }
 
     public static BaseTransformativeStatusEffect infusion(ItemStack stack) {
