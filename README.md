@@ -49,6 +49,8 @@ Craft either collar with a form curse potion to infuse it. An infused collar sta
 
 Use this key to unequip worn Cursed Feralizing Collars, Cursed Reins and Cursed Saddles, dropping them nearby. It has six uses and spends one per removed item, stopping when it runs out. Your current form and instinct stay unchanged.
 
+Removing an item also grants **Curse Cleansed** for 30 seconds, preventing cursed items from equipping themselves from your inventory or containers. Players and pillagers can still equip them on you during this time.
+
 Craft it with iron ingots and a Moondust Matrix:
 
 | Iron | Iron | Iron |

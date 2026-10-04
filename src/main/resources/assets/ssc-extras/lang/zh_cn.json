@@ -85,6 +85,8 @@
   "tooltip.ssc-extras.drake_permanent": "需要永久地龙形态。",
   "tooltip.ssc-extras.drake_pillager_rider": "阶段2及以上：潜行右键掠夺者让其骑乘，再次潜行使其下马。",
   "item.ssc-extras.cleansing_key": "净化钥匙",
+  "effect.ssc-extras.curse_cleansed": "诅咒净化",
+  "tooltip.ssc-extras.cleansing_key.cleansed": "获得30秒诅咒净化：阻止诅咒饰品自行装备。",
   "tooltip.ssc-extras.cleansing_key.release": "卸下并丢出佩戴的诅咒项圈、缰绳和鞍。每件消耗1次使用次数。",
   "tooltip.ssc-extras.cleansing_key.uses": "剩余使用次数：%s / 6",
   "item.ssc-extras.metal_cuffs": "抑制镣铐",

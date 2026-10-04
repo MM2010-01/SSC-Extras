@@ -3,6 +3,8 @@ package sscextras.collar;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.SpecialRecipeSerializer;
@@ -39,11 +41,13 @@ public final class Collars {
     public static final CollarItem FERALIZING = new CollarItem(false);
     public static final CollarItem CURSED = new CollarItem(true);
     public static final CleansingKeyItem CLEANSING_KEY = new CleansingKeyItem();
+    public static final StatusEffect CURSE_CLEANSED = new StatusEffect(StatusEffectCategory.BENEFICIAL, 0x52bdc2) { };
     public static final RecipeSerializer<CollarInfusionRecipe> INFUSION_RECIPE = new SpecialRecipeSerializer<>(CollarInfusionRecipe::new);
 
     private Collars() { }
 
     public static void register() {
+        Registry.register(Registries.STATUS_EFFECT, new Identifier("ssc-extras", "curse_cleansed"), CURSE_CLEANSED);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "feralizing_collar"), FERALIZING);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cursed_feralizing_collar"), CURSED);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cleansing_key"), CLEANSING_KEY);
@@ -134,7 +138,8 @@ public final class Collars {
     }
 
     private static boolean canAutoEquip(PlayerEntity player) {
-        return player.isAlive() && !player.isSpectator() && FormAbilityManager.getForm(player).getIndex() != 3
+        return player.isAlive() && !player.isSpectator() && !player.hasStatusEffect(CURSE_CLEANSED)
+                && FormAbilityManager.getForm(player).getIndex() != 3
                 && player.getWorld().getGameRules().getBoolean(isCursed(player)
                 ? SscExtrasGameRules.COLLAR_AUTO_EQUIP_CURSED : SscExtrasGameRules.COLLAR_AUTO_EQUIP_UNCURSED);
     }

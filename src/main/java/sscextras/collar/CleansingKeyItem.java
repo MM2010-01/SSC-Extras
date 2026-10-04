@@ -2,6 +2,7 @@ package sscextras.collar;
 
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -37,6 +38,7 @@ public final class CleansingKeyItem extends Item {
             }
         }
         if (!removed) return TypedActionResult.pass(key);
+        player.addStatusEffect(new StatusEffectInstance(Collars.CURSE_CLEANSED, 600, 0, false, false, true));
         player.getInventory().markDirty();
         player.currentScreenHandler.sendContentUpdates();
         world.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -64,6 +66,7 @@ public final class CleansingKeyItem extends Item {
 
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> lines, TooltipContext context) {
         lines.add(Text.translatable("tooltip.ssc-extras.cleansing_key.release").formatted(Formatting.GRAY));
+        lines.add(Text.translatable("tooltip.ssc-extras.cleansing_key.cleansed").formatted(Formatting.GRAY));
         lines.add(Text.translatable("tooltip.ssc-extras.cleansing_key.uses", stack.getMaxDamage() - stack.getDamage())
                 .formatted(Formatting.GRAY));
     }

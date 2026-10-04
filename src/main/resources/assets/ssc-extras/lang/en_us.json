@@ -85,6 +85,8 @@
   "tooltip.ssc-extras.drake_permanent": "Requires permanent Earthen Drake form.",
   "tooltip.ssc-extras.drake_pillager_rider": "Stage 2+: sneak-use a pillager to carry it; sneak again to remove it.",
   "item.ssc-extras.cleansing_key": "Cleansing Key",
+  "effect.ssc-extras.curse_cleansed": "Curse Cleansed",
+  "tooltip.ssc-extras.cleansing_key.cleansed": "Curse Cleansed for 30s: stops cursed items equipping themselves.",
   "tooltip.ssc-extras.cleansing_key.release": "Drops worn cursed collars, reins and saddles. Costs 1 use per item.",
   "tooltip.ssc-extras.cleansing_key.uses": "%s / 6 uses remaining",
   "item.ssc-extras.metal_cuffs": "Suppression Cuffs",
