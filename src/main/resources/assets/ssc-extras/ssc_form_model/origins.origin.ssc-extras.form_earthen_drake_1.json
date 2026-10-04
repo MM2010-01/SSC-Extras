@@ -6,12 +6,8 @@
   "model": "ssc-extras:geo/form/earthen_drake_1.geo.json",
   "texture": "ssc-extras:textures/form/earthen_drake.png",
   "hidden": [
-    "leftArm",
-    "rightArm",
     "leftSleeve",
     "rightSleeve",
-    "leftLeg",
-    "rightLeg",
     "leftPants",
     "rightPants"
   ],

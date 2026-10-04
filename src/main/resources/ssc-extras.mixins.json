@@ -4,6 +4,7 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "DrakeViewMixin",
     "DrakeEatingMixin",
     "CursePotionMixin",
     "WitchInstinctPotionMixin",
@@ -30,6 +31,6 @@
     "InfusionArmorEffectsMixin",
     "InfusionPowderSnowMixin"
   ],
-  "client": ["InstinctBarRendererMixin", "TransformOverlayMixin", "DrakeMouthItemMixin"],
+  "client": ["InstinctBarRendererMixin", "TransformOverlayMixin", "DrakeMouthItemMixin", "DrakeCameraMixin"],
   "injectors": { "defaultRequire": 1 }
 }

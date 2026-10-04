@@ -45,7 +45,7 @@ public final class DrakeBodyPower extends Power {
         set(ScaleTypes.HEIGHT, scale);
         set(ScaleTypes.HITBOX_WIDTH, width / (0.6f * scale));
         set(ScaleTypes.HITBOX_HEIGHT, height / (1.8f * scale));
-        set(ScaleTypes.EYE_HEIGHT, (allFours ? height * 0.8f : height * 0.9f) / (1.62f * scale));
+        set(ScaleTypes.EYE_HEIGHT, (stage == 3 ? 1.364f : allFours ? height * 0.8f : height * 0.9f) / (1.62f * scale));
         // Origin changes synchronize the whole component after adding its powers.
         if (sync && changed) PowerHolderComponent.syncPower(player, getType());
     }

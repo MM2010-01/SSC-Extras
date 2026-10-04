@@ -16,6 +16,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import sscextras.collar.CollarSlots;
 import sscextras.collar.Collars;
+import sscextras.drake.EarthenDrake;
 
 public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> {
     private static final Identifier TEXTURE = new Identifier("ssc-extras", "textures/entity/collar.png");
@@ -53,9 +54,13 @@ public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientP
         var collar = CollarSlots.visibleCollar(player);
         if (collar.isEmpty()) return;
         matrices.push();
+        int drakeStage = EarthenDrake.stage(player);
+        if (drakeStage == 3) matrices.translate(0, 0.66, -0.453333);
         getContextModel().head.rotate(matrices);
-        matrices.translate(0, 1.0f / 16, 0);
-        matrices.scale(0.8f, 0.8f, 0.8f);
+        matrices.translate(0, drakeStage == 2 ? 0.18 : drakeStage == 3 ? 0.14 : 1.0 / 16,
+                drakeStage == 2 ? 0.09 : drakeStage == 3 ? 0.07 : 0);
+        float scale = drakeStage == 2 ? 0.72f : drakeStage == 3 ? 0.65f : 0.8f;
+        matrices.scale(scale, scale, scale);
         var buffer = vertices.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
         boolean cursed = collar.isOf(Collars.CURSED);
         strap.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, cursed ? 0.49f : 0.78f,
