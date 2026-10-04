@@ -12,7 +12,6 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.text.Text;
-import net.onixary.shapeShifterCurseFabric.cursed_moon.CursedMoon;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormDynamic;
@@ -179,8 +178,7 @@ public final class Collars {
 
     public static void tick(ServerPlayerEntity player) {
         if (player.age % 20 != 0 || !player.isAlive() || player.isSpectator()
-                || InstinctTicker.isPausing || TransformManager.getPlayerTransformData(player).isTransforming
-                || (CursedMoon.isCursedMoon(player.getWorld()) && CursedMoon.isNight(player.getWorld()))) return;
+                || InstinctTicker.isPausing || TransformManager.getPlayerTransformData(player).isTransforming) return;
         int strength = strength(player);
         if (strength == 0) return;
         var form = FormAbilityManager.getForm(player);

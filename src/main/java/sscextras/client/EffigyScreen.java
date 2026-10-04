@@ -8,7 +8,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Formatting;
-import sscextras.effigy.Infusions;
 import sscextras.effigy.EffigyScreenHandler;
 import sscextras.effigy.InfusionSlot;
 
@@ -51,6 +50,15 @@ public final class EffigyScreen extends HandledScreen<EffigyScreenHandler> {
 
     @Override protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         super.drawForeground(context, mouseX, mouseY);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 250);
+        for (InfusionSlot kind : InfusionSlot.values()) {
+            var slot = handler.slots.get(kind.ordinal());
+            if (slot.isEnabled() && slot.hasStack() && handler.inactive(kind)) {
+                context.drawTextWithShadow(textRenderer, "!", slot.x + 12, slot.y, 0xFFFF4040);
+            }
+        }
+        context.getMatrices().pop();
         if (!handler.anyVisible()) {
             context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.ssc-extras.effigy.empty"), 88, 61, 0xFFFFFF);
         }
@@ -60,7 +68,7 @@ public final class EffigyScreen extends HandledScreen<EffigyScreenHandler> {
         var tooltip = new java.util.ArrayList<>(super.getTooltipFromItem(stack));
         if (focusedSlot != null && focusedSlot.id < EffigyScreenHandler.INFUSION_COUNT && client.player != null) {
             InfusionSlot slot = InfusionSlot.values()[focusedSlot.id];
-            if (!Infusions.restricted(client.player, slot, stack)) {
+            if (handler.inactive(slot)) {
                 tooltip.add(Text.translatable("screen.ssc-extras.effigy.inactive").formatted(Formatting.GRAY));
             }
             if (!slot.armor()) tooltip.add(Text.translatable("screen.ssc-extras.effigy.empty_hand").formatted(Formatting.GRAY));

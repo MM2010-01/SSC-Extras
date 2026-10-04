@@ -1,6 +1,7 @@
 package sscextras.mixin;
 
 import sscextras.CreatureInstinct;
+import sscextras.MoonlightInstinct;
 import sscextras.collar.Collars;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -12,6 +13,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctComponent;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import org.spongepowered.asm.mixin.Mixin;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -29,8 +31,15 @@ public abstract class InstinctTickerMixin {
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private static void sscExtras$collarBonus(ServerPlayerEntity player, CallbackInfo ci) {
+    private static void sscExtras$periodicBonuses(ServerPlayerEntity player, CallbackInfo ci) {
         Collars.tick(player);
+        MoonlightInstinct.tick(player);
+    }
+
+    @Redirect(method = "tick", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target =
+            "Lnet/onixary/shapeShifterCurseFabric/player_form/instinct/InstinctTicker;isUnderCursedMoon:Z"))
+    private static boolean sscExtras$allowInstinctDuringCursedMoon() {
+        return false;
     }
 
     @Inject(method = "judgeInstinctGrowRate", at = @At("RETURN"), cancellable = true)
@@ -70,7 +79,7 @@ public abstract class InstinctTickerMixin {
                                                        CallbackInfo ci) {
         PlayerFormBase target = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player));
         if (target != null) {
-            if (comp.instinctValue >= 100.0f && !InstinctTicker.isPausing && !InstinctTicker.isUnderCursedMoon
+            if (comp.instinctValue >= 100.0f && !InstinctTicker.isPausing
                     && player.isAlive() && (!player.isCreative() || Collars.strength(player) > 0) && !player.isSpectator()
                     && !TransformManager.getPlayerTransformData(player).isTransforming) {
                 TransformManager.handleDirectTransform(player, target, false);

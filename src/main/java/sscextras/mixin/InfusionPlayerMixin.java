@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.inventory.StackReference;
@@ -13,7 +12,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.effigy.InfusionHand;
 import sscextras.effigy.Infusions;
@@ -74,16 +72,6 @@ public abstract class InfusionPlayerMixin {
     @Inject(method = "getArmorItems", at = @At("RETURN"), cancellable = true)
     private void sscExtras$armorEnchantments(CallbackInfoReturnable<Iterable<ItemStack>> cir) {
         cir.setReturnValue(Infusions.armor((PlayerEntity)(Object)this, cir.getReturnValue()));
-    }
-
-    @Inject(method = "damageArmor", at = @At("TAIL"))
-    private void sscExtras$armorWear(DamageSource source, float amount, CallbackInfo ci) {
-        Infusions.damageArmor((PlayerEntity)(Object)this, source, amount, false);
-    }
-
-    @Inject(method = "damageHelmet", at = @At("TAIL"))
-    private void sscExtras$helmetWear(DamageSource source, float amount, CallbackInfo ci) {
-        Infusions.damageArmor((PlayerEntity)(Object)this, source, amount, true);
     }
 
 }

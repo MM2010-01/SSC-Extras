@@ -8,10 +8,8 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
-import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.ActionResult;
@@ -97,17 +95,6 @@ public final class Infusions {
             result.add(enchantmentEquipment(player, slot));
         }
         return result;
-    }
-
-    public static void damageArmor(PlayerEntity player, DamageSource source, float amount, boolean helmetOnly) {
-        if (amount <= 0 || player.getWorld().isClient || inventory(player).isEmpty()) return;
-        for (InfusionSlot slot : InfusionSlot.values()) {
-            if (!slot.armor() || helmetOnly && slot != InfusionSlot.HEAD) continue;
-            ItemStack stack = active(player, slot);
-            if (stack.isEmpty() || source.isIn(DamageTypeTags.IS_FIRE) && stack.getItem().isFireproof()) continue;
-            stack.damage(Math.max(1, (int)(amount / 4)), player, wearer -> wearer.sendEquipmentBreakStatus(slot.equipment));
-        }
-        changed(player);
     }
 
     public static void changed(PlayerEntity player) {

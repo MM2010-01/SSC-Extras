@@ -10,7 +10,7 @@
   "tooltip.ssc-extras.collar.infused": "Infused: %s",
   "block.ssc-extras.feral_effigy": "Feral Effigy",
   "screen.ssc-extras.effigy.empty": "No restricted equipment",
-  "screen.ssc-extras.effigy.inactive": "Stored; inactive in this form",
+  "screen.ssc-extras.effigy.inactive": "Stored; currently inactive",
   "screen.ssc-extras.effigy.tool_use": "Empty hand: strip / make paths; sneak to till.",
   "slot.ssc-extras.head": "Helmet infusion",
   "slot.ssc-extras.chest": "Chestplate infusion",

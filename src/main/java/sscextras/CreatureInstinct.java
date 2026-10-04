@@ -3,7 +3,6 @@ package sscextras;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.onixary.shapeShifterCurseFabric.cursed_moon.CursedMoon;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
@@ -24,8 +23,7 @@ public final class CreatureInstinct {
     public static boolean add(PlayerEntity player, BaseTransformativeStatusEffect effect, float amount) {
         if (!(player instanceof ServerPlayerEntity) || !player.isAlive()
                 || player.isCreative() || player.isSpectator() || effect == null
-                || TransformManager.getPlayerTransformData(player).isTransforming
-                || (CursedMoon.isCursedMoon(player.getWorld()) && CursedMoon.isNight(player.getWorld()))) {
+                || TransformManager.getPlayerTransformData(player).isTransforming) {
             return false;
         }
 

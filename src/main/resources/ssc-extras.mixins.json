@@ -18,6 +18,7 @@
     "InfusionPlayerMixin",
     "InfusionPlayerInventoryMixin",
     "InfusionMiningMixin",
+    "InfusionDurabilityMixin",
     "InfusionEnchantmentMixin",
     "InfusionMendingMixin",
     "InfusionArmorEffectsMixin",

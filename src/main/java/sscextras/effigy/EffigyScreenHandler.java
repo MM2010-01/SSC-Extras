@@ -2,7 +2,6 @@ package sscextras.effigy;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.Property;
 import net.minecraft.screen.ScreenHandler;
@@ -15,6 +14,7 @@ public final class EffigyScreenHandler extends ScreenHandler {
     private final InfusionInventory infusions;
     private final ScreenHandlerContext context;
     private final Property visibleMask = Property.create();
+    private final Property inactiveMask = Property.create();
 
     public EffigyScreenHandler(int syncId, PlayerInventory playerInventory) {
         this(syncId, playerInventory, ScreenHandlerContext.EMPTY);
@@ -26,6 +26,7 @@ public final class EffigyScreenHandler extends ScreenHandler {
         infusions = Infusions.inventory(player);
         this.context = context;
         addProperty(visibleMask);
+        addProperty(inactiveMask);
         updateMask();
         for (InfusionSlot kind : InfusionSlot.values()) addSlot(new Slot(infusions, kind.ordinal(), kind.x, kind.y) {
             @Override public boolean canInsert(ItemStack stack) {
@@ -41,15 +42,20 @@ public final class EffigyScreenHandler extends ScreenHandler {
     }
 
     public boolean visible(InfusionSlot slot) { return (visibleMask.get() & (1 << slot.ordinal())) != 0; }
+    public boolean inactive(InfusionSlot slot) { return (inactiveMask.get() & (1 << slot.ordinal())) != 0; }
     public boolean anyVisible() { return visibleMask.get() != 0; }
 
     private void updateMask() {
         if (player.getWorld().isClient) return;
-        int mask = 0;
+        int mask = 0, inactive = 0;
         for (InfusionSlot slot : InfusionSlot.values()) {
-            if (!infusions.getStack(slot.ordinal()).isEmpty() || Infusions.available(player, slot)) mask |= 1 << slot.ordinal();
+            if (!infusions.getStack(slot.ordinal()).isEmpty()) {
+                mask |= 1 << slot.ordinal();
+                if (Infusions.active(player, slot).isEmpty()) inactive |= 1 << slot.ordinal();
+            } else if (Infusions.available(player, slot)) mask |= 1 << slot.ordinal();
         }
         visibleMask.set(mask);
+        inactiveMask.set(inactive);
     }
 
     @Override public void sendContentUpdates() {
