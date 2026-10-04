@@ -54,6 +54,7 @@ public final class Collars {
                 .icon(FERALIZING::getDefaultStack).entries((context, entries) -> {
             entries.add(FERALIZING);
             entries.add(CURSED.getDefaultStack());
+            entries.add(sscextras.cuffs.MetalCuffs.ITEM);
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
             entries.add(sscextras.drake.DrakeEquipment.REINS);
             entries.add(sscextras.drake.DrakeEquipment.SADDLE);

@@ -3,9 +3,9 @@ package sscextras.mixin;
 import sscextras.CreatureInstinct;
 import sscextras.MoonlightInstinct;
 import sscextras.collar.Collars;
+import sscextras.cuffs.MetalCuffs;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.MathHelper;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctEffect;
@@ -24,7 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = InstinctTicker.class, remap = false)
 public abstract class InstinctTickerMixin {
     @Shadow private static void processImmediateEffects(PlayerInstinctComponent comp) { throw new AssertionError(); }
-
     @Inject(method = "clearInstinct", at = @At("HEAD"))
     private static void sscExtras$clearTarget(PlayerEntity player, CallbackInfo ci) {
         CreatureInstinct.clearTarget(player);
@@ -60,9 +59,11 @@ public abstract class InstinctTickerMixin {
     @Redirect(method = "tick", at = @At(value = "INVOKE", target =
             "Lnet/onixary/shapeShifterCurseFabric/player_form/instinct/InstinctTicker;processImmediateEffects(Lnet/onixary/shapeShifterCurseFabric/player_form/instinct/PlayerInstinctComponent;)V"))
     private static void sscExtras$scaleImmediateEffects(PlayerInstinctComponent comp, ServerPlayerEntity player) {
+        if (comp.immediateEffects.isEmpty()) return;
         float cost = CreatureInstinct.costMultiplier(FormAbilityManager.getForm(player));
         int multiplier = Math.max(1, Collars.strength(player) * 2);
-        if (cost == 1 && multiplier == 1) {
+        if (cost == 1 && multiplier == 1 && MetalCuffs.equipped(player, false, false).isEmpty()
+                && MetalCuffs.equipped(player, true, false).isEmpty()) {
             processImmediateEffects(comp);
             return;
         }
@@ -70,14 +71,21 @@ public abstract class InstinctTickerMixin {
             InstinctEffect effect = comp.immediateEffects.poll();
             float value = effect.getValue();
             if (value > 0) value *= multiplier;
-            comp.instinctValue = MathHelper.clamp(comp.instinctValue
-                    + value / cost, 0.0f, 100.0f);
+            comp.instinctValue = MetalCuffs.apply(player, comp.instinctValue, value / cost);
         }
+    }
+
+    @Redirect(method = "tick", at = @At(value = "INVOKE", target =
+            "Lnet/minecraft/util/math/MathHelper;clamp(FFF)F", remap = true))
+    private static float sscExtras$cuffPassiveGain(float value, float min, float max, ServerPlayerEntity player) {
+        var comp = net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player);
+        return MetalCuffs.apply(player, comp.instinctValue, comp.currentInstinctRate);
     }
 
     @Inject(method = "checkThreshold", at = @At("HEAD"), cancellable = true)
     private static void sscExtras$transformToPermanent(ServerPlayerEntity player, PlayerInstinctComponent comp,
                                                        CallbackInfo ci) {
+        if (comp.instinctValue >= 100) comp.instinctValue = MetalCuffs.apply(player, 99, comp.instinctValue - 99);
         PlayerFormBase target = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player));
         if (target != null) {
             if (comp.instinctValue >= 100.0f && !InstinctTicker.isPausing

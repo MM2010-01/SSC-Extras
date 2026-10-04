@@ -1,0 +1,8 @@
+{
+  "amount": 1,
+  "order": -256,
+  "icon": "ssc-extras:slot/anklet",
+  "validator_predicates": [
+    "trinkets:tag"
+  ]
+}

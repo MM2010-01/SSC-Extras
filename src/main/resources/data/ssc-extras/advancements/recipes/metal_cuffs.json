@@ -1,0 +1,34 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_matrix": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "shape-shifter-curse:moondust_matrix"
+            ]
+          }
+        ]
+      }
+    },
+    "has_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "ssc-extras:metal_cuffs"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_matrix",
+      "has_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "ssc-extras:metal_cuffs"
+    ]
+  }
+}

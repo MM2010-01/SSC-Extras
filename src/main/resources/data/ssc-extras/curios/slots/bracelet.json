@@ -1,0 +1,8 @@
+{
+  "size": 1,
+  "order": 70,
+  "icon": "ssc-extras:slot/bracelet",
+  "validators": [
+    "curios:tag"
+  ]
+}

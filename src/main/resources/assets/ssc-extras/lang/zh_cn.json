@@ -83,5 +83,16 @@
   "tooltip.ssc-extras.riders_chest": "54格共享储物空间。潜行右键大地龙，或按SSC副能力键打开。",
   "tooltip.ssc-extras.netherite_claw_tips": "将空手工具与利爪提升至下界合金级别。可接受工具和剑的附魔。",
   "tooltip.ssc-extras.drake_permanent": "需要永久大地龙形态。",
-  "tooltip.ssc-extras.drake_pillager_rider": "阶段2及以上：潜行右键掠夺者让其骑乘，再次潜行使其下马。"
+  "tooltip.ssc-extras.drake_pillager_rider": "阶段2及以上：潜行右键掠夺者让其骑乘，再次潜行使其下马。",
+  "item.ssc-extras.metal_cuffs": "金属镣铐",
+  "tooltip.ssc-extras.metal_cuffs.suppress": "将本能压制在99，每抵消1点本能消耗1点耐久。",
+  "tooltip.ssc-extras.metal_cuffs.first": "仍允许首次变身至阶段0。",
+  "tooltip.ssc-extras.metal_cuffs.pair": "手腕与脚踝同时佩戴时，每副的耐久消耗减半。",
+  "message.ssc-extras.metal_cuffs.wrists": "手腕",
+  "message.ssc-extras.metal_cuffs.ankles": "脚踝",
+  "message.ssc-extras.metal_cuffs.weak": "体内的魔力涌动，你感觉%s上的镣铐正在颤抖，逐渐变得脆弱。",
+  "message.ssc-extras.metal_cuffs.critical": "%s上的镣铐即将断裂。若想维持当前形态，请及时更换或修复。",
+  "trinkets.slot.hand.wrist": "手腕",
+  "trinkets.slot.feet.ankle": "脚踝",
+  "curios.identifier.anklet": "脚踝"
 }

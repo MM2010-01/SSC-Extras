@@ -83,5 +83,16 @@
   "tooltip.ssc-extras.riders_chest": "54 shared slots. Sneak-use the drake, or use your SSC secondary ability, to open.",
   "tooltip.ssc-extras.netherite_claw_tips": "Netherite empty-hand tools and claws. Accepts tool and sword enchantments.",
   "tooltip.ssc-extras.drake_permanent": "Requires permanent Earthen Drake form.",
-  "tooltip.ssc-extras.drake_pillager_rider": "Stage 2+: sneak-use a pillager to carry it; sneak again to remove it."
+  "tooltip.ssc-extras.drake_pillager_rider": "Stage 2+: sneak-use a pillager to carry it; sneak again to remove it.",
+  "item.ssc-extras.metal_cuffs": "Metal Cuffs",
+  "tooltip.ssc-extras.metal_cuffs.suppress": "Holds instinct at 99, spending 1 durability per instinct blocked.",
+  "tooltip.ssc-extras.metal_cuffs.first": "Allows the first transformation into stage 0.",
+  "tooltip.ssc-extras.metal_cuffs.pair": "Wear at wrists and ankles to halve wear on each pair.",
+  "message.ssc-extras.metal_cuffs.wrists": "wrists",
+  "message.ssc-extras.metal_cuffs.ankles": "ankles",
+  "message.ssc-extras.metal_cuffs.weak": "The magic within you surges. You feel the cuffs around your %s trembling and weakening.",
+  "message.ssc-extras.metal_cuffs.critical": "The cuffs around your %s are about to break. Replace or repair them to keep your current form.",
+  "trinkets.slot.hand.wrist": "Wrists",
+  "trinkets.slot.feet.ankle": "Ankles",
+  "curios.identifier.anklet": "Ankles"
 }

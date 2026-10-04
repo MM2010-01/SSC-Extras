@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "ssc-extras:slot/bracelet"
+    },
+    {
+      "type": "single",
+      "resource": "ssc-extras:slot/anklet"
+    }
+  ]
+}

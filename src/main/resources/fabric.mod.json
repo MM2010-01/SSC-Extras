@@ -3,7 +3,7 @@
   "id": "ssc-extras",
   "version": "${version}",
   "name": "SSC Extras",
-  "description": "Instinct progression, feralizing collars, and the Feral Effigy equipment-infusion station for SSC.",
+  "description": "Instinct progression, Metal Cuffs, feralizing collars, Earthen Drakes, and the Feral Effigy equipment-infusion station for SSC.",
   "authors": ["Jason"],
   "environment": "*",
   "entrypoints": { "main": ["sscextras.SscExtras"], "client": ["sscextras.client.SscExtrasClient"], "cardinal-components-entity": ["sscextras.effigy.InfusionComponents"] },

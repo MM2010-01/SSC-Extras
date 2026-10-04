@@ -30,6 +30,7 @@ public final class SscExtrasClient implements ClientModInitializer {
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
             if (renderer instanceof PlayerEntityRenderer playerRenderer) {
                 helper.register(new CollarFeatureRenderer(playerRenderer));
+                helper.register(new CuffsFeatureRenderer(playerRenderer));
                 helper.register(new DrakeGearFeatureRenderer(playerRenderer));
             }
         });

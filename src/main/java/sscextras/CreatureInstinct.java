@@ -37,8 +37,8 @@ public final class CreatureInstinct {
             state.sscExtras$setTarget(target.FormID);
         }
         sscextras.collar.Collars.equipCarried(player);
-        instinct.instinctValue = Math.min(100.0f, instinct.instinctValue
-                + sscextras.collar.Collars.gain(player, amount) / costMultiplier(current));
+        instinct.instinctValue = sscextras.cuffs.MetalCuffs.apply(player, instinct.instinctValue,
+                sscextras.collar.Collars.gain(player, amount) / costMultiplier(current));
         RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
         return true;
     }
