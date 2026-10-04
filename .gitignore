@@ -4,3 +4,8 @@ build/
 run/
 .idea/
 *.iml
+*.log
+README.md
+output/
+scripts/
+src/gametest/
