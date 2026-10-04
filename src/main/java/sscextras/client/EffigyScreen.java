@@ -6,13 +6,20 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Formatting;
 import sscextras.effigy.Infusions;
 import sscextras.effigy.EffigyScreenHandler;
 import sscextras.effigy.InfusionSlot;
 
 public final class EffigyScreen extends HandledScreen<EffigyScreenHandler> {
-    private static final Identifier ICONS = new Identifier("ssc-extras", "textures/gui/effigy_slots.png");
+    private static final Identifier[] EMPTY_ICONS = {
+            PlayerScreenHandler.EMPTY_HELMET_SLOT_TEXTURE, PlayerScreenHandler.EMPTY_CHESTPLATE_SLOT_TEXTURE,
+            PlayerScreenHandler.EMPTY_LEGGINGS_SLOT_TEXTURE, PlayerScreenHandler.EMPTY_BOOTS_SLOT_TEXTURE,
+            new Identifier("minecraft", "item/iron_sword"), new Identifier("minecraft", "item/iron_pickaxe"),
+            new Identifier("minecraft", "item/iron_axe"), new Identifier("minecraft", "item/iron_shovel"),
+            new Identifier("minecraft", "item/iron_hoe")
+    };
 
     public EffigyScreen(EffigyScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -32,7 +39,12 @@ public final class EffigyScreen extends HandledScreen<EffigyScreenHandler> {
             context.fill(sx, sy, sx + 17, sy + 17, 0xFFFFFFFF);
             context.fill(sx, sy, sx + 16, sy + 16, 0xFF8B8B8B);
             if (slot.id < EffigyScreenHandler.INFUSION_COUNT && !slot.hasStack()) {
-                context.drawTexture(ICONS, sx, sy, slot.id * 16, 0, 16, 16, 144, 16);
+                var sprite = client.getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).apply(EMPTY_ICONS[slot.id]);
+                if (InfusionSlot.values()[slot.id].armor()) {
+                    context.drawSprite(sx, sy, 0, 16, 16, sprite);
+                } else {
+                    context.drawSprite(sx, sy, 0, 16, 16, sprite, 0, 0, 0, 0.45F);
+                }
             }
         }
     }

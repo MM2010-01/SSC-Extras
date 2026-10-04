@@ -2,7 +2,6 @@ package sscextras.effigy;
 
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import dev.onyxstudios.cca.api.v3.component.tick.ServerTickingComponent;
-import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.player.PlayerEntity;
@@ -92,15 +91,6 @@ public final class InfusionInventory extends SimpleInventory implements AutoSync
         });
         applied.clear();
         applied.putAll(wanted);
-    }
-
-    public void dropOnDeath() {
-        for (int index = 0; index < size(); index++) {
-            ItemStack stack = removeStack(index);
-            if (!stack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(stack)) owner.dropItem(stack, true, false);
-        }
-        refreshAttributes();
-        flush();
     }
 
     @Override public void readFromNbt(NbtCompound tag) {

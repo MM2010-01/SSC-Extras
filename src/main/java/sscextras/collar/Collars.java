@@ -14,6 +14,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.text.Text;
 import net.onixary.shapeShifterCurseFabric.cursed_moon.CursedMoon;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
+import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
+import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormDynamic;
+import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormPhase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
@@ -21,13 +24,17 @@ import net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinc
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import net.onixary.shapeShifterCurseFabric.status_effects.BaseTransformativeStatusEffect;
 import net.onixary.shapeShifterCurseFabric.status_effects.RegTStatusEffect;
+import net.onixary.shapeShifterCurseFabric.status_effects.CTPUtils;
+import net.onixary.shapeShifterCurseFabric.status_effects.transformative_effects.CustomTransformativeStatue;
 import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManager;
 import sscextras.CreatureInstinct;
 import java.util.List;
+import java.util.LinkedHashMap;
 import sscextras.InstinctTarget;
 
 public final class Collars {
     public static final String INFUSION = "SscExtrasInfusion";
+    public static final String INFUSION_FORM = "SscExtrasInfusionForm";
     public static final String AWAKENING = "SscExtrasAwakening";
     public static final String BONUS = "ssc-extras:collar";
     public static final CollarItem FERALIZING = new CollarItem(false);
@@ -119,30 +126,55 @@ public final class Collars {
         return id != null && Registries.STATUS_EFFECT.get(id) instanceof BaseTransformativeStatusEffect effect ? effect : null;
     }
 
+    public static PlayerFormBase infusionForm(ItemStack stack) {
+        if (!stack.hasNbt()) return null;
+        Identifier id = Identifier.tryParse(stack.getNbt().getString(INFUSION_FORM));
+        return id == null ? null : RegPlayerForms.getPlayerForm(id);
+    }
+
+    public static boolean validForm(PlayerFormBase form) {
+        return form != null && form.getIndex() >= 0 && form.getPhase() != PlayerFormPhase.PHASE_CLEAR
+                && RegPlayerForms.playerForms.containsKey(form.FormID);
+    }
+
+    private static boolean availableForm(PlayerEntity player, PlayerFormBase form) {
+        return validForm(form) && (!(form instanceof PlayerFormDynamic dynamic) || dynamic.IsPlayerCanUse(player));
+    }
+
+    public static List<PlayerFormBase> randomCurseForms(PlayerEntity player) {
+        var firstForms = new LinkedHashMap<Identifier, PlayerFormBase>();
+        for (PlayerFormBase form : RegPlayerForms.playerForms.values()) {
+            if (!availableForm(player, form)) continue;
+            Identifier group = form.getGroup() == null ? form.FormID : form.getGroup().GroupID;
+            firstForms.merge(group, form, (first, next) -> first.getIndex() <= next.getIndex() ? first : next);
+        }
+        return List.copyOf(firstForms.values());
+    }
+
     public static void applyCurse(PlayerEntity player, ItemStack stack) {
         if (!(player instanceof ServerPlayerEntity) || !player.isAlive() || player.isSpectator()
                 || TransformManager.getPlayerTransformData(player).isTransforming || isCursed(player)) return;
         BaseTransformativeStatusEffect effect = infusion(stack);
+        PlayerFormBase target = effect instanceof CustomTransformativeStatue ? infusionForm(stack)
+                : effect == null ? null : effect.getToForm(player);
         if (effect == null && stack.isOf(CURSED)) {
-            List<BaseTransformativeStatusEffect> choices = List.of(RegTStatusEffect.TO_BAT_0_EFFECT,
-                    RegTStatusEffect.TO_AXOLOTL_0_EFFECT, RegTStatusEffect.TO_OCELOT_0_EFFECT,
-                    RegTStatusEffect.TO_ANUBIS_WOLF_0_EFFECT, RegTStatusEffect.TO_SPIDER_0_EFFECT,
-                    RegTStatusEffect.TO_FAMILIAR_FOX_0_EFFECT, RegTStatusEffect.TO_SNOW_FOX_0_EFFECT);
-            effect = choices.get(player.getRandom().nextInt(choices.size()));
+            if (stack.hasNbt() && stack.getNbt().contains(INFUSION)) return;
+            List<PlayerFormBase> choices = randomCurseForms(player);
+            if (choices.isEmpty()) return;
+            target = choices.get(player.getRandom().nextInt(choices.size()));
+            effect = RegTStatusEffect.TO_CUSTOM_STATUE_EFFECT;
         }
-        if (effect == null) return;
+        if (effect == null || !availableForm(player, target)) return;
         if (FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_BEFORE_ENABLE) {
             stack.getOrCreateNbt().putBoolean(AWAKENING, true);
             TransformManager.handleDirectTransform(player, RegPlayerForms.ORIGINAL_SHIFTER, false);
             return;
         }
         stack.getOrCreateNbt().remove(AWAKENING);
+        if (effect instanceof CustomTransformativeStatue) CTPUtils.setTransformativePotionForm(player, target.FormID);
         EffectManager.overrideEffect(player, effect);
-        var target = effect.getToForm(player);
-        if (target != null) {
-            ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$setTarget(target.FormID);
-            RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
-        }
+        ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$setTarget(target.FormID);
+        RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
     }
 
     public static void tick(ServerPlayerEntity player) {

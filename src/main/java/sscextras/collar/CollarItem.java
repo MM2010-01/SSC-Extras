@@ -100,7 +100,9 @@ public final class CollarItem extends AccessoryItem {
             tooltip.add(Text.translatable("tooltip.ssc-extras.collar.release").formatted(Formatting.GRAY));
         }
         var effect = Collars.infusion(stack);
+        var form = Collars.infusionForm(stack);
         tooltip.add(effect == null ? Text.translatable("tooltip.ssc-extras.collar.infuse").formatted(Formatting.GRAY)
-                : Text.translatable("tooltip.ssc-extras.collar.infused", effect.getName()).formatted(Formatting.LIGHT_PURPLE));
+                : Text.translatable("tooltip.ssc-extras.collar.infused", form == null ? effect.getName() : form.getFormName())
+                        .formatted(Formatting.LIGHT_PURPLE));
     }
 }

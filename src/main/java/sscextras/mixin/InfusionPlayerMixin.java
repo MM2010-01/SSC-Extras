@@ -8,7 +8,6 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.GameRules;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -77,11 +76,4 @@ public abstract class InfusionPlayerMixin {
         Infusions.damageArmor((PlayerEntity)(Object)this, source, amount, true);
     }
 
-    @Inject(method = "dropInventory", at = @At("TAIL"))
-    private void sscExtras$dropInfusions(CallbackInfo ci) {
-        PlayerEntity player = (PlayerEntity)(Object)this;
-        if (!player.getWorld().isClient && !player.getWorld().getGameRules().getBoolean(GameRules.KEEP_INVENTORY)) {
-            Infusions.inventory(player).dropOnDeath();
-        }
-    }
 }
