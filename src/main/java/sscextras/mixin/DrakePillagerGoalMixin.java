@@ -49,8 +49,21 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
     }
 
     @Override protected void mobTick() {
+        if (getTarget() instanceof PlayerEntity player && DrakeFaction.friendly(player)) {
+            setTarget(null); clearActiveItem(); ((PillagerEntity)(Object)this).setCharging(false);
+        }
         super.mobTick();
         DrakeRiding.tickPillager((PillagerEntity)(Object)this);
+    }
+
+    @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
+    private void sscExtras$saveGuardHome(net.minecraft.nbt.NbtCompound nbt, CallbackInfo ci) {
+        if (navigation instanceof sscextras.drake.DrakeStableNavigation stableNavigation) stableNavigation.writeHome(nbt);
+    }
+
+    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
+    private void sscExtras$loadGuardHome(net.minecraft.nbt.NbtCompound nbt, CallbackInfo ci) {
+        if (navigation instanceof sscextras.drake.DrakeStableNavigation stableNavigation) stableNavigation.readHome(nbt);
     }
 
     @Override public ItemStack getMainHandStack() {
@@ -67,6 +80,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
         sscExtras$captureGoal = new DrakeCaptureGoal((PillagerEntity)(Object)this);
         goalSelector.add(1, sscExtras$captureGoal);
         goalSelector.add(1, new sscextras.drake.DrakeFeedGoal((PillagerEntity)(Object)this));
+        goalSelector.add(5, new sscextras.drake.DrakeGuardGoal((PillagerEntity)(Object)this));
         sscExtras$defendGoal = new DrakeFaction.DefendGoal((PillagerEntity)(Object)this);
         targetSelector.add(0, sscExtras$defendGoal);
     }

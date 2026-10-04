@@ -19,6 +19,7 @@ import java.util.Set;
 
 public final class DrakeStableNavigation extends MobNavigation {
     private DrakeStablePiece stable;
+    private BlockPos guardHome;
     private int nextStableSearch;
     private final Map<BlockPos, Integer> openedGates = new HashMap<>();
 
@@ -32,9 +33,19 @@ public final class DrakeStableNavigation extends MobNavigation {
         if (!(world instanceof ServerWorld server)) return null;
         if (entity.age >= nextStableSearch) {
             nextStableSearch = entity.age + 100;
-            stable = DrakeCaptureGoal.findStable(server, entity.getBlockPos());
+            stable = DrakeCaptureGoal.findStable(server, guardHome == null ? entity.getBlockPos() : guardHome);
+            if (stable != null && entity instanceof net.minecraft.entity.mob.PillagerEntity) home(stable);
         }
         return stable;
+    }
+
+    public void home(DrakeStablePiece home) { stable = home; guardHome = home.getBoundingBox().getCenter(); }
+    public void writeHome(net.minecraft.nbt.NbtCompound nbt) {
+        if (guardHome != null) nbt.putLong("SscExtrasStableHome", guardHome.asLong());
+    }
+    public void readHome(net.minecraft.nbt.NbtCompound nbt) {
+        guardHome = nbt.contains("SscExtrasStableHome") ? BlockPos.fromLong(nbt.getLong("SscExtrasStableHome")) : null;
+        stable = null; nextStableSearch = 0;
     }
 
     @Override protected PathNodeNavigator createPathNodeNavigator(int range) {

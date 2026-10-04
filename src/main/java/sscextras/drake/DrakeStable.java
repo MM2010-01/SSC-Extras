@@ -20,6 +20,9 @@ public final class DrakeStable {
     public static final Item SPAWN_EGG = Registry.register(Registries.ITEM, EarthenDrake.id("stable_drake_spawn_egg"),
             new SpawnEggItem(DRAKE, 0x655537, 0xaca174, new Item.Settings()));
 
-    public static void register() { FabricDefaultAttributeRegistry.register(DRAKE, StableDrakeEntity.attributes()); }
+    public static void register() {
+        FabricDefaultAttributeRegistry.register(DRAKE, StableDrakeEntity.attributes());
+        DrakeStableGuards.register();
+    }
     private DrakeStable() { }
 }

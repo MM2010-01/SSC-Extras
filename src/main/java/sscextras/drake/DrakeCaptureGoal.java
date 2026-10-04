@@ -49,7 +49,8 @@ public final class DrakeCaptureGoal extends Goal {
         if (!DrakeOutpostOwnership.owns(player, stable)) return cursedHarness(player);
         var claim = DrakeOutpostOwnership.claim(player);
         return !pillager.getWorld().isDay() || EarthenDrake.stage(player) < 0
-                || claim.tryingToEscape && (DrakeLeashing.holder(player) == pillager || DrakeRoaming.canSee(pillager, player));
+                || claim.tryingToEscape && (DrakeLeashing.holder(player) == pillager
+                    || pillager.getWorld().getTime() < claim.recallUntil || DrakeRoaming.canSee(pillager, player));
     }
 
     public static boolean near(DrakeStablePiece piece, Vec3d position) {
@@ -96,10 +97,10 @@ public final class DrakeCaptureGoal extends Goal {
     private boolean occupied() {
         if (DrakeOutpostOwnership.reservedForAnother((ServerWorld)pillager.getWorld(), stable, player)) return true;
         if (!pillager.getWorld().getEntitiesByClass(LivingEntity.class, stall(stable),
-                entity -> entity.isAlive() && entity != pillager && entity != player && !entity.isSpectator()).isEmpty()) return true;
+                entity -> entity.isAlive() && !(entity instanceof PillagerEntity) && entity != player && !entity.isSpectator()).isEmpty()) return true;
         return pillager.getWorld().getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(RANGE), entity -> {
             var other = ((Captor)entity).sscExtras$captureGoal();
-            return entity != pillager && other != null && other.player != null && other.stable != null
+            return entity != pillager && other != null && other.player != null && other.player != player && other.stable != null
                     && other.stable.reservedStall().equals(stable.reservedStall());
         }).size() > 0;
     }
@@ -145,6 +146,8 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     private DrakeStableNavigation navigation() { return (DrakeStableNavigation)pillager.getNavigation(); }
+
+    public PlayerEntity quarry() { return player; }
 
     public boolean holdsOpen(BlockPos gate) {
         return player != null && stable != null && !complete
@@ -198,7 +201,7 @@ public final class DrakeCaptureGoal extends Goal {
             pillager.getNavigation().stop();
             pillager.getMoveControl().moveTo(destination.x, destination.y, destination.z, .8);
         }
-        else pillager.getNavigation().startMovingTo(destination.x, destination.y, destination.z, .8);
+        else navigation().startMovingAlong(navigation().findPathTo(destination.x, destination.y, destination.z, 0), .8);
     }
 
     @Override public void stop() {

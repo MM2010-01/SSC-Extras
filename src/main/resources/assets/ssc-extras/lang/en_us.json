@@ -127,5 +127,6 @@
   "message.ssc-extras.drake.struggle_free": "You struggle free of the leash!",
   "message.ssc-extras.drake.battle_treat": "A pillager rewards you with a treat after the battle.",
   "tooltip.ssc-extras.taming_collar.restrictions": "Prevents opening fence gates, breaking blocks, and freely untying your leash.",
-  "tooltip.ssc-extras.taming_collar.release": "A Cleansing Key removes it. Right-click your leash knot to struggle (5% chance)."
+  "tooltip.ssc-extras.taming_collar.release": "A Cleansing Key removes it.",
+  "item.ssc-extras.named_cursed_feralizing_collar": "%s's Cursed Feralizing Collar"
 }

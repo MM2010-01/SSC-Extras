@@ -38,7 +38,7 @@ public final class DrakeRoaming {
         }
         claim.outside = true;
         var previous = player.getWorld().getEntityById(claim.witness);
-        PillagerEntity witness = previous instanceof PillagerEntity pillager && canSee(pillager, player) ? pillager : null;
+        PillagerEntity witness = previous instanceof PillagerEntity pillager && canSee(pillager, player) && belongs(pillager, claim) ? pillager : null;
         if (witness == null) {
             claim.seenSince = -1; claim.witness = 0;
             if (time % 20 != 0) return;
@@ -56,6 +56,16 @@ public final class DrakeRoaming {
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
             hint(player, "escape_marked");
         }
+        if (claim.tryingToEscape) claim.recallUntil = time + 1200;
+    }
+
+    public static PlayerEntity following(PillagerEntity pillager) {
+        for (var player : pillager.getWorld().getPlayers()) {
+            var claim = DrakeOutpostOwnership.claim(player);
+            if (claim != null && claim.outside && !claim.tryingToEscape && claim.witness == pillager.getId()
+                    && canSee(pillager, player) && belongs(pillager, claim) && DrakeCaptureGoal.near(claim.stable, player.getPos())) return player;
+        }
+        return null;
     }
 
     private static boolean belongs(PillagerEntity pillager, DrakeOutpostOwnership.Claim claim) {

@@ -25,6 +25,14 @@ public abstract class DrakeMountNameMixin implements DrakeOutpostOwnership.Displ
     @Inject(method = "getName", at = @At("RETURN"), cancellable = true)
     private void sscExtras$mountName(CallbackInfoReturnable<Text> cir) {
         var name = sscExtras$mountName();
-        if (!name.isEmpty()) cir.setReturnValue(Text.literal(name));
+        if (!name.isEmpty()) cir.setReturnValue(Text.literal(name).formatted(net.minecraft.util.Formatting.ITALIC));
+    }
+
+    @Inject(method = "getDisplayName", at = @At("RETURN"), cancellable = true)
+    private void sscExtras$displayMountName(CallbackInfoReturnable<Text> cir) {
+        var name = sscExtras$mountName();
+        if (!name.isEmpty()) cir.setReturnValue(net.minecraft.scoreboard.Team.decorateName(
+                ((PlayerEntity)(Object)this).getScoreboardTeam(), Text.literal(name).formatted(net.minecraft.util.Formatting.ITALIC))
+                .setStyle(cir.getReturnValue().getStyle().withItalic(true)));
     }
 }
