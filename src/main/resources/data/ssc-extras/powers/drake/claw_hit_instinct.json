@@ -1,0 +1,16 @@
+{
+  "type": "origins:self_action_on_hit",
+  "condition": {
+    "type": "ssc-extras:claw_instinct"
+  },
+  "damage_condition": {
+    "type": "origins:name",
+    "name": "player"
+  },
+  "entity_action": {
+    "type": "shape-shifter-curse:add_instinct",
+    "instinct_effect_id": "SSC_EXTRAS_DRAKE_CLAW_HIT",
+    "value": 0.8,
+    "duration": 0
+  }
+}

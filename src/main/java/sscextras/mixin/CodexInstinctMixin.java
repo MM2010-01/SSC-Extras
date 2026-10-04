@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.CreatureInstinct;
+import sscextras.drake.EarthenDrake;
 
 @Mixin(value = CodexData.class, remap = false)
 public abstract class CodexInstinctMixin {
@@ -26,6 +27,7 @@ public abstract class CodexInstinctMixin {
                                                      CallbackInfoReturnable<Text> cir) {
         var form = FormAbilityManager.getForm(player);
         if (type == CodexData.ContentType.INSTINCTS && CreatureInstinct.permanentTarget(form) != null
+                && form.getGroup() != EarthenDrake.GROUP
                 && form.getGroup().hasForm(1)) {
             cir.setReturnValue(form.getGroup().getForm(1).getContentText(type));
         }

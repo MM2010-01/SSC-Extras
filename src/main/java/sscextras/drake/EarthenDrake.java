@@ -56,6 +56,7 @@ public final class EarthenDrake {
     public static Identifier id(String path) { return new Identifier("ssc-extras", path); }
 
     public static void register() {
+        DrakeInstinct.register();
         var body = DrakeBodyPower.factory();
         Registry.register(ApoliRegistries.POWER_FACTORY, body.getSerializerId(), body);
         var bareClaws = new ConditionFactory<Entity>(id("bare_claws"), new SerializableData(),

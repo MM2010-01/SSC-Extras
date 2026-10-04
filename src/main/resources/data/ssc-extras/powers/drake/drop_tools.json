@@ -1,45 +1,96 @@
 {
-  "type": "origins:action_over_time",
-  "interval": 1,
-  "entity_action": {
-    "type": "origins:drop_inventory",
-    "slots": [
-      "weapon.mainhand"
-    ],
-    "item_condition": {
-      "type": "origins:or",
-      "conditions": [
-        {
-          "type": "origins:ingredient",
-          "ingredient": {
-            "tag": "origins:tools"
+  "type": "origins:multiple",
+  "digging": {
+    "type": "origins:action_on_block_break",
+    "only_when_harvested": false,
+    "entity_action": {
+      "type": "origins:drop_inventory",
+      "slots": [
+        "weapon.mainhand"
+      ],
+      "item_condition": {
+        "type": "origins:or",
+        "conditions": [
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:tools"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:melee_weapons"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:ranged_weapons"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:shield"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:fishing_rod"
+            }
           }
-        },
-        {
-          "type": "origins:ingredient",
-          "ingredient": {
-            "tag": "origins:melee_weapons"
+        ]
+      }
+    }
+  },
+  "striking": {
+    "type": "origins:self_action_on_hit",
+    "damage_condition": {
+      "type": "origins:name",
+      "name": "player"
+    },
+    "entity_action": {
+      "type": "origins:drop_inventory",
+      "slots": [
+        "weapon.mainhand"
+      ],
+      "item_condition": {
+        "type": "origins:or",
+        "conditions": [
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:tools"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:melee_weapons"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:ranged_weapons"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:shield"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:fishing_rod"
+            }
           }
-        },
-        {
-          "type": "origins:ingredient",
-          "ingredient": {
-            "tag": "origins:ranged_weapons"
-          }
-        },
-        {
-          "type": "origins:ingredient",
-          "ingredient": {
-            "item": "minecraft:shield"
-          }
-        },
-        {
-          "type": "origins:ingredient",
-          "ingredient": {
-            "item": "minecraft:fishing_rod"
-          }
-        }
-      ]
+        ]
+      }
     }
   }
 }
