@@ -4,6 +4,9 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "DrakeMountNameMixin",
+    "DrakeMountTabNameMixin",
+    "DrakeHaySleepMixin",
     "DrakeLeashPlayerMixin",
     "DrakeRidingEntityMixin",
     "DrakeRidingPlayerMixin",

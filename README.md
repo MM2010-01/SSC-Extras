@@ -112,7 +112,23 @@ Newly generated stables have three stalls: two with natural drakes and one empty
 
 Use a Rider's Chest on a natural drake to give it 54 shared storage slots. Sneak-use the drake or press your inventory key while riding to open it. The chest keeps its contents through saving and drops with them if the drake dies.
 
-Stage 2 and permanent drake players can be led with a lead and tied to fences. Near a stable, a pillager can capture a player wearing both Cursed Reins and a Cursed Saddle, lead them into the empty third stall, and tie them there. An occupied stall cannot be used. Leave the stable area before being caught to avoid capture.
+Stage 2 and permanent drake players can be led with a lead and tied to fences. Leashed stage 2 drakes stay on all fours. A pillager can capture a player wearing both Cursed Reins and a Cursed Saddle into the empty third stall from **less than 128 blocks outside the stable boundary**, provided it can find complete paths to the player and back to the stall.
+
+Pillagers can also capture **Original Shifter** players wearing both cursed pieces; a vanilla saddle does not qualify.
+
+Pillagers can open and close the stable's fence gates, including when they spawn inside a stall. Recruitment also works inside another occupied drake stall: the pillager equips the player, leads them out through its gate and into the empty player stall, then closes the gates. An Original Shifter who removes the harness in Creative remains recruitable after returning to Survival with a pending drake curse, when the appropriate recruitment rule is enabled. Eligible, non-hostile recruits are not shooting targets.
+
+A pillager's lead lets the player step onto a one-block raised floor when there is room above it. Once the player is fully inside the stall, the pillager ties the lead, walks out, and closes the gates, during both day and night.
+
+Each natural drake and its stall sign share a randomly selected mount name. The player stall starts with a blank sign. Capture assigns the player to that outpost and gives the stall sign, player name tag, chat name, and tab list the same mount name, selected from [64 mount names](src/main/resources/data/ssc-extras/drake_mount_names.json). Ownership and the assigned name survive saving and rejoining.
+
+Owned drake players are untied during the day and may roam outside without being led back. Daytime freedom does not open or hold open the gates. Captured **Original Shifters have no daytime freedom** before their first transformation: they stay tied and nearby pillagers recall them during the day too. At night, pillagers also recall owned drakes outside their stall within the same 128-block capture range, provided a route is available. A reserved stall remains assigned even while its mount is away. An occupied or otherwise reserved destination stall cannot capture another player.
+
+When an owned mount is in its stall with fewer than 10 food points (five drumsticks), a nearby pillager offers 1–2 random pieces of raw beef, pork, mutton, rabbit, or chicken by throwing them toward the player. Pillagers share a ten-second feeding delay for that mount.
+
+Ownership clears when the player is in **Original Shifter form and at least 16 blocks outside the stable boundary**. Returning to original form near the stable, removing the gear, or leaving while still transformed does not clear ownership. Release clears the stall sign and restores the previous displayed name. Capture by another outpost transfers ownership and clears the old sign. **Bond of the Beast** is optional: its player ownership takes precedence, releases the outpost claim, and preserves that add-on's own naming behavior.
+
+All four drake forms can sleep at night by right-clicking a flat horizontal patch of at least **2×2 hay bales**, with enough clear space above it. Normal waking, leaving sleep, and multiplayer night skipping apply. Sneaking lets you keep building on hay without starting sleep.
 
 Removed darkness effect during transformation.
 

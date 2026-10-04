@@ -17,6 +17,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
+import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import java.util.UUID;
 
 public final class DrakeLeashing {
@@ -28,7 +30,14 @@ public final class DrakeLeashing {
 
     private DrakeLeashing() { }
     public static boolean eligible(PlayerEntity player) {
-        return player.isAlive() && !player.isSpectator() && EarthenDrake.stage(player) >= 2;
+        return player.isAlive() && !player.isSpectator()
+                && (EarthenDrake.stage(player) >= 2 || originalWithCursedHarness(player));
+    }
+    public static boolean originalWithCursedHarness(PlayerEntity player) {
+        var form = FormAbilityManager.getForm(player);
+        return (form == RegPlayerForms.ORIGINAL_SHIFTER || form == RegPlayerForms.ORIGINAL_BEFORE_ENABLE)
+                && !DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()
+                && !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty();
     }
     public static Entity holder(PlayerEntity player) {
         var state = (State)player;
@@ -42,6 +51,8 @@ public final class DrakeLeashing {
         var leash = ((State)player).sscExtras$leash();
         leash.holder = holder; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
         ((State)player).sscExtras$leashHolderId(holder.getId());
+        if (player.isSleeping()) player.wakeUp();
+        refreshPosture(player);
         return true;
     }
     public static void detach(PlayerEntity player, boolean drop) {
@@ -49,12 +60,18 @@ public final class DrakeLeashing {
         if (drop && leash.linked() && !player.getWorld().isClient) player.dropItem(Items.LEAD);
         leash.holder = null; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
         ((State)player).sscExtras$leashHolderId(0);
+        refreshPosture(player);
+    }
+
+    private static void refreshPosture(PlayerEntity player) {
+        if (!player.getWorld().isClient && EarthenDrake.stage(player) == 2)
+            io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, DrakeBodyPower.class).forEach(DrakeBodyPower::refreshSize);
     }
 
     public static void register() {
         UseEntityCallback.EVENT.register((actor, world, hand, entity, hit) -> {
             if (actor.isSpectator()) return ActionResult.PASS;
-            if (entity instanceof PlayerEntity drake && eligible(drake)) {
+            if (entity instanceof PlayerEntity drake && EarthenDrake.stage(drake) >= 2 && eligible(drake)) {
                 if (holder(drake) == actor) {
                     if (!world.isClient) detach(drake, !actor.isCreative());
                     return ActionResult.SUCCESS;
@@ -115,10 +132,12 @@ public final class DrakeLeashing {
             Vec3d delta = holder.getPos().subtract(player.getPos());
             double distance = delta.length();
             if (distance > 10) { detach(player, true); return; }
-            if (distance > (holder instanceof net.minecraft.entity.mob.PillagerEntity ? 3 : 6)) {
+            boolean pillagerLead = holder instanceof net.minecraft.entity.mob.PillagerEntity;
+            if (distance > (pillagerLead ? 3 : 6)) {
                 Vec3d direction = delta.multiply(1 / distance);
-                player.addVelocity(Math.copySign(direction.x * direction.x * .4, direction.x),
-                        Math.copySign(direction.y * direction.y * .4, direction.y), Math.copySign(direction.z * direction.z * .4, direction.z));
+                player.addVelocity(pillagerLead ? direction.x * .4 : Math.copySign(direction.x * direction.x * .4, direction.x),
+                        Math.copySign(direction.y * direction.y * .4, direction.y),
+                        pillagerLead ? direction.z * .4 : Math.copySign(direction.z * direction.z * .4, direction.z));
                 player.velocityModified = true;
                 player.fallDistance = 0;
             }

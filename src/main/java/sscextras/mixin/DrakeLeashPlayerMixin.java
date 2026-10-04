@@ -1,10 +1,14 @@
 package sscextras.mixin;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,7 +17,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import sscextras.drake.DrakeLeashing;
 
 @Mixin(PlayerEntity.class)
-public abstract class DrakeLeashPlayerMixin implements DrakeLeashing.State {
+public abstract class DrakeLeashPlayerMixin extends LivingEntity implements DrakeLeashing.State {
+    protected DrakeLeashPlayerMixin(EntityType<? extends LivingEntity> type, World world) { super(type, world); }
+
+    @Override public float getStepHeight() {
+        float height = super.getStepHeight();
+        var holder = DrakeLeashing.holder((PlayerEntity)(Object)this);
+        double distance = holder instanceof PillagerEntity ? squaredDistanceTo(holder) : 0;
+        return distance > 9 && distance <= 100 ? Math.max(1, height) : height;
+    }
+
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_LEASH = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique private final DrakeLeashing.Leash sscExtras$leash = new DrakeLeashing.Leash();
     public DrakeLeashing.Leash sscExtras$leash() { return sscExtras$leash; }

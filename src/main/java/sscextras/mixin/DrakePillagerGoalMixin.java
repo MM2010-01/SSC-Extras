@@ -25,6 +25,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
             PillagerEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
     @Unique private DrakeFaction.DefendGoal sscExtras$defendGoal;
     @Unique private DrakeCaptureGoal sscExtras$captureGoal;
+    @Unique private DrakeFaction.EquipGoal sscExtras$equipGoal;
     protected DrakePillagerGoalMixin(EntityType<? extends IllagerEntity> type, World world) { super(type, world); }
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
@@ -33,6 +34,17 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
     public void sscExtras$showEquipment(ItemStack stack) { dataTracker.set(SSC_EXTRAS_OFFERED_GEAR, stack); }
     public void sscExtras$defend(PlayerEntity player, LivingEntity enemy) { sscExtras$defendGoal.offer(player, enemy); }
     public DrakeCaptureGoal sscExtras$captureGoal() { return sscExtras$captureGoal; }
+    public PlayerEntity sscExtras$recruiting() { return sscExtras$equipGoal == null ? null : sscExtras$equipGoal.wearer(); }
+
+    @Override public boolean canTarget(LivingEntity target) {
+        return !(target instanceof PlayerEntity player && DrakeFaction.missingPiece(player) != null
+                && getWorld().getTime() - net.onixary.shapeShifterCurseFabric.util.AttackEntityDataTracker
+                .lastAttackPillagerTimeMap.getOrDefault(player.getUuid(), -1200L) >= 1200) && super.canTarget(target);
+    }
+
+    @Override protected net.minecraft.entity.ai.pathing.EntityNavigation createNavigation(World world) {
+        return new sscextras.drake.DrakeStableNavigation(this, world);
+    }
 
     @Override protected void mobTick() {
         super.mobTick();
@@ -46,9 +58,11 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
 
     @Inject(method = "initGoals", at = @At("TAIL"))
     private void sscExtras$completeDrakeHarness(CallbackInfo ci) {
-        goalSelector.add(1, new DrakeFaction.EquipGoal((PillagerEntity)(Object)this));
+        sscExtras$equipGoal = new DrakeFaction.EquipGoal((PillagerEntity)(Object)this);
+        goalSelector.add(1, sscExtras$equipGoal);
         sscExtras$captureGoal = new DrakeCaptureGoal((PillagerEntity)(Object)this);
         goalSelector.add(1, sscExtras$captureGoal);
+        goalSelector.add(1, new sscextras.drake.DrakeFeedGoal((PillagerEntity)(Object)this));
         sscExtras$defendGoal = new DrakeFaction.DefendGoal((PillagerEntity)(Object)this);
         targetSelector.add(0, sscExtras$defendGoal);
     }

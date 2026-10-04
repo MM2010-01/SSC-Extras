@@ -26,6 +26,7 @@ public final class DrakeFaction {
     public interface EquipmentDisplay {
         void sscExtras$showEquipment(ItemStack stack);
         void sscExtras$defend(PlayerEntity player, LivingEntity enemy);
+        PlayerEntity sscExtras$recruiting();
     }
     private DrakeFaction() { }
 
@@ -144,11 +145,15 @@ public final class DrakeFaction {
         boolean saddle = !DrakeEquipment.saddle(player).isEmpty();
         if (reins && saddle) return null;
         boolean cursedPiece = reins || !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty();
+        var pending = sscextras.CreatureInstinct.getTarget(player);
+        boolean pendingDrake = FormAbilityManager.getForm(player).getIndex() < 0
+                && (pending != null && pending.getGroup() == EarthenDrake.GROUP
+                || player.hasStatusEffect(EarthenDrake.CURSE) || player.hasStatusEffect(EarthenDrake.POTION_EFFECT));
         var rules = player.getWorld().getGameRules();
         boolean drakeRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_DRAKE)
-                && (EarthenDrake.stage(player) >= 0 || cursedPiece);
+                && (EarthenDrake.stage(player) >= 0 || cursedPiece || pendingDrake);
         boolean uncursedRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)
-                && (!Collars.isCursed(player) || cursedPiece && FormAbilityManager.getForm(player).getIndex() < 0);
+                && (!Collars.isCursed(player) || (cursedPiece || pendingDrake) && FormAbilityManager.getForm(player).getIndex() < 0);
         if (!drakeRecruiting && !uncursedRecruiting) return null;
         if (!reins && DrakeEquipment.stacks(player, DrakeEquipment.REINS).stream().anyMatch(ItemStack::isEmpty))
             return DrakeEquipment.REINS;
@@ -162,6 +167,7 @@ public final class DrakeFaction {
         private PlayerEntity wearer;
         private int nextSearch;
         private int nextEquip;
+        private boolean equipping;
 
         public EquipGoal(PillagerEntity pillager) {
             this.pillager = pillager;
@@ -174,29 +180,43 @@ public final class DrakeFaction {
             if (!rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_DRAKE)
                     && !rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)) return false;
             nextSearch = pillager.age + 20;
-            wearer = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12),
-                    player -> missingPiece(player) != null && pillager.getVisibilityCache().canSee(player) && isNearest(player))
-                    .stream().min(Comparator.comparingDouble(pillager::squaredDistanceTo)).orElse(null);
+            wearer = pillager.getWorld().getPlayers().stream()
+                    .filter(player -> missingPiece(player) != null && inRange(pillager, player) && isNearest(player))
+                    .min(Comparator.comparingDouble(pillager::squaredDistanceTo)).orElse(null);
             return wearer != null;
         }
 
         @Override public boolean shouldContinue() {
             return wearer != null && !pillager.hasVehicle() && missingPiece(wearer) != null
-                    && pillager.squaredDistanceTo(wearer) <= 144 && isNearest(wearer);
+                    && wearer.getWorld() == pillager.getWorld() && inRange(pillager, wearer);
+        }
+
+        public PlayerEntity wearer() { return equipping ? wearer : null; }
+
+        private static boolean inRange(PillagerEntity pillager, PlayerEntity player) {
+            if (pillager.squaredDistanceTo(player) > (DrakeCaptureGoal.RANGE * 2 + 24) * (DrakeCaptureGoal.RANGE * 2 + 24)) return false;
+            var stable = ((DrakeStableNavigation)pillager.getNavigation()).stable();
+            return stable != null ? DrakeCaptureGoal.near(stable, player.getPos()) : pillager.squaredDistanceTo(player) <= 144;
         }
 
         private boolean isNearest(PlayerEntity player) {
-            return pillager.getWorld().getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(12),
+            var candidates = pillager.getWorld().getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(DrakeCaptureGoal.RANGE * 2 + 24),
                     candidate -> candidate.isAlive() && !candidate.isAiDisabled() && !candidate.hasVehicle()
-                            && candidate.getVisibilityCache().canSee(player)).stream()
-                    .min(Comparator.<PillagerEntity>comparingDouble(player::squaredDistanceTo).thenComparingInt(Entity::getId))
-                    .orElse(null) == pillager;
+                            && inRange(candidate, player));
+            for (var candidate : candidates)
+                if (((EquipmentDisplay)candidate).sscExtras$recruiting() == player) return candidate == pillager;
+            return candidates.stream().filter(candidate -> ((EquipmentDisplay)candidate).sscExtras$recruiting() == null)
+                    .sorted(Comparator.<PillagerEntity>comparingDouble(player::squaredDistanceTo).thenComparingInt(Entity::getId))
+                    .filter(candidate -> ((DrakeStableNavigation)candidate.getNavigation()).reaches(player.getBlockPos()))
+                    .findFirst().orElse(null) == pillager;
         }
 
         @Override public void start() {
+            equipping = true;
             nextEquip = pillager.age;
             pillager.clearActiveItem();
             pillager.setCharging(false);
+            pillager.setTarget(null);
             var missing = missingPiece(wearer);
             if (missing != null) ((EquipmentDisplay)pillager).sscExtras$showEquipment(new ItemStack(missing));
             pillager.getNavigation().startMovingTo(wearer, 1.1);
@@ -219,7 +239,7 @@ public final class DrakeFaction {
         }
 
         @Override public void stop() {
-            wearer = null;
+            equipping = false; wearer = null;
             ((EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
             pillager.getNavigation().stop();
         }

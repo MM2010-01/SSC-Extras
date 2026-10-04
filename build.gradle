@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.10.5'
 }
 
-version = '1.8.0'
+version = '1.9.6'
 group = 'sscextras'
 
 repositories { mavenCentral() }
@@ -19,6 +19,7 @@ dependencies {
     }
     modRuntimeOnly fileTree('.work/runtime') { include '*.jar' }
     modCompileOnly fileTree('.work/runtime') { include 'azurelib-*.jar', 'player-animation-lib-*.jar' }
+    modCompileOnly files('.work/compat/bondofthebeast.jar')
 }
 
 java {
