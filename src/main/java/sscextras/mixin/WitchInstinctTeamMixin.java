@@ -22,6 +22,7 @@ public abstract class WitchInstinctTeamMixin {
         Entity self = (Entity) (Object) this;
         if (other instanceof PlayerEntity player && (self instanceof WitchEntity
                 || Registries.ENTITY_TYPE.getId(self.getType()).equals(SSC_EXTRAS_FAMILIAR))
+                && !sscextras.drake.DrakeFaction.friendly(player)
                 && CreatureInstinct.canGain(player, RegTStatusEffect.TO_FAMILIAR_FOX_0_EFFECT)) {
             cir.setReturnValue(self.getScoreboardTeam() != null && self.getScoreboardTeam().isEqual(other.getScoreboardTeam()));
         }

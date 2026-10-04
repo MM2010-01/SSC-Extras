@@ -34,11 +34,16 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
     private int contactCooldown;
     private ItemStack saddle = ItemStack.EMPTY, reins = ItemStack.EMPTY;
+    private boolean naturalSaddle = true, naturalReins = true;
 
     public StableDrakeEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
         setPersistent();
         setStepHeight(1);
+        saddle = new ItemStack(DrakeEquipment.SADDLE);
+        reins = new ItemStack(DrakeEquipment.REINS);
+        dataTracker.set(SADDLED, true);
+        dataTracker.set(REINED, true);
     }
 
     public static DefaultAttributeContainer.Builder attributes() {
@@ -113,8 +118,11 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         ItemStack stack = player.getStackInHand(hand);
         if (stack.isOf(DrakeEquipment.SADDLE) && !isSaddled() || stack.isOf(DrakeEquipment.REINS) && !hasReins()) {
             if (!getWorld().isClient) {
-                if (stack.isOf(DrakeEquipment.SADDLE)) { saddle = stack.copyWithCount(1); dataTracker.set(SADDLED, true); }
-                else { reins = stack.copyWithCount(1); dataTracker.set(REINED, true); }
+                if (stack.isOf(DrakeEquipment.SADDLE)) {
+                    saddle = stack.copyWithCount(1); naturalSaddle = false; dataTracker.set(SADDLED, true);
+                } else {
+                    reins = stack.copyWithCount(1); naturalReins = false; dataTracker.set(REINED, true);
+                }
                 if (!player.isCreative()) stack.decrement(1);
                 playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1, 1);
             }
@@ -144,21 +152,31 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         nbt.put("DrakeSaddle", saddle.writeNbt(new NbtCompound()));
         nbt.put("DrakeReins", reins.writeNbt(new NbtCompound()));
         nbt.putInt("CurseContactCooldown", contactCooldown);
+        nbt.putBoolean("DrakeNaturalSaddle", naturalSaddle);
+        nbt.putBoolean("DrakeNaturalReins", naturalReins);
     }
 
     @Override public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         saddle = ItemStack.fromNbt(nbt.getCompound("DrakeSaddle"));
         reins = ItemStack.fromNbt(nbt.getCompound("DrakeReins"));
+        naturalSaddle = nbt.getBoolean("DrakeNaturalSaddle");
+        naturalReins = nbt.getBoolean("DrakeNaturalReins");
+        if (!nbt.contains("DrakeNaturalSaddle") && saddle.isEmpty()) {
+            saddle = new ItemStack(DrakeEquipment.SADDLE); naturalSaddle = true;
+        }
+        if (!nbt.contains("DrakeNaturalReins") && reins.isEmpty()) {
+            reins = new ItemStack(DrakeEquipment.REINS); naturalReins = true;
+        }
         dataTracker.set(SADDLED, saddle.isOf(DrakeEquipment.SADDLE));
         dataTracker.set(REINED, reins.isOf(DrakeEquipment.REINS));
         contactCooldown = nbt.getInt("CurseContactCooldown");
     }
 
-    @Override protected void dropInventory() {
-        super.dropInventory();
-        if (!saddle.isEmpty()) dropStack(saddle);
-        if (!reins.isEmpty()) dropStack(reins);
+    @Override protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {
+        super.dropEquipment(source, lootingMultiplier, allowDrops);
+        if (!saddle.isEmpty() && (!naturalSaddle || allowDrops && random.nextFloat() < .085f + lootingMultiplier * .01f)) dropStack(saddle);
+        if (!reins.isEmpty() && (!naturalReins || allowDrops && random.nextFloat() < .085f + lootingMultiplier * .01f)) dropStack(reins);
         saddle = reins = ItemStack.EMPTY;
     }
 

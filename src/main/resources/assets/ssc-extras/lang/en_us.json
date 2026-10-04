@@ -75,10 +75,12 @@
   "item.ssc-extras.stable_drake_spawn_egg": "Earthen Drake Spawn Egg",
   "entity.ssc-extras.stable_drake": "Earthen Drake",
   "container.ssc-extras.riders_chest": "%s — Rider's Chest",
-  "tooltip.ssc-extras.cursed_reins": "Inflicts Drake Curse. A rider can steer a saddled permanent drake while giving movement input.",
+  "tooltip.ssc-extras.cursed_reins": "Inflicts Drake Curse. A rider can steer a saddled permanent drake.",
   "tooltip.ssc-extras.cursed_saddle": "Inflicts Drake Curse. Allows other players to ride a permanent drake.",
   "tooltip.ssc-extras.drake_binding": "Wearing both Cursed Reins and Cursed Saddle binds both items.",
+  "tooltip.ssc-extras.drake_faction": "Together: friendly to the pillager faction; cannot attack its members.",
+  "tooltip.ssc-extras.drake_missing_piece": "Pillagers try to equip the missing piece when only one is worn.",
   "tooltip.ssc-extras.riders_chest": "54 shared slots. Sneak-use the drake, or use your SSC secondary ability, to open.",
-  "tooltip.ssc-extras.netherite_claw_tips": "Netherite empty-hand tools and claws. Accepts tool and sword enchantments.",
+  "tooltip.ssc-extras.netherite_claw_tips": "Netherite empty-hand tools and claws. Enchantable.",
   "tooltip.ssc-extras.drake_permanent": "Requires permanent Earthen Drake form."
 }

@@ -21,7 +21,7 @@ public final class DrakeGearModel {
         boolean mature = stage == 3;
         ModelData data = new ModelData();
         var root = data.getRoot();
-        var straps = ModelPartBuilder.create().uv(0, 0);
+        var straps = ModelPartBuilder.create().uv(0, 16);
         var rings = ModelPartBuilder.create().uv(16, 0);
         float cheekX, cheekZ, bitX, bitZ, bitY;
         if (mature) {
@@ -58,7 +58,7 @@ public final class DrakeGearModel {
         for (int side : new int[]{-1, 1}) {
             float dx = side * (bitX - cheekX), dz = bitZ - cheekZ;
             float length = (float)Math.sqrt(dx * dx + dz * dz);
-            reinParts.addChild("cheek_" + side, ModelPartBuilder.create().uv(0, 0)
+            reinParts.addChild("cheek_" + side, ModelPartBuilder.create().uv(0, 16)
                     .cuboid(-.2f, 0, -.2f, .4f, .5f, length + .4f),
                     ModelTransform.of(side * cheekX, bitY, cheekZ, 0, (float)Math.atan2(dx, dz), 0));
             rings.cuboid(side * bitX - .25f, bitY - .2f, bitZ - .4f, .5f, .9f, .8f);

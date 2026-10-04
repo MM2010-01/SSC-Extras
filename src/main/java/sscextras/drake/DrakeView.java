@@ -12,18 +12,20 @@ public final class DrakeView {
     private DrakeView() { }
 
     public static Vec3d atHead(Entity entity, float tickDelta, Vec3d eyes) {
-        if (!(entity instanceof PlayerEntity player) || EarthenDrake.stage(player) != 3
-                || player.isSleeping()) return eyes;
-        double width = ScaleUtils.getModelWidthScale(player, tickDelta) / 1.5;
-        double height = ScaleUtils.getModelHeightScale(player, tickDelta) / 1.5;
+        if (!(entity instanceof PlayerEntity player) || player.isSleeping()) return eyes;
+        int stage = EarthenDrake.stage(player);
+        if (stage < 2) return eyes;
+        double scale = stage == 3 ? 1.5 : 1;
+        double width = ScaleUtils.getModelWidthScale(player, tickDelta) / scale;
+        double height = ScaleUtils.getModelHeightScale(player, tickDelta) / scale;
         double bodyYaw = Math.toRadians(MathHelper.lerpAngleDegrees(tickDelta, player.prevBodyYaw, player.bodyYaw));
         double yaw = Math.toRadians(MathHelper.lerpAngleDegrees(tickDelta, player.prevHeadYaw, player.headYaw));
         double pitch = Math.toRadians(player.getPitch(tickDelta));
-        // The skull pivots 0.68 blocks ahead of the body; the eyes sit above and ahead of it.
-        double forward = .206 * Math.cos(pitch) + .104 * Math.sin(pitch);
-        Vec3d offset = new Vec3d((-Math.sin(bodyYaw)*.68-Math.sin(yaw)*forward)*width,
-                (.104*(Math.cos(pitch)-1)-.206*Math.sin(pitch))*height,
-                (Math.cos(bodyYaw)*.68+Math.cos(yaw)*forward)*width);
+        double pivot = stage == 3 ? .68 : EarthenDrake.onAllFours(player) ? .375 : .1;
+        double forward = stage == 3 ? .206 * Math.cos(pitch) + .104 * Math.sin(pitch) : .3;
+        double vertical = stage == 3 ? .104 * (Math.cos(pitch) - 1) - .206 * Math.sin(pitch) : 0;
+        Vec3d offset = new Vec3d((-Math.sin(bodyYaw)*pivot-Math.sin(yaw)*forward)*width,
+                vertical*height, (Math.cos(bodyYaw)*pivot+Math.cos(yaw)*forward)*width);
         Vec3d head = eyes.add(offset);
         var hit = player.getWorld().raycast(new RaycastContext(eyes, head,
                 RaycastContext.ShapeType.VISUAL, RaycastContext.FluidHandling.NONE, player));

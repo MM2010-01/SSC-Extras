@@ -9,9 +9,11 @@ import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.onixary.shapeShifterCurseFabric.util.Accessory.AccessoryUtils;
+import net.onixary.shapeShifterCurseFabric.items.accessory.AccessoryItem;
 import sscextras.collar.Collars;
 import sscextras.collar.CuriosCompat;
 import java.util.List;
@@ -31,9 +33,15 @@ public final class DrakeEquipment {
         Registry.register(Registries.ITEM, EarthenDrake.id("netherite_claw_tips"), CLAW_TIPS);
         CuriosCompat.register(REINS, SADDLE, RIDERS_CHEST, CLAW_TIPS);
         DrakeRiding.register();
+        DrakeFaction.register();
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || player.isSpectator() || !(entity instanceof PlayerEntity drake)
+            if (player.isSpectator() || !(entity instanceof PlayerEntity drake)
                     || EarthenDrake.stage(drake) != 3) return ActionResult.PASS;
+            ItemStack held = player.getStackInHand(hand);
+            if (held.isOf(REINS) || held.isOf(SADDLE) || held.isOf(RIDERS_CHEST)) {
+                return tryEquip(drake, held, !player.isCreative()) ? ActionResult.SUCCESS : ActionResult.FAIL;
+            }
+            if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
             if (player.isSneaking() && !equipped(drake, RIDERS_CHEST).isEmpty()) {
                 if (player instanceof ServerPlayerEntity serverPlayer) RiderChestInventory.open(serverPlayer, drake);
                 return ActionResult.SUCCESS;
@@ -49,6 +57,34 @@ public final class DrakeEquipment {
 
     public static AccessoryUtils.AccessoryIO slots() {
         return CuriosCompat.instance != null ? CuriosCompat.instance : AccessoryUtils.nowAccessoryMod;
+    }
+
+    public static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume) {
+        if (!player.isAlive() || player.isSpectator() || source.isEmpty()
+                || !(source.getItem() instanceof DrakeAccessoryItem item)) return false;
+        var io = slots();
+        if (io == null) return false;
+        String group = CuriosCompat.instance == null ? item.group : "";
+        String name = CuriosCompat.instance == null ? item.slot : item.curiosSlot();
+        var stacks = stacks(player, item);
+        for (int index = 0; index < stacks.size(); index++) {
+            if (!stacks.get(index).isEmpty()) continue;
+            var data = new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
+                    CuriosCompat.instance == null ? "trinkets" : "curios",
+                    CuriosCompat.instance == null ? group + "/" + name : name), index);
+            if (!item.canEquip(source, player, data)) continue;
+            if (player.getWorld().isClient) return true;
+            ItemStack copy = source.copyWithCount(1);
+            io.setEntitySlot(player, group, name, index, copy);
+            ItemStack equipped = io.getEntitySlot(player, group, name, index);
+            if (equipped == null || !ItemStack.areEqual(equipped, copy)) return false;
+            item.onEquip(equipped, player, data);
+            if (consume) source.decrement(1);
+            player.currentScreenHandler.sendContentUpdates();
+            player.playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1, 1);
+            return true;
+        }
+        return false;
     }
 
     public static List<ItemStack> stacks(PlayerEntity player, DrakeAccessoryItem item) {

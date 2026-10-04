@@ -72,13 +72,15 @@
   "item.ssc-extras.cursed_saddle": "诅咒鞍",
   "item.ssc-extras.riders_chest": "骑手箱",
   "item.ssc-extras.netherite_claw_tips": "下界合金爪套",
-  "item.ssc-extras.stable_drake_spawn_egg": "大地龙刷怪蛋",
-  "entity.ssc-extras.stable_drake": "大地龙",
+  "item.ssc-extras.stable_drake_spawn_egg": "地龙刷怪蛋",
+  "entity.ssc-extras.stable_drake": "地龙",
   "container.ssc-extras.riders_chest": "%s的骑手箱",
-  "tooltip.ssc-extras.cursed_reins": "施加大地龙诅咒。骑手移动时可操控佩戴鞍的永久形态大地龙。",
-  "tooltip.ssc-extras.cursed_saddle": "施加大地龙诅咒。允许其他玩家骑乘永久形态的大地龙。",
+  "tooltip.ssc-extras.cursed_reins": "施加地龙诅咒。骑手移动时可操控佩戴鞍的永久形态地龙。",
+  "tooltip.ssc-extras.cursed_saddle": "施加地龙诅咒。允许其他玩家骑乘永久形态的地龙。",
   "tooltip.ssc-extras.drake_binding": "同时佩戴诅咒缰绳与诅咒鞍后，两者均获得绑定诅咒。",
-  "tooltip.ssc-extras.riders_chest": "54格共享储物空间。潜行右键大地龙，或按SSC副能力键打开。",
-  "tooltip.ssc-extras.netherite_claw_tips": "将空手工具与利爪提升至下界合金级别。可接受工具和剑的附魔。",
-  "tooltip.ssc-extras.drake_permanent": "需要永久大地龙形态。"
+  "tooltip.ssc-extras.drake_faction": "同时佩戴：与掠夺者阵营友好，且无法攻击其成员。",
+  "tooltip.ssc-extras.drake_missing_piece": "仅佩戴一件时，掠夺者会尝试为你补上另一件。",
+  "tooltip.ssc-extras.riders_chest": "54格共享储物空间。潜行右键地龙，或按SSC副能力键打开。",
+  "tooltip.ssc-extras.netherite_claw_tips": "将空手工具与利爪提升至下界合金级别。可附魔。",
+  "tooltip.ssc-extras.drake_permanent": "需要永久地龙形态。"
 }

@@ -54,7 +54,11 @@ public class DrakeAccessoryItem extends AccessoryItem {
         if (!permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.collar.gain",
                 Collars.CURSED.strength(), Collars.CURSED.strength() * 2).formatted(Formatting.GRAY));
         if (permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.drake_permanent").formatted(Formatting.DARK_PURPLE));
-        else tooltip.add(Text.translatable("tooltip.ssc-extras.drake_binding").formatted(Formatting.DARK_PURPLE));
+        else {
+            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_binding").formatted(Formatting.DARK_PURPLE));
+            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_faction").formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_missing_piece").formatted(Formatting.GRAY));
+        }
     }
 
     @Override public int getEnchantability() { return this == DrakeEquipment.CLAW_TIPS ? 15 : 0; }

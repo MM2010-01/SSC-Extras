@@ -1,6 +1,7 @@
 package sscextras.mixin;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,6 +12,11 @@ import sscextras.drake.*;
 
 @Mixin(PlayerEntity.class)
 public abstract class DrakeRidingPlayerMixin {
+    @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
+    private void sscExtras$boundPillagerAttack(Entity target, CallbackInfo ci) {
+        if (DrakeFaction.blocksAttack((PlayerEntity)(Object)this, target)) ci.cancel();
+    }
+
     @ModifyVariable(method = "travel", at = @At("HEAD"), argsOnly = true)
     private Vec3d sscExtras$riderMovement(Vec3d own) {
         return DrakeRiding.movement((PlayerEntity)(Object)this, own);
