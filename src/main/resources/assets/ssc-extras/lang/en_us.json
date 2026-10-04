@@ -126,7 +126,7 @@
   "message.ssc-extras.drake.taming_collar": "After your repeated escapes, a pillager locks a cursed taming collar around your neck.",
   "message.ssc-extras.drake.struggle_free": "You struggle free of the leash!",
   "message.ssc-extras.drake.battle_treat": "A pillager rewards you with a treat after the battle.",
-  "tooltip.ssc-extras.taming_collar.restrictions": "Keeps stage 2 drakes on all fours. Prevents opening fence gates, breaking or placing blocks, and freely untying your leash.",
+  "tooltip.ssc-extras.taming_collar.restrictions": "Keeps drakes on all fours. Prevents opening fence gates, breaking or placing blocks, and freely untying your leash.",
   "tooltip.ssc-extras.taming_collar.release": "A Cleansing Key removes it.",
   "item.ssc-extras.named_cursed_feralizing_collar": "%s's Cursed Feralizing Collar",
   "item.ssc-extras.named_cursed_taming_collar": "%s's Cursed Taming Collar",

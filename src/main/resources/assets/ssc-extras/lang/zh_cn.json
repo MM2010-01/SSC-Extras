@@ -126,9 +126,9 @@
   "message.ssc-extras.drake.taming_collar": "由于你多次逃跑，一名掠夺者把诅咒的驯服项圈锁在了你的脖子上。",
   "message.ssc-extras.drake.struggle_free": "你挣脱了拴绳！",
   "message.ssc-extras.drake.battle_treat": "战斗结束后，一名掠夺者给了你一些食物作为奖励。",
-  "tooltip.ssc-extras.taming_collar.restrictions": "使第二阶段地龙始终四足着地。无法打开栅栏门、破坏或放置方块，也无法随意解开自己的拴绳。",
+  "tooltip.ssc-extras.taming_collar.restrictions": "使地龙始终四足着地。无法打开栅栏门、破坏或放置方块，也无法随意解开自己的拴绳。",
   "tooltip.ssc-extras.taming_collar.release": "可用净化钥匙移除。",
-  "item.ssc-extras.named_cursed_feralizing_collar": "%s的诅咒野化项圈",
+  "item.ssc-extras.named_cursed_feralizing_collar": "%s的诅咒兽化项圈",
   "item.ssc-extras.named_cursed_taming_collar": "%s的诅咒驯服项圈",
   "message.ssc-extras.drake.last_escape_warning": "你隐约感到，下次逃跑后若再被抓住，就会受到惩罚。这是你最后的机会了。"
 }
