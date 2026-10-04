@@ -70,6 +70,7 @@ public final class Collars {
             entries.add(CLEANSING_KEY);
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
             entries.add(sscextras.drake.DrakeEquipment.REINS);
+            entries.add(sscextras.drake.DrakeEquipment.BLINDING_REIN);
             entries.add(sscextras.drake.DrakeEquipment.SADDLE);
             entries.add(sscextras.drake.DrakeEquipment.RIDERS_CHEST);
             entries.add(sscextras.drake.DrakeEquipment.CLAW_TIPS);

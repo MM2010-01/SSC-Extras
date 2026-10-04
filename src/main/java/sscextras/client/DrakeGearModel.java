@@ -12,7 +12,7 @@ import sscextras.drake.EarthenDrake;
 public final class DrakeGearModel {
     public static final Identifier TEXTURE = EarthenDrake.id("textures/entity/drake_gear.png");
     private static final Identifier VANILLA_SADDLE_TEXTURE = EarthenDrake.id("textures/entity/drake_gear_vanilla.png");
-    private final ModelPart reins, reinsMetal, saddle, saddleMetal, chest, chestMetal, leftClaws, rightClaws;
+    private final ModelPart reins, reinsMetal, blinkers, saddle, saddleMetal, chest, chestMetal, leftClaws, rightClaws;
 
     public DrakeGearModel(int stage) {
         this(stage, false);
@@ -65,6 +65,14 @@ public final class DrakeGearModel {
             rings.cuboid(side * bitX - .25f, bitY - .2f, bitZ - .4f, .5f, .9f, .8f);
         }
         root.addChild("rings", rings, ModelTransform.NONE);
+        var shields = ModelPartBuilder.create().uv(0, 16);
+        float shieldX = mature ? 2.75f : stage == 2 ? 4.35f : helmet ? 5.25f : 4.8f;
+        float shieldY = mature ? 13.3f : 26.2f;
+        float shieldZ = mature ? 6.25f : -.8f;
+        for (int side : new int[]{-1, 1}) {
+            shields.cuboid(side * shieldX - .25f, shieldY, shieldZ, .5f, mature ? 3.1f : 4.1f, mature ? 3.5f : 6);
+        }
+        root.addChild("blinkers", shields, ModelTransform.NONE);
         var leather = ModelPartBuilder.create().uv(0, 16);
         var metal = ModelPartBuilder.create().uv(16, 0);
         if (mature) {
@@ -108,6 +116,7 @@ public final class DrakeGearModel {
         }
         var model = TexturedModelData.of(data, 64, 64).createModel();
         reins = model.getChild("reins"); reinsMetal = model.getChild("rings");
+        blinkers = model.getChild("blinkers");
         saddle = model.getChild("saddle"); saddleMetal = model.getChild("saddle_metal");
         chest = model.getChild("chests"); chestMetal = model.getChild("chest_metal");
         leftClaws = model.getChild("left_claws"); rightClaws = model.getChild("right_claws");
@@ -128,6 +137,11 @@ public final class DrakeGearModel {
 
     public void render(String bone, MatrixStack matrices, VertexConsumerProvider buffers, int light,
             boolean showReins, boolean showSaddle, boolean showChest, boolean showClaws, boolean vanillaSaddle) {
+        render(bone, matrices, buffers, light, showReins, showSaddle, showChest, showClaws, vanillaSaddle, false);
+    }
+
+    public void render(String bone, MatrixStack matrices, VertexConsumerProvider buffers, int light,
+            boolean showReins, boolean showSaddle, boolean showChest, boolean showClaws, boolean vanillaSaddle, boolean showBlinkers) {
         if (bone.equals("@left@_front_paw")) bone = "right_front_paw";
         if (!(bone.equals("bipedHead") && showReins || bone.equals("bipedBody") && (showSaddle || showChest)
                 || showClaws && (bone.equals("left_front_paw") || bone.equals("right_front_paw")))) return;
@@ -135,6 +149,7 @@ public final class DrakeGearModel {
         if (bone.equals("bipedHead") && showReins) {
             reins.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
             reinsMetal.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
+            if (showBlinkers) blinkers.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
         } else if (bone.equals("bipedBody")) {
             if (showSaddle) {
                 if (vanillaSaddle) buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(VANILLA_SADDLE_TEXTURE));

@@ -118,6 +118,8 @@ Newly generated stables have three stalls: two with natural drakes and one empty
 
 Use a Rider's Chest on a natural drake to give it 54 shared storage slots. Sneak-use the drake or press your inventory key while riding to open it. The chest keeps its contents through saving and drops with them if the drake dies.
 
+**Blinding Rein:** craft Cursed Reins with two leather. It retains all cursed-rein functions, adds visible leather blinkers, blocks the sides of first-person vision, and applies blindness fog in either third-person camera view. The Cleansing Key removes it.
+
 Drake players at every stage can be led with a lead and tied to fences. Leashed stage 2 drakes stay on all fours. A pillager can capture a player wearing both Cursed Reins and a Cursed Saddle into the empty third stall from **less than 128 blocks outside the stable boundary**, provided it can find complete paths to the player and back to the stall.
 
 Pillagers can also capture **Original Shifter** players wearing both cursed pieces; a vanilla saddle does not qualify.

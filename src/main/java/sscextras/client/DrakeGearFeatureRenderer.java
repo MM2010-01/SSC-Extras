@@ -22,7 +22,8 @@ public final class DrakeGearFeatureRenderer extends FeatureRenderer<AbstractClie
         matrices.scale(1, -1, -1);
         matrices.translate(0, -1.5, 0);
         var headGear = player.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD).isEmpty() ? gear : helmetGear;
-        headGear.render("bipedHead", matrices, buffers, light, reins, false, false, false);
+        headGear.render("bipedHead", matrices, buffers, light, reins, false, false, false, false,
+                DrakeEquipment.visible(player, DrakeEquipment.BLINDING_REIN));
         matrices.pop();
         matrices.push();
         getContextModel().body.rotate(matrices);

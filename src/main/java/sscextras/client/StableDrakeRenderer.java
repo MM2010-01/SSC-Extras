@@ -21,7 +21,7 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
             private final DrakeGearModel gear = new DrakeGearModel(3);
             @Override public void renderForBone(MatrixStack matrices, StableDrakeEntity drake, GeoBone bone, RenderLayer type,
                     VertexConsumerProvider buffers, VertexConsumer buffer, float tickDelta, int light, int overlay) {
-                gear.render(bone.getName(), matrices, buffers, light, drake.hasReins(), drake.isSaddled(), drake.hasChest(), false, drake.hasVanillaSaddle());
+                gear.render(bone.getName(), matrices, buffers, light, drake.hasReins(), drake.isSaddled(), drake.hasChest(), false, drake.hasVanillaSaddle(), drake.hasBlinkers());
                 buffers.getBuffer(type);
             }
         });

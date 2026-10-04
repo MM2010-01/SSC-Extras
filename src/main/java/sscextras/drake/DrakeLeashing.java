@@ -178,7 +178,7 @@ public final class DrakeLeashing {
                 }
                 Vec3d direction = pull.normalize();
                 player.addVelocity(pillagerLead ? direction.x * .4 : Math.copySign(direction.x * direction.x * .4, direction.x),
-                        Math.copySign(direction.y * direction.y * .4, direction.y),
+                        pillagerLead && !player.isTouchingWater() && !player.isInLava() ? 0 : Math.copySign(direction.y * direction.y * .4, direction.y),
                         pillagerLead ? direction.z * .4 : Math.copySign(direction.z * direction.z * .4, direction.z));
                 player.velocityModified = true;
                 player.fallDistance = 0;

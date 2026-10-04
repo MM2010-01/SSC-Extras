@@ -46,6 +46,8 @@
     "DrakeVoiceMixin"
   ],
   "client": [
+    "BlindingReinOverlayMixin",
+    "BlindingReinFogMixin",
     "DrakeAutomaticEatingMixin",
     "InstinctBarRendererMixin",
     "TransformOverlayMixin",
