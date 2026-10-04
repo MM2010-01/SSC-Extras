@@ -55,6 +55,8 @@ public final class CleansingKeyItem extends Item {
         ItemStack dropped = stack.copy();
         io.setEntitySlot(player, group, name, index, ItemStack.EMPTY);
         if (!io.getEntitySlot(player, group, name, index).isEmpty()) return false;
+        DrakeEquipment.clearSetBinding(dropped);
+        DrakeEquipment.refreshBinding(player);
         player.dropItem(dropped, false);
         key.setDamage(key.getDamage() + 1);
         if (key.getDamage() >= key.getMaxDamage()) {

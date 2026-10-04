@@ -29,6 +29,10 @@ final class VanillaSaddleTrinket implements Trinket {
         DrakeEquipment.SADDLE.onEquip(stack, entity, slot(reference));
     }
 
+    @Override public void onUnequip(ItemStack stack, SlotReference reference, LivingEntity entity) {
+        DrakeEquipment.SADDLE.onUnequip(stack, entity, slot(reference));
+    }
+
     @Override public void tick(ItemStack stack, SlotReference reference, LivingEntity entity) {
         DrakeEquipment.SADDLE.accessoryTick(stack, entity, slot(reference));
     }

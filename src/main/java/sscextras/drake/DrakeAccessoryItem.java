@@ -3,6 +3,7 @@ package sscextras.drake;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -45,6 +46,20 @@ public class DrakeAccessoryItem extends AccessoryItem {
         accessoryTick(stack, entity, data);
     }
 
+    @Override public void onUnequip(ItemStack stack, LivingEntity entity, SlotData data) {
+        if (!entity.getWorld().isClient && !permanentOnly && entity instanceof PlayerEntity player) {
+            DrakeEquipment.clearSetBinding(stack);
+            DrakeEquipment.clearSetBinding(DrakeEquipment.equipped(player, DrakeEquipment.REINS));
+            DrakeEquipment.clearSetBinding(DrakeEquipment.equipped(player, DrakeEquipment.SADDLE));
+        }
+    }
+
+    @Override public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
+        if (!world.isClient && !permanentOnly && entity instanceof PlayerEntity player
+                && slot >= 0 && slot < player.getInventory().size() && player.getInventory().getStack(slot) == stack)
+            DrakeEquipment.clearSetBinding(stack);
+    }
+
     @Override public void accessoryTick(ItemStack stack, LivingEntity entity, SlotData data) {
         if (!entity.getWorld().isClient && entity instanceof PlayerEntity player && CollarSlots.isActive(data)) {
             DrakeEquipment.tickEquipped(player, stack);
@@ -57,10 +72,10 @@ public class DrakeAccessoryItem extends AccessoryItem {
                 Collars.CURSED.strength(), Collars.CURSED.strength() * 2).formatted(Formatting.GRAY));
         if (permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.drake_permanent").formatted(Formatting.DARK_PURPLE));
         else {
-            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_binding").formatted(Formatting.DARK_PURPLE));
-            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_faction").formatted(Formatting.GRAY));
-            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_missing_piece").formatted(Formatting.GRAY));
-            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_pillager_rider").formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_mount_set").formatted(Formatting.GOLD));
+            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_mount_set_bonus").formatted(Formatting.DARK_PURPLE));
+            if (this == DrakeEquipment.SADDLE)
+                tooltip.add(Text.translatable("tooltip.ssc-extras.drake_pillager_rider").formatted(Formatting.GRAY));
         }
     }
 

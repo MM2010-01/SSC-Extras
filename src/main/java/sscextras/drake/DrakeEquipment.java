@@ -128,16 +128,30 @@ public final class DrakeEquipment {
                 stack.getOrCreateNbt().putString(Collars.INFUSION, Registries.STATUS_EFFECT.getId(EarthenDrake.CURSE).toString());
                 Collars.applyCurse(player, stack);
             }
-            ItemStack reins = equipped(player, REINS), saddle = saddle(player);
-            if (!reins.isEmpty() && !saddle.isEmpty()) {
-                bind(reins);
-                bind(saddle);
-            }
+            if (stack.isOf(Items.SADDLE)) setBinding(stack, false);
+            refreshBinding(player);
         }
     }
 
-    private static void bind(ItemStack stack) {
-        if (!EnchantmentHelper.hasBindingCurse(stack)) stack.addEnchantment(Enchantments.BINDING_CURSE, 1);
+    public static void refreshBinding(PlayerEntity player) {
+        ItemStack reins = equipped(player, REINS), saddle = equipped(player, SADDLE);
+        boolean paired = !reins.isEmpty() && !saddle.isEmpty();
+        setBinding(reins, paired);
+        setBinding(saddle, paired);
+    }
+
+    public static void clearSetBinding(ItemStack stack) {
+        if (stack.isOf(REINS) || stack.isOf(SADDLE)) setBinding(stack, false);
+    }
+
+    private static void setBinding(ItemStack stack, boolean bound) {
+        if (stack.isEmpty() || EnchantmentHelper.hasBindingCurse(stack) == bound) return;
+        if (bound) stack.addEnchantment(Enchantments.BINDING_CURSE, 1);
+        else {
+            var enchantments = EnchantmentHelper.get(stack);
+            enchantments.remove(Enchantments.BINDING_CURSE);
+            EnchantmentHelper.set(enchantments, stack);
+        }
     }
 
     public static boolean canRide(Entity entity) {
