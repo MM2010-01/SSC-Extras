@@ -39,6 +39,8 @@ It can bind itself to cursed players when their necklace slot is empty, so watch
 
 Wearing one while uncursed (if you really want to) starts a random form curse, unless the collar has been infused with a specific one.
 
+Collar-triggered animal sounds play at **25%, 50%, 75%, and 100% volume** in stages 0, 1, 2, and permanent form. Before the first transformation, they use 25% volume.
+
 A bound collar can be removed after reaching permanent form, or with a Cleansing Key. Inhibitors no longer remove collars.
 
 ### Choose your curse
@@ -118,7 +120,7 @@ Newly generated stables have three stalls: two with natural drakes and one empty
 
 Use a Rider's Chest on a natural drake to give it 54 shared storage slots. Sneak-use the drake or press your inventory key while riding to open it. The chest keeps its contents through saving and drops with them if the drake dies.
 
-**Blinding Rein:** craft Cursed Reins with two leather. It retains all cursed-rein functions, adds visible leather blinkers, blocks the sides of first-person vision, and applies blindness fog in either third-person camera view. The Cleansing Key removes it.
+**Blinding Rein:** craft Cursed Reins with two leather. It normally stays open and works as ordinary Cursed Reins. Pillagers replace a taming-collared player's Cursed Reins with this version. Only a pillager battle ride closes the blinkers, blocking peripheral vision in first person and applying blindness fog in third person. They reopen when the player is returned to the stable; patrols, recalls, and ordinary riding do not close them. The Cleansing Key removes the reins.
 
 Drake players at every stage can be led with a lead and tied to fences. Leashed stage 2 drakes stay on all fours. A pillager can capture a player wearing both Cursed Reins and a Cursed Saddle into the empty third stall from **less than 128 blocks outside the stable boundary**, provided it can find complete paths to the player and back to the stall.
 
@@ -139,6 +141,10 @@ Stall leashes remain attached through daytime and waking from hay sleep. A pilla
 Pillagers on foot also shoot monsters targeting a harnessed player, including creepers before they attack. Pillagers facing nearby non-illager monsters or hostile players choose different, random mounts belonging to their own outpost. Native stable drakes and harnessed stage 2 or permanent player drakes can be selected. Sleeping drakes are left asleep. Riders switch to substantially closer enemies along the route and immediately reconsider a target that dies; if no enemy remains before combat begins, the trip is cancelled. The pillagers open the gates, ride into combat using their crossbows, then return each mount to its own stall, dismount, leave, and close the gates. After participating in combat and winning, each rider has a **30% chance** to reward its mount; player treats increase with hunger lost during the ride. Battle rides do not count as escapes.
 
 The outpost remembers successful escape recaptures under the same mount name. The **third recapture** gives a private last-chance warning. On the **fourth recapture**, a pillager fits a **Cursed Taming Collar** bearing that mount name and restores missing cursed reins or saddle. This black metal neck cuff has purple engravings and the cursed collar's feralizing effects, but never auto-equips from inventory. It moves other neck accessories to inventory, or drops them if full. It keeps stage 2 drakes on all fours and prevents opening fence gates, breaking or placing blocks, and directly untying your own leash. Right-clicking your leash knot gives a **5% chance** to struggle free. The collar remains bound after permanent transformation; a **Cleansing Key** removes it. Returning voluntarily or after battle does not increase the counter, and a new outpost/name starts a new record.
+
+While a drake-cursed player is inside any generated stable stall, **positive instinct gains increase by 50%**, including passive buildup, collar buildup, and instinct actions. This also applies before the first drake transformation. Instinct loss is unchanged, and Metal Cuffs still suppress the increased gain.
+
+Pillagers speak privately to their mount in **gray**, using its assigned mount name. They announce mounting for guard patrols, roaming, battles, and recalls, call out escapes, and speak when catching, tethering, feeding, or rewarding the mount.
 
 When an owned mount is in its stall with fewer than 10 food points (five drumsticks), a nearby pillager offers 1–2 random pieces of raw beef, pork, mutton, rabbit, or chicken by throwing them toward the player. Pillagers share a ten-second feeding delay for that mount.
 

@@ -27,6 +27,7 @@ public final class DrakeFeedGoal extends Goal {
     public static void treat(PillagerEntity pillager, PlayerEntity player, int hungerLost) {
         var food = new ItemStack(MEAT[pillager.getRandom().nextInt(MEAT.length)], 1 + (Math.max(0, hungerLost) + 2) / 3);
         throwFood(pillager, player, food);
+        DrakeDialogue.say(player, "reward");
         player.sendMessage(net.minecraft.text.Text.translatable("message.ssc-extras.drake.battle_treat")
                 .formatted(net.minecraft.util.Formatting.YELLOW), false);
     }
@@ -73,6 +74,7 @@ public final class DrakeFeedGoal extends Goal {
         pillager.getNavigation().stop();
         if (pillager.age - started < 20) return;
         throwFood(pillager, player, meal);
+        DrakeDialogue.say(player, "feed");
         thrown = true;
     }
 

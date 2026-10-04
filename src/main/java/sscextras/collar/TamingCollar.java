@@ -51,6 +51,7 @@ public final class TamingCollar {
         }
         restore(player, DrakeEquipment.REINS);
         restore(player, DrakeEquipment.SADDLE);
+        sscextras.drake.BlindingRein.upgrade(player);
         player.getInventory().markDirty();
         player.currentScreenHandler.sendContentUpdates();
         return true;

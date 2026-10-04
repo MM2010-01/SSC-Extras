@@ -180,6 +180,8 @@ public final class DrakeBattleGoal extends Goal {
         ((DrakeRiding.State)mount).sscExtras$battleRider(pillager);
         pillager.clearActiveItem(); pillager.setCharging(false); pillager.setTarget(null);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(net.minecraft.item.ItemStack.EMPTY);
+        DrakeDialogue.say(mount, purpose == Purpose.BATTLE ? "mount_battle" : purpose == Purpose.RECALL ? "mount_recall"
+                : (pillager.getId() & 1) == 0 ? "mount_guard" : "mount_roam");
     }
 
     @Override public boolean shouldContinue() {
@@ -217,7 +219,11 @@ public final class DrakeBattleGoal extends Goal {
                 hungerBefore = player.getHungerManager().getFoodLevel();
             }
             if (!pillager.startRiding(mount)) { complete = true; return; }
-            if (mount instanceof PlayerEntity player) DrakeLeashing.detach(player, false);
+            if (mount instanceof PlayerEntity player) {
+                BlindingRein.upgrade(player);
+                if (purpose == Purpose.BATTLE) BlindingRein.setClosed(player, true);
+                DrakeLeashing.detach(player, false);
+            }
             exitGate = stable.gateAt(mount.getPos());
             phase = exitGate == null ? afterExit() : Phase.EXIT;
             nextPath = 0; lastSeen = pillager.age;
@@ -242,7 +248,11 @@ public final class DrakeBattleGoal extends Goal {
         }
         if (phase == Phase.PATROL) {
             var threat = findEnemy();
-            if (threat != null) { purpose = Purpose.BATTLE; enemy = threat; engaged = false; phase = Phase.FIGHT; lastSeen = pillager.age; return; }
+            if (threat != null) {
+                purpose = Purpose.BATTLE; enemy = threat; engaged = false; phase = Phase.FIGHT; lastSeen = pillager.age;
+                if (mount instanceof PlayerEntity player) BlindingRein.setClosed(player, true);
+                DrakeDialogue.say(mount, "battle_spotted"); return;
+            }
             if (!pillager.getWorld().isDay() || pillager.age >= patrolUntil
                     || !DrakeCaptureGoal.near(stable.getBoundingBox(), mount.getPos(), DrakeRoaming.RANGE)) { beginReturn(); return; }
             if (navigation().isIdle() && pillager.age >= nextPath) {
@@ -266,7 +276,9 @@ public final class DrakeBattleGoal extends Goal {
             ((DrakeRiding.State)mount).sscExtras$setRiderInput(null);
             if (mount instanceof PlayerEntity player) {
                 if (purpose == Purpose.RECALL) DrakeOutpostOwnership.capture(player, stable);
+                BlindingRein.setClosed(player, false);
                 DrakeLeashing.attachPillager(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), homeTie));
+                DrakeDialogue.say(player, "stable_arrived");
             } else if (mount instanceof StableDrakeEntity drake) {
                 drake.getNavigation().stop(); drake.setTarget(null);
             }

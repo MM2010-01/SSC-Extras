@@ -70,7 +70,9 @@
   "codex.form.ssc-extras.earthen_drake_2.status": "硬化的皮肤向四周蔓延，鳞片间剩余的空隙逐渐收拢，喉部与腹部的浅色鳞甲连成一片。颈部增粗并向前倾斜，随着吻部与双角变得沉重，头肩也被牵引着微微前倾。\n小腿猛地绷紧，脚跟离开地面，足部继续拉长，直到体重落在宽厚的爪趾上。你试着像以前那样站立，却一阵摇晃；尾巴在髋后增粗、伸长，平衡着上身向前的牵引。\n你伸手寻找支撑，却发现拇指正在贴着掌侧缩短。剩余的手指增粗为三根爪指，下方鼓起结实的肉垫。手掌合拢时，再也无法像原先那样抓握。你把它们压向地面，感到肉垫承住了身体的重量。\n肩膀沉在前肢之间。你试着向前移动，还没来得及琢磨，四肢便已交替迈开。你撑起身体，恢复略微前倾的站姿，但下一次尝试奔跑时，前爪又落回了地面。",
   "codex.form.ssc-extras.earthen_drake_3.status": "胸腔与背部深处涌起胀迫感，将你压向四足着地的姿势。肩部撑宽，肋骨向外扩张，躯干在前后肢之间拉长。原本落在髋部上方的重量，逐渐分散到四条腿上。\n双臂增粗为前肢，腕部与肘部调整位置，承托起身体。每只爪足的三根脚趾下方，肉垫逐渐铺开，爪尖伸长为厚重的利爪。后胯的肌肉愈发饱满，将抬起的关节稳稳撑在地面上方。\n鳞甲下的颈部膨胀起来。吻部继续向外伸展、变宽，下颌也变得厚实。双角进一步向后延伸，脸颊两侧顶出较小的角突。全身的鳞片随身躯增长而排列得更加紧密，腹面的浅色鳞甲也随之加宽。\n尾根变得沉重，尾巴在身后继续伸长。胀迫感渐渐平息后，你挪动重心想要站起，却发现髋部与脊背已无法支撑直立。你重新落下前爪，用这副完全成形的龙躯迈出了最初几步平稳的步伐。",
   "item.ssc-extras.blinding_rein": "致盲缰绳",
-  "tooltip.ssc-extras.blinding_rein": "施加地龙诅咒，具有诅咒缰绳的全部功能。第一人称下遮挡两侧视野，第三人称下致盲。",
+  "tooltip.ssc-extras.blinding_rein": "施加地龙诅咒，具有诅咒缰绳的全部功能。掠夺者在骑乘作战时关闭眼罩，返回马厩后重新打开。",
+  "tooltip.ssc-extras.blinkers_open": "眼罩：打开 - 视野正常。",
+  "tooltip.ssc-extras.blinkers_closed": "眼罩：关闭 - 视野受限。",
   "item.ssc-extras.cursed_reins": "诅咒缰绳",
   "item.ssc-extras.cursed_saddle": "诅咒鞍",
   "item.ssc-extras.riders_chest": "骑手箱",
@@ -132,5 +134,16 @@
   "tooltip.ssc-extras.taming_collar.release": "可用净化钥匙移除。",
   "item.ssc-extras.named_cursed_feralizing_collar": "%s的诅咒兽化项圈",
   "item.ssc-extras.named_cursed_taming_collar": "%s的诅咒驯服项圈",
-  "message.ssc-extras.drake.last_escape_warning": "你隐约感到，下次逃跑后若再被抓住，就会受到惩罚。这是你最后的机会了。"
+  "message.ssc-extras.drake.last_escape_warning": "你隐约感到，下次逃跑后若再被抓住，就会受到惩罚。这是你最后的机会了。",
+  "message.ssc-extras.drake.pillager.mount_guard": "掠夺者：%s，别动。我上来，咱们去守卫前哨站。",
+  "message.ssc-extras.drake.pillager.mount_roam": "掠夺者：%s，站稳了。我上来，咱们去附近巡逻。",
+  "message.ssc-extras.drake.pillager.mount_battle": "掠夺者：%s，站稳了。我要骑上来，咱们去迎敌。",
+  "message.ssc-extras.drake.pillager.mount_recall": "掠夺者：%s，别动。我要骑着你回栏位。",
+  "message.ssc-extras.drake.pillager.battle_spotted": "掠夺者：%s，前面有敌人！朝那边走，别停下。",
+  "message.ssc-extras.drake.pillager.escape_seen": "掠夺者：%s！跑得太远了。站住，跟我们回去。",
+  "message.ssc-extras.drake.pillager.escape_caught": "掠夺者：抓到你了，%s。这根拴绳会让你跟紧我。回栏位去。",
+  "message.ssc-extras.drake.pillager.recall_leashed": "掠夺者：跟上，%s。顺着拴绳走，该回兽栏了。",
+  "message.ssc-extras.drake.pillager.stable_arrived": "掠夺者：%s，回到你该待的地方了。乖乖拴在这里，安分些。",
+  "message.ssc-extras.drake.pillager.feed": "掠夺者：饿了，%s？给，把肉吃了。",
+  "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。"
 }

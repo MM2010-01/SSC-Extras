@@ -68,6 +68,8 @@ public class DrakeAccessoryItem extends AccessoryItem {
 
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
         tooltip.add(Text.translatable("tooltip.ssc-extras." + description).formatted(Formatting.GRAY));
+        if (this == DrakeEquipment.BLINDING_REIN) tooltip.add(Text.translatable(BlindingRein.closed(stack)
+                ? "tooltip.ssc-extras.blinkers_closed" : "tooltip.ssc-extras.blinkers_open").formatted(Formatting.DARK_PURPLE));
         if (!permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.collar.gain",
                 Collars.CURSED.strength(), Collars.CURSED.strength() * 2).formatted(Formatting.GRAY));
         if (permanentOnly) tooltip.add(Text.translatable(this == DrakeEquipment.RIDERS_CHEST

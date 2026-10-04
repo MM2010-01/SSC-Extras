@@ -43,7 +43,8 @@
     "InfusionMendingMixin",
     "InfusionArmorEffectsMixin",
     "InfusionPowderSnowMixin",
-    "DrakeVoiceMixin"
+    "DrakeVoiceMixin",
+    "CollarVoiceMixin"
   ],
   "client": [
     "BlindingReinOverlayMixin",

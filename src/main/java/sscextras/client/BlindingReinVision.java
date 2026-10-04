@@ -4,23 +4,24 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import sscextras.drake.DrakeEquipment;
+import sscextras.drake.BlindingRein;
 
 public final class BlindingReinVision {
     private BlindingReinVision() { }
 
-    public static boolean worn() {
+    public static boolean active() {
         var client = MinecraftClient.getInstance();
         return client.player != null && client.player.isAlive() && client.getCameraEntity() == client.player
-                && !DrakeEquipment.equipped(client.player, DrakeEquipment.BLINDING_REIN).isEmpty();
+                && BlindingRein.closed(DrakeEquipment.equipped(client.player, DrakeEquipment.BLINDING_REIN));
     }
 
     public static boolean blind(Camera camera) {
-        return camera.isThirdPerson() && worn();
+        return camera.isThirdPerson() && active();
     }
 
     public static void renderBlinkers(DrawContext context) {
         var client = MinecraftClient.getInstance();
-        if (!client.options.getPerspective().isFirstPerson() || !worn()) return;
+        if (!client.options.getPerspective().isFirstPerson() || !active()) return;
         int width = context.getScaledWindowWidth(), height = context.getScaledWindowHeight();
         int opening = Math.min(width * 44 / 100, height);
         int edge = (width - opening) / 2;

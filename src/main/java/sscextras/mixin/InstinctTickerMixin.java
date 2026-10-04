@@ -32,7 +32,8 @@ public abstract class InstinctTickerMixin {
     @Inject(method = "calculateCurrentRate", at = @At("RETURN"), cancellable = true)
     private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
                                            CallbackInfoReturnable<Float> cir) {
-        float rate = cir.getReturnValue() + Collars.instinctRate(player) + MoonlightInstinct.rate(player);
+        float rate = cir.getReturnValue() + Collars.instinctRate(player)
+                + sscextras.drake.DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player));
         cir.setReturnValue(rate + (comp.instinctValue + rate >= 100 ? 0 : CreatureInstinct.cooldownRate(player, comp)));
     }
 
@@ -61,7 +62,7 @@ public abstract class InstinctTickerMixin {
     private static void sscExtras$scaleImmediateEffects(PlayerInstinctComponent comp, ServerPlayerEntity player) {
         if (comp.immediateEffects.isEmpty()) return;
         float cost = CreatureInstinct.costMultiplier(FormAbilityManager.getForm(player));
-        int multiplier = Math.max(1, Collars.strength(player) * 2);
+        float multiplier = Collars.gain(player, 1);
         if (cost == 1 && multiplier == 1 && MetalCuffs.equipped(player, false, false).isEmpty()
                 && MetalCuffs.equipped(player, true, false).isEmpty()) {
             processImmediateEffects(comp);

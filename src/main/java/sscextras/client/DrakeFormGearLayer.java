@@ -12,7 +12,7 @@ import sscextras.drake.*;
 public final class DrakeFormGearLayer extends GeoRenderLayer<FormAnimatable> {
     private final DrakeGearModel[] gear = {new DrakeGearModel(0), new DrakeGearModel(1), new DrakeGearModel(2), new DrakeGearModel(3)};
     private int stage = -1;
-    private boolean reins, saddle, chest, claws, vanillaSaddle, blinkers;
+    private boolean reins, saddle, chest, claws, vanillaSaddle, blinkers, blinkersClosed;
     public DrakeFormGearLayer(FormRenderer renderer) { super(renderer); }
 
     @Override public void preRender(MatrixStack matrices, FormAnimatable animatable, BakedGeoModel model, RenderLayer renderType,
@@ -24,6 +24,7 @@ public final class DrakeFormGearLayer extends GeoRenderLayer<FormAnimatable> {
         if (stage < 0) return;
         reins = DrakeEquipment.visible(player, DrakeEquipment.REINS);
         blinkers = DrakeEquipment.visible(player, DrakeEquipment.BLINDING_REIN);
+        blinkersClosed = blinkers && BlindingRein.closed(DrakeEquipment.equipped(player, DrakeEquipment.BLINDING_REIN));
         saddle = DrakeEquipment.visible(player, DrakeEquipment.SADDLE);
         vanillaSaddle = DrakeEquipment.saddle(player).isOf(net.minecraft.item.Items.SADDLE);
         chest = stage == 3 && DrakeEquipment.visible(player, DrakeEquipment.RIDERS_CHEST);
@@ -33,7 +34,7 @@ public final class DrakeFormGearLayer extends GeoRenderLayer<FormAnimatable> {
     @Override public void renderForBone(MatrixStack matrices, FormAnimatable animatable, GeoBone bone, RenderLayer renderType,
             VertexConsumerProvider buffers, VertexConsumer buffer, float tickDelta, int light, int overlay) {
         if (stage >= 0) {
-            gear[stage].render(bone.getName(), matrices, buffers, light, reins, saddle, chest, claws, vanillaSaddle, blinkers);
+            gear[stage].render(bone.getName(), matrices, buffers, light, reins, saddle, chest, claws, vanillaSaddle, blinkers, blinkersClosed);
             // AzureLib may retain the shared fallback buffer for the next body bone.
             buffers.getBuffer(renderType);
         }

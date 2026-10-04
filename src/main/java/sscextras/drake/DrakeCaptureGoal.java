@@ -190,6 +190,8 @@ public final class DrakeCaptureGoal extends Goal {
                     complete = true; return;
                 }
                 if (!DrakeLeashing.attachPillager(player, pillager)) return;
+                BlindingRein.upgrade(player);
+                DrakeDialogue.say(player, DrakeDialogue.escaping(player) ? "escape_caught" : "recall_leashed");
                 sourceGate = stable.gateAt(player.getPos());
                 if (stable.reservedGate().equals(sourceGate)) sourceGate = null;
             }
@@ -212,6 +214,7 @@ public final class DrakeCaptureGoal extends Goal {
                 && player.squaredDistanceTo(Vec3d.ofCenter(stable.reservedTie())) <= 81) {
             DrakeOutpostOwnership.capture(player, stable);
             DrakeLeashing.attach(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), stable.reservedTie()));
+            DrakeDialogue.say(player, "stable_arrived");
             leaving = true; started = pillager.age;
             ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
             return;

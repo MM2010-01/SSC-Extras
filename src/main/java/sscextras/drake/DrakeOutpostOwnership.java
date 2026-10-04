@@ -81,6 +81,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static void capture(PlayerEntity player, DrakeStablePiece stable) {
         if (BondOfTheBeastCompat.hasOwner(player)) return;
+        BlindingRein.setClosed(player, false);
         if (owns(player, stable)) {
             var claim = claim(player);
             if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {

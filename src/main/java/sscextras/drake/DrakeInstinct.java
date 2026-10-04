@@ -7,14 +7,49 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockBox;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3d;
+import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
+import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManager;
 import sscextras.CreatureInstinct;
 
 public final class DrakeInstinct {
     private DrakeInstinct() { }
+
+    public static float stallGain(PlayerEntity player, float amount) {
+        if (amount <= 0 || !(player.getWorld() instanceof ServerWorld world)) return amount;
+        int stage = EarthenDrake.stage(player);
+        if (stage == 3) return amount;
+        if (stage < 0) {
+            var form = FormAbilityManager.getForm(player);
+            var target = CreatureInstinct.getTarget(player);
+            var curse = EffectManager.getTransformativeEffect(player);
+            if (form.getIndex() >= 0 || !(target != null && target.getGroup() == EarthenDrake.GROUP
+                    || target == null && curse != null && curse.getTransformativeEffectType() == EarthenDrake.CURSE)) return amount;
+        }
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim != null && claim.world.equals(world.getRegistryKey()) && insideStall(claim.stable, player.getPos())) return amount * 1.5f;
+        var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
+        for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(player.getBlockPos()), structure -> structure == outpost))
+            for (var piece : start.getChildren())
+                if (piece instanceof DrakeStablePiece && insideStall(piece.getBoundingBox(), player.getPos())) return amount * 1.5f;
+        return amount;
+    }
+
+    private static boolean insideStall(BlockBox box, Vec3d pos) {
+        double x = pos.x - box.getMinX();
+        return x >= 1 && x < box.getBlockCountX() - 1 && x % 7 >= 1
+                && pos.z >= box.getMinZ() + 4 && pos.z < box.getMaxZ()
+                && pos.y >= box.getMinY() + 1 && pos.y < box.getMinY() + 5;
+    }
 
     public static void register() {
         var claws = new ConditionFactory<Entity>(EarthenDrake.id("claw_instinct"), new SerializableData(),

@@ -59,6 +59,7 @@ public final class DrakeRoaming {
             claim.tryingToEscape = true;
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
             hint(player, "escape_marked");
+            DrakeDialogue.say(player, "escape_seen");
         }
     }
 

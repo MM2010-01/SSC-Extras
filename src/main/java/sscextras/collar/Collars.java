@@ -36,6 +36,7 @@ import sscextras.SscExtrasGameRules;
 import sscextras.drake.DrakeEquipment;
 
 public final class Collars {
+    private static final ThreadLocal<Float> VOICE_VOLUME = ThreadLocal.withInitial(() -> 1f);
     public static final String INFUSION = "SscExtrasInfusion";
     public static final String INFUSION_FORM = "SscExtrasInfusionForm";
     public static final String AWAKENING = "SscExtrasAwakening";
@@ -93,7 +94,7 @@ public final class Collars {
     }
 
     public static float gain(PlayerEntity player, float amount) {
-        return amount > 0 ? amount * Math.max(1, strength(player) * 2) : amount;
+        return amount > 0 ? sscextras.drake.DrakeInstinct.stallGain(player, amount * Math.max(1, strength(player) * 2)) : amount;
     }
 
     public static boolean isCursed(PlayerEntity player) {
@@ -256,7 +257,7 @@ public final class Collars {
             }
             if (CreatureInstinct.getTarget(player) == null) return 0;
         } else if (form.getIndex() < 0 || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(form) == null)) return 0;
-        return strength * 0.05f / CreatureInstinct.costMultiplier(form);
+        return sscextras.drake.DrakeInstinct.stallGain(player, strength * 0.05f) / CreatureInstinct.costMultiplier(form);
     }
 
     public static java.util.function.Consumer<net.minecraft.entity.Entity> ambientVoice(PlayerFormBase form) {
@@ -283,6 +284,7 @@ public final class Collars {
         if (player.age % 200 != 0 || !player.isAlive() || player.isSleeping() || player.isSilent() || player.isSpectator()
                 || player.getRandom().nextFloat() >= .3f) return;
         var form = FormAbilityManager.getForm(player);
+        float volume = Math.min(4, Math.max(1, form.getIndex() + 1)) * .25f;
         if (form.getIndex() < 0) {
             form = CreatureInstinct.getTarget(player);
             if (form == null) {
@@ -292,7 +294,13 @@ public final class Collars {
             }
         }
         var action = ambientVoice(form);
-        if (action != null) action.accept(player);
+        if (action == null) return;
+        float previous = VOICE_VOLUME.get();
+        VOICE_VOLUME.set(volume);
+        try { action.accept(player); }
+        finally { VOICE_VOLUME.set(previous); }
     }
+
+    public static float voiceVolume(float volume) { return volume * VOICE_VOLUME.get(); }
 
 }

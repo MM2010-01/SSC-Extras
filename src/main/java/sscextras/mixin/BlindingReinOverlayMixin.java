@@ -15,7 +15,7 @@ public abstract class BlindingReinOverlayMixin {
             target = "Lnet/minecraft/client/render/DiffuseLighting;enableGuiDepthLighting()V", shift = At.Shift.AFTER))
     private void sscExtras$blinkers(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
         var client = MinecraftClient.getInstance();
-        if (!tick || client.world == null || !client.options.getPerspective().isFirstPerson() || !BlindingReinVision.worn()) return;
+        if (!tick || client.world == null || !client.options.getPerspective().isFirstPerson() || !BlindingReinVision.active()) return;
         var context = new DrawContext(client, client.getBufferBuilders().getEntityVertexConsumers());
         BlindingReinVision.renderBlinkers(context);
         context.draw();

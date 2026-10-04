@@ -162,7 +162,8 @@ public final class DrakeFaction {
         if (!player.isAlive() || player.isCreative() || player.isSpectator()) return null;
         boolean reins = !DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty();
         boolean saddle = !DrakeEquipment.saddle(player).isEmpty();
-        if (reins && saddle) return null;
+        boolean upgrade = BlindingRein.needsUpgrade(player);
+        if (reins && saddle && !upgrade) return null;
         boolean cursedPiece = reins || !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty();
         var pending = sscextras.CreatureInstinct.getTarget(player);
         boolean pendingDrake = FormAbilityManager.getForm(player).getIndex() < 0
@@ -174,6 +175,7 @@ public final class DrakeFaction {
         boolean uncursedRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)
                 && (!Collars.isCursed(player) || (cursedPiece || pendingDrake) && FormAbilityManager.getForm(player).getIndex() < 0);
         if (!drakeRecruiting && !uncursedRecruiting) return null;
+        if (upgrade) return DrakeEquipment.BLINDING_REIN;
         if (!reins && DrakeEquipment.stacks(player, DrakeEquipment.REINS).stream().anyMatch(ItemStack::isEmpty))
             return DrakeEquipment.REINS;
         if (!saddle && DrakeEquipment.stacks(player, DrakeEquipment.SADDLE).stream().anyMatch(ItemStack::isEmpty))
@@ -246,7 +248,8 @@ public final class DrakeFaction {
             pillager.getNavigation().startMovingTo(wearer, 1.1);
             if (pillager.age < nextEquip || pillager.squaredDistanceTo(wearer) > 4 || !pillager.getVisibilityCache().canSee(wearer)) return;
             var missing = missingPiece(wearer);
-            if (missing != null && DrakeEquipment.tryEquip(wearer, new ItemStack(missing), false)) {
+            if (missing != null && (missing == DrakeEquipment.BLINDING_REIN ? BlindingRein.upgrade(wearer)
+                    : DrakeEquipment.tryEquip(wearer, new ItemStack(missing), false))) {
                 wearer.sendMessage(Text.translatable("message.ssc-extras.drake.pillager_equipped",
                         new ItemStack(missing).getName()).formatted(Formatting.YELLOW), false);
                 var next = missingPiece(wearer);

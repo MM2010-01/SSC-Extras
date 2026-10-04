@@ -33,6 +33,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     private static final TrackedData<Boolean> SADDLED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> REINED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> BLINKERED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> BLINKERS_CLOSED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> VANILLA_SADDLE = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> CHESTED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
@@ -89,6 +90,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         dataTracker.startTracking(SADDLED, false);
         dataTracker.startTracking(REINED, false);
         dataTracker.startTracking(BLINKERED, false);
+        dataTracker.startTracking(BLINKERS_CLOSED, false);
         dataTracker.startTracking(VANILLA_SADDLE, false);
         dataTracker.startTracking(CHESTED, false);
     }
@@ -151,6 +153,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     public boolean isSaddled() { return dataTracker.get(SADDLED); }
     public boolean hasReins() { return dataTracker.get(REINED); }
     public boolean hasBlinkers() { return dataTracker.get(BLINKERED); }
+    public boolean hasClosedBlinkers() { return dataTracker.get(BLINKERS_CLOSED); }
     public boolean hasVanillaSaddle() { return dataTracker.get(VANILLA_SADDLE); }
     public boolean hasChest() { return dataTracker.get(CHESTED); }
     public ItemStack chest() { return chest; }
@@ -181,6 +184,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
                 } else {
                     reins = stack.copyWithCount(1); naturalReins = false; dataTracker.set(REINED, true);
                     dataTracker.set(BLINKERED, reins.isOf(DrakeEquipment.BLINDING_REIN));
+                    dataTracker.set(BLINKERS_CLOSED, BlindingRein.closed(reins));
                 }
                 if (!player.isCreative()) stack.decrement(1);
                 playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1, 1);
@@ -242,6 +246,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         dataTracker.set(VANILLA_SADDLE, saddle.isOf(net.minecraft.item.Items.SADDLE));
         dataTracker.set(REINED, DrakeEquipment.isReins(reins));
         dataTracker.set(BLINKERED, reins.isOf(DrakeEquipment.BLINDING_REIN));
+        dataTracker.set(BLINKERS_CLOSED, BlindingRein.closed(reins));
         contactCooldown = nbt.getInt("CurseContactCooldown");
         int[] box = nbt.getIntArray("StableHome");
         if (box.length == 6) {
