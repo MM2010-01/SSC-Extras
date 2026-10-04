@@ -13,6 +13,13 @@ import sscextras.effigy.FeralEffigy;
 
 public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register((stack, tint) -> switch (tint) {
+            case 0 -> 0x929eab;
+            case 1 -> 0xe0ebf0;
+            case 2 -> 0x52bdc2;
+            case 3 -> 0x33474d;
+            default -> 0xffffff;
+        }, sscextras.cuffs.MetalCuffs.ITEM);
         DrakeEquipmentClient.register();
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
                 sscextras.drake.DrakeStable.DRAKE, StableDrakeRenderer::new);

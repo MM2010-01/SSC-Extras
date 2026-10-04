@@ -7,6 +7,14 @@
     {
       "type": "single",
       "resource": "ssc-extras:slot/anklet"
+    },
+    {
+      "type": "single",
+      "resource": "ssc-extras:entity/collar"
+    },
+    {
+      "type": "single",
+      "resource": "minecraft:font/ascii_sga"
     }
   ]
 }

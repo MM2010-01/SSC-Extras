@@ -4,15 +4,22 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.village.Merchant;
 
 public final class DrakeRiding {
     public static final Identifier INPUT = EarthenDrake.id("rider_input");
     public static final Identifier CHEST = EarthenDrake.id("open_riders_chest");
+    public static final TagKey<net.minecraft.entity.EntityType<?>> HUMANOID_PASSENGERS = TagKey.of(
+            RegistryKeys.ENTITY_TYPE, EarthenDrake.id("drake_humanoid_passengers"));
 
     public record Input(float sideways, float forward, boolean jump, float yaw, long tick, int rider) {
         public boolean moving() { return Math.abs(sideways) > .001f || Math.abs(forward) > .001f || jump; }
@@ -32,9 +39,15 @@ public final class DrakeRiding {
         return player.isAlive() && EarthenDrake.stage(player) >= 2 && DrakeFaction.harnessed(player);
     }
 
+    public static boolean canCarryMob(PlayerEntity player) {
+        return player.isAlive() && EarthenDrake.stage(player) >= 2 && !DrakeEquipment.saddle(player).isEmpty();
+    }
+
     public static boolean accepts(PlayerEntity mount, Entity passenger) {
-        return passenger instanceof PlayerEntity && DrakeEquipment.canRide(mount)
-                || passenger instanceof net.minecraft.entity.mob.PillagerEntity && canCarryPillager(mount);
+        if (passenger instanceof PlayerEntity) return DrakeEquipment.canRide(mount);
+        if (passenger instanceof PillagerEntity) return canCarryPillager(mount);
+        return passenger instanceof MobEntity && canCarryMob(mount)
+                && (passenger instanceof Merchant || passenger.getType().isIn(HUMANOID_PASSENGERS));
     }
 
     public static void register() {
@@ -47,16 +60,7 @@ public final class DrakeRiding {
                 if (!canControl(mount, rider)) return;
                 Input input = new Input(MathHelper.clamp(sideways, -1, 1), MathHelper.clamp(forward, -1, 1),
                         jump, MathHelper.wrapDegrees(yaw), mount.getWorld().getTime(), rider.getId());
-                ((State) mount).sscExtras$setRiderInput(input);
-                if (mount instanceof ServerPlayerEntity owner) {
-                    var packet = PacketByteBufs.create();
-                    packet.writeInt(rider.getId());
-                    packet.writeFloat(input.sideways());
-                    packet.writeFloat(input.forward());
-                    packet.writeFloat(input.yaw());
-                    packet.writeBoolean(jump);
-                    ServerPlayNetworking.send(owner, INPUT, packet);
-                }
+                publishInput(mount, input);
             });
         });
         ServerPlayNetworking.registerGlobalReceiver(CHEST, (server, player, handler, buf, sender) -> server.execute(() -> {
@@ -66,15 +70,62 @@ public final class DrakeRiding {
         }));
     }
 
-    public static boolean canControl(Entity mount, PlayerEntity rider) {
-        return mount != null && mount.isAlive() && rider.isAlive() && !rider.isSpectator()
-                && mount.getFirstPassenger() == rider && DrakeEquipment.canRide(mount) && DrakeEquipment.hasReins(mount);
+    public static boolean canControl(Entity mount, LivingEntity rider) {
+        if (mount == null || !mount.isAlive() || !rider.isAlive() || mount.getFirstPassenger() != rider
+                || !DrakeEquipment.canRide(mount) || !DrakeEquipment.hasReins(mount)) return false;
+        return rider instanceof PlayerEntity player && !player.isSpectator()
+                || rider instanceof PillagerEntity pillager && !pillager.isAiDisabled()
+                && mount instanceof PlayerEntity drake && EarthenDrake.stage(drake) == 3;
+    }
+
+    private static void publishInput(Entity mount, Input input) {
+        Input previous = ((State) mount).sscExtras$getRiderInput();
+        if (previous != null && previous.rider() == input.rider() && previous.sideways() == input.sideways()
+                && previous.forward() == input.forward() && previous.jump() == input.jump()
+                && Math.abs(MathHelper.wrapDegrees(previous.yaw() - input.yaw())) < .5f && input.tick() - previous.tick() < 10) return;
+        ((State) mount).sscExtras$setRiderInput(input);
+        if (!(mount instanceof ServerPlayerEntity owner)) return;
+        var packet = PacketByteBufs.create();
+        packet.writeInt(input.rider());
+        packet.writeFloat(input.sideways());
+        packet.writeFloat(input.forward());
+        packet.writeFloat(input.yaw());
+        packet.writeBoolean(input.jump());
+        ServerPlayNetworking.send(owner, INPUT, packet);
+    }
+
+    public static void tickPillager(PillagerEntity pillager) {
+        if (!(pillager.getVehicle() instanceof ServerPlayerEntity mount)) return;
+        var enemy = pillager.getTarget();
+        var path = pillager.getNavigation().getCurrentPath();
+        float forward = 0, yaw = mount.getYaw();
+        boolean jump = false;
+        if (canControl(mount, pillager) && enemy != null && enemy.isAlive() && enemy != mount
+                && !pillager.isTeammate(enemy) && path != null && !path.isFinished()) {
+            // Mounted navigation must advance waypoints at the drake's feet, not the rider's raised seat.
+            while (!path.isFinished()) {
+                var node = path.getNodePosition(pillager);
+                double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
+                if (dx * dx + dz * dz >= .36 || Math.abs(node.y - mount.getY()) >= 1) break;
+                path.next();
+            }
+            if (!path.isFinished()) {
+                var node = path.getNodePosition(pillager);
+                double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
+                yaw = (float)(MathHelper.atan2(dz, dx) * 180 / Math.PI) - 90;
+                forward = MathHelper.clamp((float)pillager.getMoveControl().getSpeed(), 0, 1);
+                jump = node.y > mount.getY() + .5 && dx * dx + dz * dz < 2.25;
+            }
+        }
+        Input previous = ((State)mount).sscExtras$getRiderInput();
+        if (forward != 0 || jump || previous != null && previous.rider() == pillager.getId() && previous.moving())
+            publishInput(mount, new Input(0, forward, jump, yaw, mount.getWorld().getTime(), pillager.getId()));
     }
 
     public static Input input(Entity mount) {
         Input input = ((State) mount).sscExtras$getRiderInput();
         if (input == null || !input.moving() || mount.getWorld().getTime() - input.tick() > 20
-                || !(mount.getFirstPassenger() instanceof PlayerEntity rider) || rider.getId() != input.rider()
+                || !(mount.getFirstPassenger() instanceof LivingEntity rider) || rider.getId() != input.rider()
                 || !canControl(mount, rider)) return null;
         return input;
     }

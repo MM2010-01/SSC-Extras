@@ -12,6 +12,8 @@ import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.onixary.shapeShifterCurseFabric.util.AttackEntityDataTracker;
 import net.onixary.shapeShifterCurseFabric.util.ModTags;
 import java.util.Comparator;
@@ -193,6 +195,8 @@ public final class DrakeFaction {
             if (pillager.age < nextEquip || pillager.squaredDistanceTo(wearer) > 4 || !pillager.getVisibilityCache().canSee(wearer)) return;
             var missing = missingPiece(wearer);
             if (missing != null && DrakeEquipment.tryEquip(wearer, new ItemStack(missing), false)) {
+                wearer.sendMessage(Text.translatable("message.ssc-extras.drake.pillager_equipped",
+                        new ItemStack(missing).getName()).formatted(Formatting.YELLOW), false);
                 var next = missingPiece(wearer);
                 ((EquipmentDisplay)pillager).sscExtras$showEquipment(next == null ? ItemStack.EMPTY : new ItemStack(next));
                 nextEquip = pillager.age + 10;

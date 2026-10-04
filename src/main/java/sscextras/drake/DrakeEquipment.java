@@ -39,12 +39,12 @@ public final class DrakeEquipment {
         DrakeFaction.register();
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (player.isSpectator()) return ActionResult.PASS;
-            if (hand == Hand.MAIN_HAND && player.isSneaking() && entity instanceof net.minecraft.entity.mob.PillagerEntity pillager
-                    && DrakeRiding.canCarryPillager(player) && !player.hasPassengers() && !player.hasVehicle()
-                    && pillager.isAlive() && !pillager.hasVehicle() && !pillager.hasPassengers()) {
+            if (hand == Hand.MAIN_HAND && player.isSneaking() && entity instanceof net.minecraft.entity.mob.MobEntity passenger
+                    && DrakeRiding.accepts(player, passenger) && !player.hasPassengers() && !player.hasVehicle()
+                    && passenger.isAlive() && !passenger.hasVehicle() && !passenger.hasPassengers()) {
                 if (!world.isClient) {
-                    pillager.getNavigation().stop();
-                    if (!pillager.startRiding(player)) return ActionResult.FAIL;
+                    passenger.getNavigation().stop();
+                    if (!passenger.startRiding(player)) return ActionResult.FAIL;
                 }
                 return ActionResult.SUCCESS;
             }

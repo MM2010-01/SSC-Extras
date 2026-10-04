@@ -6,8 +6,12 @@
   "condition": {
     "type": "origins:and",
     "conditions": [
-      { "type": "ssc-extras:quadruped_instinct" },
-      { "type": "ssc-extras:ridden_drake" }
+      {
+        "type": "ssc-extras:quadruped_instinct"
+      },
+      {
+        "type": "ssc-extras:ridden_drake"
+      }
     ]
   }
 }

@@ -78,6 +78,10 @@ public final class MetalCuffs {
             if (!ankles.isEmpty()) damage(serverPlayer, ankles, step * share, true);
             remaining -= step;
         }
+        if (remaining < gain) {
+            var instinct = net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player);
+            ((sscextras.InstinctTarget) instinct).sscExtras$addBlockedGain(gain - remaining);
+        }
         return MathHelper.clamp(current + (float) remaining, 0, 100);
     }
 

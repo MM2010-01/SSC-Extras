@@ -14,7 +14,7 @@ import sscextras.drake.EarthenDrake;
 public final class CuffsFormLayer extends GeoRenderLayer<FormAnimatable> {
     private final FormRenderer form;
     private final CuffModel normal = new CuffModel(4.15f, 4.15f), drakeWrist = new CuffModel(4.9f, 4.8f),
-            drakeAnkle = new CuffModel(3.55f, 3.15f), mature = new CuffModel(2.35f, 2.35f);
+            drakeAnkle = new CuffModel(3.05f, 2.75f), mature = new CuffModel(2.35f, 2.35f);
     private boolean wrists, ankles;
     private int stage;
 
@@ -55,10 +55,18 @@ public final class CuffsFormLayer extends GeoRenderLayer<FormAnimatable> {
             if (stage == 2) z = .55f;
         } else return;
         matrices.push();
-        matrices.translate(x / 16, y / 16, z / 16);
-        if (stage == 2 && name.contains("Leg")) matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-56.888658f));
+        if (stage == 2 && name.contains("Leg")) {
+            var pastern = bone.getCubes().get(2);
+            var pivot = pastern.pivot();
+            var rotation = pastern.rotation();
+            matrices.translate(pivot.x / 16, pivot.y / 16, pivot.z / 16);
+            matrices.multiply(RotationAxis.POSITIVE_Z.rotation((float) rotation.z));
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotation((float) rotation.y));
+            matrices.multiply(RotationAxis.POSITIVE_X.rotation((float) rotation.x));
+            matrices.translate(0, -3.5f / 16, 0);
+        } else matrices.translate(x / 16, y / 16, z / 16);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180));
-        cuff.render(matrices, buffers, light);
+        cuff.render(matrices, buffers, light, true);
         matrices.pop();
         buffers.getBuffer(renderType);
     }

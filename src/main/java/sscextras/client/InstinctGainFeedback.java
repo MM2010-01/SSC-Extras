@@ -5,12 +5,14 @@ import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctComponent;
 import sscextras.CreatureInstinct;
+import sscextras.InstinctTarget;
 import sscextras.cuffs.MetalCuffs;
 
 public final class InstinctGainFeedback {
     private PlayerInstinctComponent previous;
     private PlayerFormBase previousForm;
     private float previousValue;
+    private double previousBlockedGain;
     private int previousTick, until;
     private float rate, cooldown;
     private boolean suppressed;
@@ -20,8 +22,11 @@ public final class InstinctGainFeedback {
         suppressed = MetalCuffs.isSuppressing(player);
         cooldown = CreatureInstinct.cooldownRate(player, instinct);
         int tick = player.age;
+        double blockedGain = ((InstinctTarget) instinct).sscExtras$getBlockedGain();
+        float blockedChange = (float) Math.max(0, blockedGain - previousBlockedGain);
         float change = instinct.instinctValue - previousValue;
-        if (suppressed || previous != instinct || previousForm != form || tick < previousTick || change < -0.001f) {
+        if (blockedChange > 0) change = Math.max(0, change) + blockedChange;
+        if (previous != instinct || previousForm != form || tick < previousTick || blockedGain < previousBlockedGain || change < -0.001f) {
             rate = 0;
             until = tick;
         } else {
@@ -35,10 +40,13 @@ public final class InstinctGainFeedback {
         previous = instinct;
         previousForm = form;
         previousValue = instinct.instinctValue;
+        previousBlockedGain = blockedGain;
         previousTick = tick;
     }
 
-    public boolean increasing(PlayerInstinctComponent instinct) { return !suppressed && (rate > 0 || instinct.isInstinctIncreasing); }
+    public boolean increasing(PlayerInstinctComponent instinct) {
+        return rate > 0 || instinct.isInstinctIncreasing || suppressed && instinct.currentInstinctRate > 0;
+    }
     public boolean decreasing(PlayerInstinctComponent instinct) {
         return rate <= 0 && instinct.isInstinctDecreasing && instinct.currentInstinctRate - cooldown < -0.000001f;
     }

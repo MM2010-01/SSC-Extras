@@ -26,7 +26,7 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
     @Inject(method = {"addPassenger", "removePassenger"}, at = @At("TAIL"))
     private void sscExtras$syncOwnerPassenger(Entity passenger, CallbackInfo ci) {
         if ((Object)this instanceof ServerPlayerEntity owner && (sscExtras$syncPassengers || DrakeEquipment.canRide(owner)
-                || DrakeRiding.canCarryPillager(owner))) {
+                || DrakeRiding.canCarryMob(owner))) {
             // Vanilla sends passenger changes to observers, excluding the mounted player's own client.
             owner.networkHandler.sendPacket(new EntityPassengersSetS2CPacket(owner));
             sscExtras$syncPassengers = owner.hasPassengers();
@@ -40,7 +40,7 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
     @Inject(method = "canAddPassenger", at = @At("HEAD"), cancellable = true)
     private void sscExtras$drakePassenger(Entity passenger, CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity)(Object)this;
-        if (self instanceof PlayerEntity player && (DrakeEquipment.canRide(self) || DrakeRiding.canCarryPillager(player)))
+        if (self instanceof PlayerEntity player && (DrakeEquipment.canRide(self) || DrakeRiding.canCarryMob(player)))
             cir.setReturnValue(DrakeRiding.accepts(player, passenger) && !self.hasPassengers() && !self.hasVehicle());
     }
 

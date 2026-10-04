@@ -39,7 +39,7 @@ public final class CuffsFeatureRenderer extends FeatureRenderer<AbstractClientPl
         matrices.push();
         limb.rotate(matrices);
         matrices.translate(x / 16, y / 16, 0);
-        cuff.render(matrices, buffers, light);
+        cuff.render(matrices, buffers, light, false);
         matrices.pop();
     }
 }

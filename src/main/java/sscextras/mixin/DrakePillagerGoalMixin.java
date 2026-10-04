@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import sscextras.drake.DrakeFaction;
+import sscextras.drake.DrakeRiding;
 
 @Mixin(PillagerEntity.class)
 public abstract class DrakePillagerGoalMixin extends IllagerEntity implements DrakeFaction.EquipmentDisplay {
@@ -29,6 +30,11 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
 
     public void sscExtras$showEquipment(ItemStack stack) { dataTracker.set(SSC_EXTRAS_OFFERED_GEAR, stack); }
     public void sscExtras$defend(PlayerEntity player, LivingEntity enemy) { sscExtras$defendGoal.offer(player, enemy); }
+
+    @Override protected void mobTick() {
+        super.mobTick();
+        DrakeRiding.tickPillager((PillagerEntity)(Object)this);
+    }
 
     @Override public ItemStack getMainHandStack() {
         ItemStack offered = dataTracker.get(SSC_EXTRAS_OFFERED_GEAR);

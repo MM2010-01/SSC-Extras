@@ -10,6 +10,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtByte;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import virtuoel.pehkui.api.ScaleType;
 import virtuoel.pehkui.api.ScaleTypes;
 
@@ -39,6 +41,9 @@ public final class DrakeBodyPower extends Power {
         if (!force && next == allFours) return;
         boolean changed = next != allFours;
         allFours = next;
+        if (changed && stage == 2 && next && player.getHungerManager().getFoodLevel() <= 6
+                && !player.isSprinting() && !player.isSneaking() && !player.hasPassengers())
+            player.sendMessage(Text.translatable("message.ssc-extras.drake.hunger_collapse").formatted(Formatting.YELLOW), false);
         float scale = switch (stage) { case 1 -> 2.0f / 1.8f; case 2 -> 2.2f / 1.8f; case 3 -> 1.5f; default -> 1.0f; };
         float height = stage == 3 ? 1.65f : stage == 2 && allFours ? 1.4f : 1.8f * scale;
         float width = switch (stage) { case 1 -> 0.7f; case 2 -> 0.95f; case 3 -> 1.6f; default -> 0.6f; };

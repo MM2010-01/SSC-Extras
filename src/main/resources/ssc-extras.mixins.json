@@ -43,6 +43,7 @@
     "InstinctBarRendererMixin",
     "TransformOverlayMixin",
     "DrakeMouthItemMixin",
+    "DrakeGroundAlignmentMixin",
     "DrakeCameraMixin",
     "DrakeFormGearMixin",
     "DrakeRiderInventoryMixin"

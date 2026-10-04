@@ -18,7 +18,7 @@
     "ssc-extras:drake/no_tool_use",
     "ssc-extras:drake/drop_tools",
     "ssc-extras:drake/no_offhand",
-    "ssc-extras:drake/sprint",
+    "ssc-extras:drake/permanent_speed",
     "shape-shifter-curse:form_camera_bobbing_feral",
     "ssc-extras:drake/melee_3",
     "ssc-extras:drake/complete_scales",
