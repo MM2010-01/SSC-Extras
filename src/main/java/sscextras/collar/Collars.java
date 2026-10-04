@@ -11,13 +11,13 @@ import net.minecraft.registry.Registry;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.text.Text;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormDynamic;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormPhase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
-import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinctComponent;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
@@ -28,14 +28,12 @@ import net.onixary.shapeShifterCurseFabric.status_effects.transformative_effects
 import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManager;
 import sscextras.CreatureInstinct;
 import java.util.List;
-import java.util.LinkedHashMap;
 import sscextras.InstinctTarget;
 
 public final class Collars {
     public static final String INFUSION = "SscExtrasInfusion";
     public static final String INFUSION_FORM = "SscExtrasInfusionForm";
     public static final String AWAKENING = "SscExtrasAwakening";
-    public static final String BONUS = "ssc-extras:collar";
     public static final CollarItem FERALIZING = new CollarItem(false);
     public static final CollarItem CURSED = new CollarItem(true);
     public static final RecipeSerializer<CollarInfusionRecipe> INFUSION_RECIPE = new SpecialRecipeSerializer<>(CollarInfusionRecipe::new);
@@ -87,6 +85,7 @@ public final class Collars {
             if (destination == null) destination = slot;
         }
         if (destination == null) return false;
+        ensureNaturalCurse(source, player.getRandom());
         ItemStack equipped = source.copyWithCount(1);
         CURSED.ensureBinding(equipped);
         destination.set(player, equipped);
@@ -140,29 +139,27 @@ public final class Collars {
         return validForm(form) && (!(form instanceof PlayerFormDynamic dynamic) || dynamic.IsPlayerCanUse(player));
     }
 
-    public static List<PlayerFormBase> randomCurseForms(PlayerEntity player) {
-        var firstForms = new LinkedHashMap<Identifier, PlayerFormBase>();
-        for (PlayerFormBase form : RegPlayerForms.playerForms.values()) {
-            if (!availableForm(player, form)) continue;
-            Identifier group = form.getGroup() == null ? form.FormID : form.getGroup().GroupID;
-            firstForms.merge(group, form, (first, next) -> first.getIndex() <= next.getIndex() ? first : next);
-        }
-        return List.copyOf(firstForms.values());
+    public static List<BaseTransformativeStatusEffect> naturalCurses() {
+        return List.of(RegTStatusEffect.TO_BAT_0_EFFECT, RegTStatusEffect.TO_AXOLOTL_0_EFFECT,
+                RegTStatusEffect.TO_OCELOT_0_EFFECT, RegTStatusEffect.TO_ANUBIS_WOLF_0_EFFECT,
+                RegTStatusEffect.TO_SPIDER_0_EFFECT, RegTStatusEffect.TO_FAMILIAR_FOX_0_EFFECT);
+    }
+
+    public static void ensureNaturalCurse(ItemStack stack, Random random) {
+        if (!stack.isOf(CURSED) || (stack.hasNbt()
+                && (stack.getNbt().contains(INFUSION) || stack.getNbt().contains(INFUSION_FORM)))) return;
+        var choices = naturalCurses();
+        var effect = choices.get(random.nextInt(choices.size()));
+        stack.getOrCreateNbt().putString(INFUSION, Registries.STATUS_EFFECT.getId(effect).toString());
     }
 
     public static void applyCurse(PlayerEntity player, ItemStack stack) {
-        if (!(player instanceof ServerPlayerEntity) || !player.isAlive() || player.isSpectator()
-                || TransformManager.getPlayerTransformData(player).isTransforming || isCursed(player)) return;
+        if (!(player instanceof ServerPlayerEntity) || !player.isAlive() || player.isSpectator()) return;
+        ensureNaturalCurse(stack, player.getRandom());
+        if (TransformManager.getPlayerTransformData(player).isTransforming || isCursed(player)) return;
         BaseTransformativeStatusEffect effect = infusion(stack);
         PlayerFormBase target = effect instanceof CustomTransformativeStatue ? infusionForm(stack)
                 : effect == null ? null : effect.getToForm(player);
-        if (effect == null && stack.isOf(CURSED)) {
-            if (stack.hasNbt() && stack.getNbt().contains(INFUSION)) return;
-            List<PlayerFormBase> choices = randomCurseForms(player);
-            if (choices.isEmpty()) return;
-            target = choices.get(player.getRandom().nextInt(choices.size()));
-            effect = RegTStatusEffect.TO_CUSTOM_STATUE_EFFECT;
-        }
         if (effect == null || !availableForm(player, target)) return;
         if (FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_BEFORE_ENABLE) {
             stack.getOrCreateNbt().putBoolean(AWAKENING, true);
@@ -176,11 +173,11 @@ public final class Collars {
         RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
     }
 
-    public static void tick(ServerPlayerEntity player) {
-        if (player.age % 20 != 0 || !player.isAlive() || player.isSpectator()
-                || InstinctTicker.isPausing || TransformManager.getPlayerTransformData(player).isTransforming) return;
+    public static float instinctRate(PlayerEntity player) {
+        if (!player.isAlive() || player.isSpectator()
+                || InstinctTicker.isPausing || TransformManager.getPlayerTransformData(player).isTransforming) return 0;
         int strength = strength(player);
-        if (strength == 0) return;
+        if (strength == 0) return 0;
         var form = FormAbilityManager.getForm(player);
         if (form == RegPlayerForms.ORIGINAL_SHIFTER) {
             var effect = EffectManager.getTransformativeEffect(player);
@@ -188,9 +185,9 @@ public final class Collars {
                 var target = effect.getTransformativeEffectType().getToForm(player);
                 if (target != null) ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$setTarget(target.FormID);
             }
-            if (CreatureInstinct.getTarget(player) == null) return;
-        } else if (form.getIndex() < 0 || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(form) == null)) return;
-        InstinctManager.applyImmediateEffect(player, BONUS, strength);
+            if (CreatureInstinct.getTarget(player) == null) return 0;
+        } else if (form.getIndex() < 0 || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(form) == null)) return 0;
+        return strength * 0.05f / CreatureInstinct.costMultiplier(form);
     }
 
     public static boolean release(PlayerEntity player) {

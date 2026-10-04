@@ -47,6 +47,7 @@ public final class CollarItem extends AccessoryItem {
     @Override public ItemStack getDefaultStack() {
         ItemStack stack = super.getDefaultStack();
         ensureBinding(stack);
+        if (cursed) Collars.ensureNaturalCurse(stack, net.minecraft.util.math.random.Random.create());
         return stack;
     }
 
@@ -69,6 +70,7 @@ public final class CollarItem extends AccessoryItem {
                 CollarSlots.recoverLegacy(player);
                 return;
             }
+            Collars.ensureNaturalCurse(stack, player.getRandom());
             refreshBinding(stack, player);
             if (stack.hasNbt() && stack.getNbt().getBoolean(Collars.AWAKENING)
                     && !net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager.getPlayerTransformData(player).isTransforming) {
@@ -82,6 +84,7 @@ public final class CollarItem extends AccessoryItem {
         if (!world.isClient && entity instanceof PlayerEntity player && cursed) {
             // Curios also ticks equipped stacks here, with slot -1.
             if (slot < 0 || slot >= player.getInventory().size() || player.getInventory().getStack(slot) != stack) return;
+            Collars.ensureNaturalCurse(stack, player.getRandom());
             ensureBinding(stack);
             if (Collars.tryEquip(player, stack)) player.getInventory().markDirty();
         }

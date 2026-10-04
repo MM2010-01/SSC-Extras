@@ -54,8 +54,8 @@ public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientP
         if (collar.isEmpty()) return;
         matrices.push();
         getContextModel().head.rotate(matrices);
-        matrices.translate(0, 0.8f / 16, 0);
-        matrices.scale(0.95f, 0.8f, 0.95f);
+        matrices.translate(0, 1.0f / 16, 0);
+        matrices.scale(0.8f, 0.8f, 0.8f);
         var buffer = vertices.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
         boolean cursed = collar.isOf(Collars.CURSED);
         strap.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, cursed ? 0.49f : 0.78f,

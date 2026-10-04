@@ -30,10 +30,10 @@ public abstract class InstinctTickerMixin {
         CreatureInstinct.clearTarget(player);
     }
 
-    @Inject(method = "tick", at = @At("HEAD"))
-    private static void sscExtras$periodicBonuses(ServerPlayerEntity player, CallbackInfo ci) {
-        Collars.tick(player);
-        MoonlightInstinct.tick(player);
+    @Inject(method = "calculateCurrentRate", at = @At("RETURN"), cancellable = true)
+    private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
+                                           CallbackInfoReturnable<Float> cir) {
+        cir.setReturnValue(cir.getReturnValue() + Collars.instinctRate(player) + MoonlightInstinct.rate(player));
     }
 
     @Redirect(method = "tick", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target =
@@ -68,7 +68,7 @@ public abstract class InstinctTickerMixin {
         while (!comp.immediateEffects.isEmpty()) {
             InstinctEffect effect = comp.immediateEffects.poll();
             float value = effect.getValue();
-            if (value > 0 && !effect.ID.equals(Collars.BONUS)) value *= multiplier;
+            if (value > 0) value *= multiplier;
             comp.instinctValue = MathHelper.clamp(comp.instinctValue
                     + value / cost, 0.0f, 100.0f);
         }

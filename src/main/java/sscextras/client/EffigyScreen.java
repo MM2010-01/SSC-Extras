@@ -50,15 +50,6 @@ public final class EffigyScreen extends HandledScreen<EffigyScreenHandler> {
 
     @Override protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         super.drawForeground(context, mouseX, mouseY);
-        context.getMatrices().push();
-        context.getMatrices().translate(0, 0, 250);
-        for (InfusionSlot kind : InfusionSlot.values()) {
-            var slot = handler.slots.get(kind.ordinal());
-            if (slot.isEnabled() && slot.hasStack() && handler.inactive(kind)) {
-                context.drawTextWithShadow(textRenderer, "!", slot.x + 12, slot.y, 0xFFFF4040);
-            }
-        }
-        context.getMatrices().pop();
         if (!handler.anyVisible()) {
             context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.ssc-extras.effigy.empty"), 88, 61, 0xFFFFFF);
         }
@@ -82,6 +73,17 @@ public final class EffigyScreen extends HandledScreen<EffigyScreenHandler> {
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
+        context.draw();
+        context.getMatrices().push();
+        context.getMatrices().translate(x, y, 400);
+        for (InfusionSlot kind : InfusionSlot.values()) {
+            var slot = handler.slots.get(kind.ordinal());
+            if (slot.isEnabled() && slot.hasStack() && handler.inactive(kind)) {
+                context.drawTextWithShadow(textRenderer, "!", slot.x + 12, slot.y, 0xFFFF4040);
+            }
+        }
+        context.draw();
+        context.getMatrices().pop();
         drawMouseoverTooltip(context, mouseX, mouseY);
         if (focusedSlot != null && focusedSlot.id < EffigyScreenHandler.INFUSION_COUNT && !focusedSlot.hasStack()) {
             context.drawTooltip(textRenderer, Text.translatable(InfusionSlot.values()[focusedSlot.id].translation()), mouseX, mouseY);

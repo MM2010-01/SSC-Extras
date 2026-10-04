@@ -6,6 +6,8 @@ import net.minecraft.loot.LootPool;
 import net.minecraft.loot.condition.RandomChanceLootCondition;
 import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.loot.function.SetEnchantmentsLootFunction;
+import net.minecraft.loot.function.SetNbtLootFunction;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.Registries;
@@ -32,11 +34,19 @@ public final class CollarLoot {
     public static void register() {
         Registry.register(Registries.LOOT_CONDITION_TYPE, new Identifier("ssc-extras", "root_chest"), RootChestCondition.TYPE);
         LootTableEvents.MODIFY.register((resources, manager, id, builder, source) -> {
-            if (eligible(id)) builder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+            if (!eligible(id)) return;
+            var pool = LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
                     .conditionally(() -> RootChestCondition.INSTANCE)
-                    .conditionally(RandomChanceLootCondition.builder(CHANCE))
-                    .with(ItemEntry.builder(Collars.CURSED).apply(new SetEnchantmentsLootFunction.Builder()
-                            .enchantment(Enchantments.BINDING_CURSE, ConstantLootNumberProvider.create(1)))));
+                    .conditionally(RandomChanceLootCondition.builder(CHANCE));
+            for (var curse : Collars.naturalCurses()) {
+                var data = new NbtCompound();
+                data.putString(Collars.INFUSION, Registries.STATUS_EFFECT.getId(curse).toString());
+                pool.with(ItemEntry.builder(Collars.CURSED)
+                        .apply(SetNbtLootFunction.builder(data))
+                        .apply(new SetEnchantmentsLootFunction.Builder()
+                                .enchantment(Enchantments.BINDING_CURSE, ConstantLootNumberProvider.create(1))));
+            }
+            builder.pool(pool);
         });
     }
 }
