@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ssc-extras:item/netherite_claw_tips"
+  }
+}

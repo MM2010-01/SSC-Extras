@@ -26,7 +26,7 @@ public abstract class InfusionPlayerMixin {
     @WrapMethod(method = "attack")
     private void sscExtras$infusedAttack(Entity target, Operation<Void> original) {
         PlayerEntity player = (PlayerEntity)(Object)this;
-        ItemStack stack = Infusions.weapon(player);
+        ItemStack stack = Infusions.combatWeapon(player);
         if (stack.isEmpty()) { original.call(target); return; }
         Infusions.inventory(player).refreshAttributes();
         try (var ignored = new InfusionHand(player, stack)) {

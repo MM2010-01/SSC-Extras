@@ -29,6 +29,7 @@ import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManag
 import sscextras.CreatureInstinct;
 import java.util.List;
 import sscextras.InstinctTarget;
+import sscextras.drake.DrakeEquipment;
 
 public final class Collars {
     public static final String INFUSION = "SscExtrasInfusion";
@@ -54,6 +55,11 @@ public final class Collars {
             entries.add(FERALIZING);
             entries.add(CURSED.getDefaultStack());
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
+            entries.add(sscextras.drake.DrakeEquipment.REINS);
+            entries.add(sscextras.drake.DrakeEquipment.SADDLE);
+            entries.add(sscextras.drake.DrakeEquipment.RIDERS_CHEST);
+            entries.add(sscextras.drake.DrakeEquipment.CLAW_TIPS);
+            entries.add(sscextras.drake.DrakeStable.SPAWN_EGG);
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.POTION));
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.SPLASH_POTION));
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.LINGERING_POTION));
@@ -62,6 +68,8 @@ public final class Collars {
     }
 
     public static int strength(PlayerEntity player) {
+        if (!DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()
+                || !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty()) return CURSED.strength();
         int strength = 0;
         for (var slot : CollarSlots.get(player)) {
             if (slot.stack().getItem() instanceof CollarItem collar) strength = Math.max(strength, collar.strength());
@@ -160,11 +168,14 @@ public final class Collars {
     public static void applyCurse(PlayerEntity player, ItemStack stack) {
         if (!(player instanceof ServerPlayerEntity) || !player.isAlive() || player.isSpectator()) return;
         ensureNaturalCurse(stack, player.getRandom());
-        if (TransformManager.getPlayerTransformData(player).isTransforming || isCursed(player)) return;
+        if (TransformManager.getPlayerTransformData(player).isTransforming
+                || FormAbilityManager.getForm(player).getIndex() >= 0 || EffectManager.hasTransformativeEffect(player)) return;
         BaseTransformativeStatusEffect effect = infusion(stack);
         PlayerFormBase target = effect instanceof CustomTransformativeStatue ? infusionForm(stack)
                 : effect == null ? null : effect.getToForm(player);
         if (effect == null || !availableForm(player, target)) return;
+        var pending = CreatureInstinct.getTarget(player);
+        if (pending != null && pending != target) return;
         if (FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_BEFORE_ENABLE) {
             stack.getOrCreateNbt().putBoolean(AWAKENING, true);
             TransformManager.handleDirectTransform(player, RegPlayerForms.ORIGINAL_SHIFTER, false);

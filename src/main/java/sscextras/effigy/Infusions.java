@@ -60,6 +60,11 @@ public final class Infusions {
 
     public static ItemStack weapon(PlayerEntity player) { return active(player, InfusionSlot.WEAPON); }
 
+    public static ItemStack combatWeapon(PlayerEntity player) {
+        ItemStack infusion = weapon(player);
+        return infusion.isEmpty() ? sscextras.drake.DrakeEquipment.claws(player, Items.NETHERITE_SWORD) : infusion;
+    }
+
     public static ItemStack tool(PlayerEntity player, BlockState state) {
         ItemStack best = sscextras.drake.EarthenDrake.clawTool(player, state);
         for (InfusionSlot slot : InfusionSlot.values()) {
@@ -85,7 +90,7 @@ public final class Infusions {
         if (slot.getType() == EquipmentSlot.Type.ARMOR) {
             for (InfusionSlot infusion : InfusionSlot.values()) if (infusion.equipment == slot) return active(player, infusion);
         }
-        return slot == EquipmentSlot.MAINHAND ? weapon(player) : actual;
+        return slot == EquipmentSlot.MAINHAND ? combatWeapon(player) : actual;
     }
 
     public static Iterable<ItemStack> armor(PlayerEntity player, Iterable<ItemStack> original) {

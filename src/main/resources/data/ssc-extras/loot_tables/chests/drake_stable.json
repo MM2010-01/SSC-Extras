@@ -1,0 +1,52 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "ssc-extras:cursed_reins"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "ssc-extras:cursed_saddle"
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 2,
+        "max": 5
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:porkchop"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:beef"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:mutton"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:chicken"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:rabbit"
+        }
+      ]
+    }
+  ]
+}

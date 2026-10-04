@@ -22,7 +22,8 @@
     "shape-shifter-curse:form_camera_bobbing_feral",
     "ssc-extras:drake/melee_3",
     "ssc-extras:drake/complete_scales",
-    "shape-shifter-curse:feral_form_step_sound_speed_up"
+    "shape-shifter-curse:feral_form_step_sound_speed_up",
+    "ssc-extras:drake/netherite_claws"
   ],
   "icon": {
     "item": "minecraft:pointed_dripstone"

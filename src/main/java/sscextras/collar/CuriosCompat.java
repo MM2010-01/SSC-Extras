@@ -45,11 +45,11 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
         index = contextClass.getMethod("index");
     }
 
-    public static void register(CollarItem... items) {
+    public static void register(AccessoryItem... items) {
         if (!FabricLoader.getInstance().isModLoaded("curios")) return;
         try {
-            CuriosCompat bridge = new CuriosCompat();
-            for (CollarItem item : items) {
+            CuriosCompat bridge = instance == null ? new CuriosCompat() : instance;
+            for (AccessoryItem item : items) {
                 Object adapter = Proxy.newProxyInstance(bridge.itemInterface.getClassLoader(), new Class<?>[]{bridge.itemInterface},
                         (proxy, method, args) -> bridge.dispatch(item, proxy, method, args));
                 bridge.register.invoke(null, item, adapter);
@@ -61,7 +61,7 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
         LoggerFactory.getLogger("ssc-extras").info("Registered native Curios collar callbacks and necklace access");
     }
 
-    private Object dispatch(CollarItem item, Object proxy, Method method, Object[] args) throws Throwable {
+    private Object dispatch(AccessoryItem item, Object proxy, Method method, Object[] args) throws Throwable {
         if (method.getDeclaringClass() == Object.class) {
             return switch (method.getName()) {
                 case "hashCode" -> System.identityHashCode(proxy);

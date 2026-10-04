@@ -13,6 +13,9 @@ import sscextras.effigy.FeralEffigy;
 
 public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        DrakeEquipmentClient.register();
+        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
+                sscextras.drake.DrakeStable.DRAKE, StableDrakeRenderer::new);
         net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderUtils.register_MAS(
                 sscextras.drake.EarthenDrake.id("earthen_drake"), EarthenDrakeAnimation::new);
         HandledScreens.register(FeralEffigy.SCREEN, EffigyScreen::new);
@@ -27,6 +30,7 @@ public final class SscExtrasClient implements ClientModInitializer {
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
             if (renderer instanceof PlayerEntityRenderer playerRenderer) {
                 helper.register(new CollarFeatureRenderer(playerRenderer));
+                helper.register(new DrakeGearFeatureRenderer(playerRenderer));
             }
         });
     }

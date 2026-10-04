@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "NNN",
+    "LCL"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "C": {
+      "item": "shape-shifter-curse:morphscale_core"
+    }
+  },
+  "result": {
+    "item": "ssc-extras:netherite_claw_tips"
+  }
+}

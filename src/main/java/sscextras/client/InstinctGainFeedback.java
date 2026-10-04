@@ -4,16 +4,18 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctComponent;
+import sscextras.CreatureInstinct;
 
 public final class InstinctGainFeedback {
     private PlayerInstinctComponent previous;
     private PlayerFormBase previousForm;
     private float previousValue;
     private int previousTick, until;
-    private float rate;
+    private float rate, cooldown;
 
     public void update(PlayerEntity player, PlayerInstinctComponent instinct) {
         var form = FormAbilityManager.getForm(player);
+        cooldown = CreatureInstinct.cooldownRate(player, instinct);
         int tick = player.age;
         float change = instinct.instinctValue - previousValue;
         if (previous != instinct || previousForm != form || tick < previousTick || change < -0.001f) {
@@ -34,6 +36,8 @@ public final class InstinctGainFeedback {
     }
 
     public boolean increasing(PlayerInstinctComponent instinct) { return rate > 0 || instinct.isInstinctIncreasing; }
-    public boolean decreasing(PlayerInstinctComponent instinct) { return rate <= 0 && instinct.isInstinctDecreasing; }
+    public boolean decreasing(PlayerInstinctComponent instinct) {
+        return rate <= 0 && instinct.isInstinctDecreasing && instinct.currentInstinctRate - cooldown < -0.000001f;
+    }
     public float rate(PlayerInstinctComponent instinct) { return Math.max(rate, instinct.currentInstinctRate); }
 }

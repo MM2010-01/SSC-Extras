@@ -1,0 +1,14 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "shape-shifter-curse:mob_effect/to_bat_0_effect",
+      "sprite": "ssc-extras:to_earthen_drake_0_effect"
+    },
+    {
+      "type": "single",
+      "resource": "shape-shifter-curse:mob_effect/to_bat_0_effect",
+      "sprite": "ssc-extras:to_earthen_drake_0_potion"
+    }
+  ]
+}

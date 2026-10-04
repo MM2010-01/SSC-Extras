@@ -22,6 +22,8 @@ public final class SscExtras implements ModInitializer {
         sscextras.drake.EarthenDrake.register();
         sscextras.effigy.FeralEffigy.register();
         sscextras.collar.Collars.register();
+        sscextras.drake.DrakeEquipment.register();
+        sscextras.drake.DrakeStable.register();
         Path file = FabricLoader.getInstance().getConfigDir().resolve("ssc-extras.properties");
         Properties config = new Properties();
         try {

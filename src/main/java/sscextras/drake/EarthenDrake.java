@@ -64,6 +64,10 @@ public final class EarthenDrake {
                         && player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()
                         && Infusions.weapon(player).isEmpty());
         Registry.register(ApoliRegistries.ENTITY_CONDITION, bareClaws.getSerializerId(), bareClaws);
+        var clawTips = new ConditionFactory<Entity>(id("netherite_claws"), new SerializableData(),
+                (data, entity) -> entity instanceof PlayerEntity player
+                        && !DrakeEquipment.equipped(player, DrakeEquipment.CLAW_TIPS).isEmpty());
+        Registry.register(ApoliRegistries.ENTITY_CONDITION, clawTips.getSerializerId(), clawTips);
         LootTableEvents.MODIFY.register((resources, manager, id, builder, source) -> {
             if (id.equals(new Identifier("minecraft", "chests/pillager_outpost"))) {
                 builder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
@@ -107,6 +111,13 @@ public final class EarthenDrake {
         } else if (block.isOf(Blocks.COBWEB) && stage >= 2) {
             tool = stage == 2 ? Items.IRON_SWORD : Items.DIAMOND_SWORD;
         } else return ItemStack.EMPTY;
+        if (stage == 3 && !DrakeEquipment.equipped(player, DrakeEquipment.CLAW_TIPS).isEmpty()) {
+            Item upgraded = tool == Items.DIAMOND_PICKAXE ? Items.NETHERITE_PICKAXE
+                    : tool == Items.DIAMOND_SHOVEL ? Items.NETHERITE_SHOVEL
+                    : tool == Items.DIAMOND_AXE ? Items.NETHERITE_AXE
+                    : tool == Items.DIAMOND_HOE ? Items.NETHERITE_HOE : Items.NETHERITE_SWORD;
+            return DrakeEquipment.claws(player, upgraded);
+        }
         var stack = new ItemStack(tool);
         stack.getOrCreateNbt().putBoolean("Unbreakable", true);
         return stack;
