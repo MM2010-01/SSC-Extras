@@ -1,0 +1,19 @@
+{
+  "type": "origins:conditioned_attribute",
+  "tick_rate": 1,
+  "condition": {
+    "type": "ssc-extras:bare_claws"
+  },
+  "modifiers": [
+    {
+      "operation": "addition",
+      "value": 5,
+      "attribute": "minecraft:generic.attack_damage"
+    },
+    {
+      "operation": "addition",
+      "value": -2.4,
+      "attribute": "minecraft:generic.attack_speed"
+    }
+  ]
+}

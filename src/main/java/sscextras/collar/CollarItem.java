@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
@@ -58,6 +59,10 @@ public final class CollarItem extends AccessoryItem {
             if (!CollarSlots.isActive(slot)) {
                 CollarSlots.recoverLegacy(player);
                 return;
+            }
+            if (!player.isSilent() && !player.isSpectator()) {
+                player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                        SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, player.getSoundCategory(), 1.0f, 1.0f);
             }
             refreshBinding(stack, player);
             Collars.applyCurse(player, stack);

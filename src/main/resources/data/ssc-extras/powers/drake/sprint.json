@@ -1,0 +1,12 @@
+{
+  "type": "origins:conditioned_attribute",
+  "tick_rate": 1,
+  "condition": {
+    "type": "origins:sprinting"
+  },
+  "modifier": {
+    "operation": "multiply_total",
+    "value": 0.2,
+    "attribute": "minecraft:generic.movement_speed"
+  }
+}

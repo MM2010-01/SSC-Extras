@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.10.5'
 }
 
-version = '1.0.0'
+version = '1.1.0'
 group = 'sscextras'
 
 repositories { mavenCentral() }
@@ -18,6 +18,7 @@ dependencies {
                 'apoli-*.jar', 'calio-*.jar', 'Pehkui-*.jar', 'trinkets-*.jar'
     }
     modRuntimeOnly fileTree('.work/runtime') { include '*.jar' }
+    modCompileOnly fileTree('.work/runtime') { include 'azurelib-*.jar', 'player-animation-lib-*.jar' }
 }
 
 java {

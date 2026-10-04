@@ -1,0 +1,31 @@
+{
+  "name": "ssc-extras.earthen_drake_1.model_name",
+  "layer": "origins:origin",
+  "form": "ssc-extras:form_earthen_drake_1",
+  "wide_only": true,
+  "model": "ssc-extras:geo/form/earthen_drake_1.geo.json",
+  "texture": "ssc-extras:textures/form/earthen_drake.png",
+  "hidden": [
+    "leftArm",
+    "rightArm",
+    "leftSleeve",
+    "rightSleeve",
+    "leftLeg",
+    "rightLeg",
+    "leftPants",
+    "rightPants"
+  ],
+  "animation_system": "ssc-extras:earthen_drake",
+  "animation_system_config": {
+    "stage": 1
+  },
+  "builtin_controller_data": {
+    "tail_chain": {
+      "tail": [
+        0,
+        1,
+        2
+      ]
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "powers": [
+    "ssc-extras:drake/food_beef",
+    "ssc-extras:drake/food_porkchop",
+    "ssc-extras:drake/food_chicken",
+    "ssc-extras:drake/food_mutton",
+    "ssc-extras:drake/food_rabbit",
+    "ssc-extras:drake/food_cod",
+    "ssc-extras:drake/food_salmon",
+    "ssc-extras:drake/food_potato",
+    "ssc-extras:drake/raw_food_instinct",
+    "shape-shifter-curse:form_instinct_use_golden_apple",
+    "shape-shifter-curse:form_instinct_use_catalyst",
+    "ssc-extras:drake/body_2",
+    "ssc-extras:drake/armor_restrictions_2",
+    "ssc-extras:drake/attributes_2",
+    "ssc-extras:drake/claws_2",
+    "ssc-extras:drake/no_tool_use",
+    "ssc-extras:drake/drop_tools",
+    "ssc-extras:drake/no_offhand",
+    "ssc-extras:drake/sprint",
+    "shape-shifter-curse:form_camera_bobbing_feral",
+    "ssc-extras:drake/melee_2"
+  ],
+  "icon": {
+    "item": "minecraft:pointed_dripstone"
+  },
+  "order": 0,
+  "unchoosable": true,
+  "impact": 0
+}

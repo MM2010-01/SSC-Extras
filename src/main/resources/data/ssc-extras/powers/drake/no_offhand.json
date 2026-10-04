@@ -1,0 +1,10 @@
+{
+  "type": "origins:action_over_time",
+  "interval": 1,
+  "entity_action": {
+    "type": "origins:drop_inventory",
+    "slots": [
+      "weapon.offhand"
+    ]
+  }
+}

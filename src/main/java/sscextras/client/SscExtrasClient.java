@@ -13,6 +13,8 @@ import sscextras.effigy.FeralEffigy;
 
 public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderUtils.register_MAS(
+                sscextras.drake.EarthenDrake.id("earthen_drake"), EarthenDrakeAnimation::new);
         HandledScreens.register(FeralEffigy.SCREEN, EffigyScreen::new);
         ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
             if (!(stack.getItem() instanceof CollarItem)) return;

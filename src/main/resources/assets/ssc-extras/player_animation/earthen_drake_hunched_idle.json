@@ -1,0 +1,109 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "earthen_drake_hunched_idle": {
+      "loop": true,
+      "animation_length": 1,
+      "bones": {
+        "body": {
+          "position": {
+            "vector": [
+              0,
+              -1.5,
+              0
+            ]
+          }
+        },
+        "torso": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              25,
+              0,
+              0
+            ]
+          }
+        },
+        "head": {
+          "position": {
+            "vector": [
+              0,
+              -1.3,
+              -3.8
+            ]
+          }
+        },
+        "leftArm": {
+          "position": {
+            "vector": [
+              -0.6,
+              2,
+              -2.2
+            ]
+          },
+          "rotation": {
+            "vector": [
+              -18,
+              0,
+              -5
+            ]
+          }
+        },
+        "rightArm": {
+          "position": {
+            "vector": [
+              0.6,
+              2,
+              -2.2
+            ]
+          },
+          "rotation": {
+            "vector": [
+              -18,
+              0,
+              5
+            ]
+          }
+        },
+        "leftLeg": {
+          "position": {
+            "vector": [
+              -0.5,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              10,
+              0,
+              -3
+            ]
+          }
+        },
+        "rightLeg": {
+          "position": {
+            "vector": [
+              0.5,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              10,
+              0,
+              3
+            ]
+          }
+        }
+      }
+    }
+  }
+}

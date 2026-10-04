@@ -54,6 +54,9 @@ public final class Collars {
             entries.add(FERALIZING);
             entries.add(CURSED.getDefaultStack());
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
+            entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.POTION));
+            entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.SPLASH_POTION));
+            entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.LINGERING_POTION));
         }).build());
         CollarLoot.register();
     }
@@ -142,7 +145,8 @@ public final class Collars {
     public static List<BaseTransformativeStatusEffect> naturalCurses() {
         return List.of(RegTStatusEffect.TO_BAT_0_EFFECT, RegTStatusEffect.TO_AXOLOTL_0_EFFECT,
                 RegTStatusEffect.TO_OCELOT_0_EFFECT, RegTStatusEffect.TO_ANUBIS_WOLF_0_EFFECT,
-                RegTStatusEffect.TO_SPIDER_0_EFFECT, RegTStatusEffect.TO_FAMILIAR_FOX_0_EFFECT);
+                RegTStatusEffect.TO_SPIDER_0_EFFECT, RegTStatusEffect.TO_FAMILIAR_FOX_0_EFFECT,
+                sscextras.drake.EarthenDrake.CURSE);
     }
 
     public static void ensureNaturalCurse(ItemStack stack, Random random) {

@@ -61,14 +61,14 @@ public final class Infusions {
     public static ItemStack weapon(PlayerEntity player) { return active(player, InfusionSlot.WEAPON); }
 
     public static ItemStack tool(PlayerEntity player, BlockState state) {
-        ItemStack best = ItemStack.EMPTY;
+        ItemStack best = sscextras.drake.EarthenDrake.clawTool(player, state);
         for (InfusionSlot slot : InfusionSlot.values()) {
             if (slot.armor()) continue;
             ItemStack stack = active(player, slot);
             if (stack.isEmpty()) continue;
             boolean suitable = stack.isSuitableFor(state), oldSuitable = best.isSuitableFor(state);
             if (best.isEmpty() || suitable && !oldSuitable || suitable == oldSuitable
-                    && miningSpeed(stack, state) > miningSpeed(best, state)) best = stack;
+                    && miningSpeed(stack, state) >= miningSpeed(best, state)) best = stack;
         }
         return best;
     }

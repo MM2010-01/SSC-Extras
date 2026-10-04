@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "origins": [
+    "ssc-extras:form_earthen_drake_0",
+    "ssc-extras:form_earthen_drake_1",
+    "ssc-extras:form_earthen_drake_2",
+    "ssc-extras:form_earthen_drake_3"
+  ]
+}
