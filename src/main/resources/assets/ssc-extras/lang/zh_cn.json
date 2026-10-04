@@ -31,7 +31,7 @@
   "codex.form.ssc-extras.earthen_drake_0.name": "地龙（阶段0）",
   "codex.form.ssc-extras.earthen_drake_0.title": "诅咒已经在你的皮肤上留下了最初的痕迹。零星鳞片之下，身体仍是你熟悉的模样。",
   "codex.form.ssc-extras.earthen_drake_0.appearance": "你的身体保留着人类的轮廓，额头、后背和四肢上零星分布着鳞片。胸腹中央有几小片浅色鳞片。\n短而钝的吻部从脸部向前突出，额头上有两枚小角。\n尾骨延长为一条短尾。手指和脚趾末端带有深色的小爪，但大体仍是人类的形状。",
-  "codex.form.ssc-extras.earthen_drake_0.pros": "逐渐改变的消化系统能从生食中获取与熟食相同的营养。",
+  "codex.form.ssc-extras.earthen_drake_0.pros": "逐渐改变的消化系统能从生食中获取与熟食相同的营养。\n主手空置时，利爪的挖掘能力相当于木质工具，攻击额外造成1点伤害。初生的鳞片提供1点天然护甲。",
   "codex.form.ssc-extras.earthen_drake_0.cons": "新长出的角和尾巴让头盔与护腿不再适合你的身体，无法继续穿戴。",
   "codex.form.ssc-extras.earthen_drake_0.instincts": "你开始渴望生食，觉得它们格外诱人。每一顿生食，都让顺从这些变化的念头更强烈一些。\n你开始渴望用利爪挖掘大地、击打敌人。",
   "ssc-extras.earthen_drake_0.model_name": "地龙（阶段0）",

@@ -97,17 +97,17 @@ public final class EarthenDrake {
     /** A temporary native tool lets normal mining speed, harvest levels and loot rules apply. */
     public static ItemStack clawTool(PlayerEntity player, BlockState block) {
         int stage = stage(player);
-        if (stage < 1 || player.isSpectator()
+        if (stage < 0 || player.isSpectator()
                 || !player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()) return ItemStack.EMPTY;
         Item tool;
         if (block.isIn(BlockTags.PICKAXE_MINEABLE)) {
-            tool = stage == 1 ? Items.STONE_PICKAXE : stage == 2 ? Items.IRON_PICKAXE : Items.DIAMOND_PICKAXE;
+            tool = stage == 0 ? Items.WOODEN_PICKAXE : stage == 1 ? Items.STONE_PICKAXE : stage == 2 ? Items.IRON_PICKAXE : Items.DIAMOND_PICKAXE;
         } else if (block.isIn(BlockTags.SHOVEL_MINEABLE)) {
-            tool = stage == 1 ? Items.STONE_SHOVEL : stage == 2 ? Items.IRON_SHOVEL : Items.DIAMOND_SHOVEL;
+            tool = stage == 0 ? Items.WOODEN_SHOVEL : stage == 1 ? Items.STONE_SHOVEL : stage == 2 ? Items.IRON_SHOVEL : Items.DIAMOND_SHOVEL;
         } else if (block.isIn(BlockTags.AXE_MINEABLE)) {
-            tool = stage == 1 ? Items.STONE_AXE : stage == 2 ? Items.IRON_AXE : Items.DIAMOND_AXE;
+            tool = stage == 0 ? Items.WOODEN_AXE : stage == 1 ? Items.STONE_AXE : stage == 2 ? Items.IRON_AXE : Items.DIAMOND_AXE;
         } else if (block.isIn(BlockTags.HOE_MINEABLE)) {
-            tool = stage == 1 ? Items.STONE_HOE : stage == 2 ? Items.IRON_HOE : Items.DIAMOND_HOE;
+            tool = stage == 0 ? Items.WOODEN_HOE : stage == 1 ? Items.STONE_HOE : stage == 2 ? Items.IRON_HOE : Items.DIAMOND_HOE;
         } else if (block.isOf(Blocks.COBWEB) && stage >= 2) {
             tool = stage == 2 ? Items.IRON_SWORD : Items.DIAMOND_SWORD;
         } else return ItemStack.EMPTY;
