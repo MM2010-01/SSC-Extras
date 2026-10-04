@@ -106,6 +106,14 @@ The permanent drake form gains **Body Slam** on SSC's primary ability key. Rush 
 
 ## Some Other Changes
 
+### Drake Stables and Leads
+
+Newly generated stables have three stalls: two with natural drakes and one empty stall, with solid log pillars extending to the floor. Existing stables keep their original layout.
+
+Use a Rider's Chest on a natural drake to give it 54 shared storage slots. Sneak-use the drake or press your inventory key while riding to open it. The chest keeps its contents through saving and drops with them if the drake dies.
+
+Stage 2 and permanent drake players can be led with a lead and tied to fences. Near a stable, a pillager can capture a player wearing both Cursed Reins and a Cursed Saddle, lead them into the empty third stall, and tie them there. An occupied stall cannot be used. Leave the stable area before being caught to avoid capture.
+
 Removed darkness effect during transformation.
 
 

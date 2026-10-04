@@ -18,13 +18,14 @@ public abstract class DrakeRiderInventoryMixin {
 
     @Redirect(method = "handleInputEvents", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;hasRidingInventory()Z"))
     private boolean sscExtras$hasRiderChest(ClientPlayerInteractionManager manager) {
-        return player.getVehicle() instanceof PlayerEntity drake
-                && !DrakeEquipment.equipped(drake, DrakeEquipment.RIDERS_CHEST).isEmpty() || manager.hasRidingInventory();
+        return !RiderChestInventory.equipped(player.getVehicle()).isEmpty()
+                || player.getVehicle() instanceof StableDrakeEntity drake && drake.hasChest() || manager.hasRidingInventory();
     }
 
     @Redirect(method = "handleInputEvents", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;openRidingInventory()V"))
     private void sscExtras$openRiderChest(ClientPlayerEntity rider) {
-        if (rider.getVehicle() instanceof PlayerEntity drake && !DrakeEquipment.equipped(drake, DrakeEquipment.RIDERS_CHEST).isEmpty())
+        if (!RiderChestInventory.equipped(rider.getVehicle()).isEmpty()
+                || rider.getVehicle() instanceof StableDrakeEntity drake && drake.hasChest())
             ClientPlayNetworking.send(DrakeRiding.CHEST, PacketByteBufs.create());
         else rider.openRidingInventory();
     }

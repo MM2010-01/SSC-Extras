@@ -70,7 +70,8 @@ public class DrakeAccessoryItem extends AccessoryItem {
         tooltip.add(Text.translatable("tooltip.ssc-extras." + description).formatted(Formatting.GRAY));
         if (!permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.collar.gain",
                 Collars.CURSED.strength(), Collars.CURSED.strength() * 2).formatted(Formatting.GRAY));
-        if (permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.drake_permanent").formatted(Formatting.DARK_PURPLE));
+        if (permanentOnly) tooltip.add(Text.translatable(this == DrakeEquipment.RIDERS_CHEST
+                ? "tooltip.ssc-extras.drake_chest_requirement" : "tooltip.ssc-extras.drake_permanent").formatted(Formatting.DARK_PURPLE));
         else {
             tooltip.add(Text.translatable("tooltip.ssc-extras.drake_mount_set").formatted(Formatting.GOLD));
             tooltip.add(Text.translatable("tooltip.ssc-extras.drake_mount_set_bonus").formatted(Formatting.DARK_PURPLE));

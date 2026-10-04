@@ -1,6 +1,8 @@
 package sscextras.drake;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
@@ -11,11 +13,11 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 
 public final class RiderChestInventory extends SimpleInventory {
-    private final PlayerEntity owner;
+    private final LivingEntity owner;
     private final ItemStack item;
     private boolean loading = true;
 
-    public RiderChestInventory(PlayerEntity owner, ItemStack item) {
+    public RiderChestInventory(LivingEntity owner, ItemStack item) {
         super(54);
         this.owner = owner;
         this.item = item;
@@ -39,12 +41,18 @@ public final class RiderChestInventory extends SimpleInventory {
 
     @Override public boolean canPlayerUse(PlayerEntity player) {
         return owner.isAlive() && player.isAlive() && owner.getWorld() == player.getWorld()
-                && player.squaredDistanceTo(owner) <= 64 && DrakeEquipment.equipped(owner, DrakeEquipment.RIDERS_CHEST) == item;
+                && player.squaredDistanceTo(owner) <= 64 && equipped(owner) == item;
     }
 
-    public static void open(ServerPlayerEntity viewer, PlayerEntity owner) {
-        var stack = DrakeEquipment.equipped(owner, DrakeEquipment.RIDERS_CHEST);
-        if (stack.isEmpty() || viewer.isSpectator() || viewer.squaredDistanceTo(owner) > 64) return;
+    public static ItemStack equipped(Entity owner) {
+        return owner instanceof PlayerEntity player ? DrakeEquipment.equipped(player, DrakeEquipment.RIDERS_CHEST)
+                : owner instanceof StableDrakeEntity drake ? drake.chest() : ItemStack.EMPTY;
+    }
+
+    public static void open(ServerPlayerEntity viewer, LivingEntity owner) {
+        var stack = equipped(owner);
+        if (stack.isEmpty() || !owner.isAlive() || viewer.isSpectator() || viewer.getWorld() != owner.getWorld()
+                || viewer.squaredDistanceTo(owner) > 64) return;
         var state = (DrakeRiding.State) owner;
         RiderChestInventory inventory = state.sscExtras$getChest();
         if (inventory == null || !inventory.belongsTo(stack)) {

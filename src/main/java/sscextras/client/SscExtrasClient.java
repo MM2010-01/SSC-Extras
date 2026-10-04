@@ -14,6 +14,7 @@ import sscextras.effigy.FeralEffigy;
 public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         DrakeEquipmentClient.register();
+        DrakeLeashRenderer.register();
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
                 sscextras.drake.DrakeStable.DRAKE, StableDrakeRenderer::new);
         net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderUtils.register_MAS(

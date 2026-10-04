@@ -1,0 +1,142 @@
+package sscextras.drake;
+
+import net.minecraft.block.FenceGateBlock;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.decoration.LeashKnotEntity;
+import net.minecraft.entity.mob.PillagerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3d;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashSet;
+
+public final class DrakeCaptureGoal extends Goal {
+    public interface Captor { DrakeCaptureGoal sscExtras$captureGoal(); }
+    private final PillagerEntity pillager;
+    private DrakeStablePiece stable;
+    private PlayerEntity player;
+    private int nextSearch, started;
+    private boolean atGate, complete;
+
+    public DrakeCaptureGoal(PillagerEntity pillager) {
+        this.pillager = pillager;
+        setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+    }
+
+    public static boolean eligible(PlayerEntity player) {
+        return DrakeLeashing.eligible(player) && !player.isCreative() && !player.hasVehicle()
+                && !DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()
+                && !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty();
+    }
+
+    public static Box stall(DrakeStablePiece piece) {
+        var center = piece.reservedStall();
+        return new Box(center.getX() - 2, center.getY(), center.getZ() - 4,
+                center.getX() + 4, center.getY() + 4, center.getZ() + 4);
+    }
+
+    public static DrakeStablePiece findStable(ServerWorld world, BlockPos pos) {
+        var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
+        if (outpost == null) return null;
+        var checked = new HashSet<net.minecraft.structure.StructureStart>();
+        var chunk = new ChunkPos(pos);
+        DrakeStablePiece closest = null;
+        double distance = Double.MAX_VALUE;
+        for (int x = chunk.x - 2; x <= chunk.x + 2; x++) for (int z = chunk.z - 2; z <= chunk.z + 2; z++) {
+            if (!world.isChunkLoaded(x, z)) continue;
+            for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(x, z), structure -> structure == outpost)) {
+                if (!checked.add(start)) continue;
+                for (var piece : start.getChildren()) if (piece instanceof DrakeStablePiece candidate && candidate.reservedStall() != null
+                        && Box.from(candidate.getBoundingBox()).expand(12).contains(Vec3d.ofCenter(pos))) {
+                    double next = candidate.reservedStall().getSquaredDistance(pos);
+                    if (next < distance) { closest = candidate; distance = next; }
+                }
+            }
+        }
+        return closest;
+    }
+
+    private boolean occupied() {
+        if (!pillager.getWorld().getEntitiesByClass(LivingEntity.class, stall(stable),
+                entity -> entity.isAlive() && entity != pillager && entity != player && !entity.isSpectator()).isEmpty()) return true;
+        return pillager.getWorld().getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(16), entity -> {
+            var other = ((Captor)entity).sscExtras$captureGoal();
+            return entity != pillager && other != null && other.player != null && other.stable != null
+                    && other.stable.reservedStall().equals(stable.reservedStall());
+        }).size() > 0;
+    }
+
+    @Override public boolean canStart() {
+        if (pillager.hasVehicle() || pillager.age < nextSearch) return false;
+        nextSearch = pillager.age + 40;
+        if (pillager.getWorld().getPlayers().stream().noneMatch(candidate -> eligible(candidate)
+                && pillager.squaredDistanceTo(candidate) <= 48 * 48)) return false;
+        stable = findStable((ServerWorld)pillager.getWorld(), pillager.getBlockPos());
+        if (stable == null || !pillager.getWorld().getBlockState(stable.reservedTie()).isIn(BlockTags.FENCES)) return false;
+        player = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, Box.from(stable.getBoundingBox()).expand(8), candidate ->
+                eligible(candidate) && (DrakeLeashing.holder(candidate) == pillager || !stall(stable).contains(candidate.getPos()))
+                && pillager.getVisibilityCache().canSee(candidate)
+                && (!DrakeLeashing.attached(candidate) || DrakeLeashing.holder(candidate) == pillager)).stream()
+                .min(Comparator.comparingDouble(pillager::squaredDistanceTo)).orElse(null);
+        if (player != null && !occupied()) return true;
+        player = null;
+        return false;
+    }
+
+    @Override public boolean shouldContinue() {
+        return !complete && player != null && eligible(player) && !pillager.hasVehicle() && pillager.age - started < 600
+                && Box.from(stable.getBoundingBox()).expand(10).contains(player.getPos()) && !occupied()
+                && (!DrakeLeashing.attached(player) || DrakeLeashing.holder(player) == pillager)
+                && pillager.getWorld().getBlockState(stable.reservedTie()).isIn(BlockTags.FENCES);
+    }
+
+    @Override public void start() {
+        atGate = false; complete = false; started = pillager.age;
+        pillager.clearActiveItem(); pillager.setCharging(false); pillager.setTarget(null);
+        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(new ItemStack(Items.LEAD));
+    }
+
+    private void gates(boolean open) {
+        for (var pos : new BlockPos[]{stable.reservedGate(), stable.reservedGate().east()}) {
+            var state = pillager.getWorld().getBlockState(pos);
+            if (state.getBlock() instanceof FenceGateBlock) pillager.getWorld().setBlockState(pos, state.with(FenceGateBlock.OPEN, open), 3);
+        }
+    }
+
+    @Override public void tick() {
+        pillager.getLookControl().lookAt(player, 30, 30);
+        if (DrakeLeashing.holder(player) != pillager) {
+            pillager.getNavigation().startMovingTo(player, 1);
+            if (pillager.squaredDistanceTo(player) <= 4 && pillager.getVisibilityCache().canSee(player)) DrakeLeashing.attach(player, pillager);
+            return;
+        }
+        gates(true);
+        if (stall(stable).contains(player.getPos()) && player.squaredDistanceTo(Vec3d.ofCenter(stable.reservedTie())) <= 81) {
+            DrakeLeashing.attach(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), stable.reservedTie()));
+            gates(false); complete = true; pillager.getNavigation().stop();
+            return;
+        }
+        Vec3d gate = Vec3d.ofBottomCenter(stable.reservedGate().north(2)).add(.5, 0, 0);
+        if (pillager.squaredDistanceTo(gate) < 2.25 && player.squaredDistanceTo(gate) < 16) atGate = true;
+        Vec3d destination = atGate ? Vec3d.ofBottomCenter(stable.reservedTie().north(2)).add(.5, 0, 0) : gate;
+        if (pillager.squaredDistanceTo(player) > 7 * 7) pillager.getNavigation().stop();
+        else pillager.getNavigation().startMovingTo(destination.x, destination.y, destination.z, .8);
+    }
+
+    @Override public void stop() {
+        if (player != null && DrakeLeashing.holder(player) == pillager) DrakeLeashing.detach(player, true);
+        player = null; stable = null; nextSearch = pillager.age + 100;
+        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
+        pillager.getNavigation().stop();
+    }
+}

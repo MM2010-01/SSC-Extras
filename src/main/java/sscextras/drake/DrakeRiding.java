@@ -64,7 +64,7 @@ public final class DrakeRiding {
             });
         });
         ServerPlayNetworking.registerGlobalReceiver(CHEST, (server, player, handler, buf, sender) -> server.execute(() -> {
-            if (player.getVehicle() instanceof PlayerEntity mount && DrakeEquipment.canRide(mount))
+            if (player.getVehicle() instanceof LivingEntity mount && DrakeEquipment.canRide(mount))
                 RiderChestInventory.open(player, mount);
             else RiderChestInventory.open(player, player);
         }));

@@ -17,12 +17,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import sscextras.drake.DrakeFaction;
 import sscextras.drake.DrakeRiding;
+import sscextras.drake.DrakeCaptureGoal;
 
 @Mixin(PillagerEntity.class)
-public abstract class DrakePillagerGoalMixin extends IllagerEntity implements DrakeFaction.EquipmentDisplay {
+public abstract class DrakePillagerGoalMixin extends IllagerEntity implements DrakeFaction.EquipmentDisplay, DrakeCaptureGoal.Captor {
     @Unique private static final TrackedData<ItemStack> SSC_EXTRAS_OFFERED_GEAR = DataTracker.registerData(
             PillagerEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
     @Unique private DrakeFaction.DefendGoal sscExtras$defendGoal;
+    @Unique private DrakeCaptureGoal sscExtras$captureGoal;
     protected DrakePillagerGoalMixin(EntityType<? extends IllagerEntity> type, World world) { super(type, world); }
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
@@ -30,6 +32,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
 
     public void sscExtras$showEquipment(ItemStack stack) { dataTracker.set(SSC_EXTRAS_OFFERED_GEAR, stack); }
     public void sscExtras$defend(PlayerEntity player, LivingEntity enemy) { sscExtras$defendGoal.offer(player, enemy); }
+    public DrakeCaptureGoal sscExtras$captureGoal() { return sscExtras$captureGoal; }
 
     @Override protected void mobTick() {
         super.mobTick();
@@ -44,6 +47,8 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
     @Inject(method = "initGoals", at = @At("TAIL"))
     private void sscExtras$completeDrakeHarness(CallbackInfo ci) {
         goalSelector.add(1, new DrakeFaction.EquipGoal((PillagerEntity)(Object)this));
+        sscExtras$captureGoal = new DrakeCaptureGoal((PillagerEntity)(Object)this);
+        goalSelector.add(1, sscExtras$captureGoal);
         sscExtras$defendGoal = new DrakeFaction.DefendGoal((PillagerEntity)(Object)this);
         targetSelector.add(0, sscExtras$defendGoal);
     }

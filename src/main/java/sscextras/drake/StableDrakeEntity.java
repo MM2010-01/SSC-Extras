@@ -33,9 +33,11 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     private static final TrackedData<Boolean> SADDLED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> REINED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> VANILLA_SADDLE = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> CHESTED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
     private int contactCooldown;
     private ItemStack saddle = ItemStack.EMPTY, reins = ItemStack.EMPTY;
+    private ItemStack chest = ItemStack.EMPTY;
     private boolean naturalSaddle = true, naturalReins = true;
 
     public StableDrakeEntity(EntityType<? extends PathAwareEntity> type, World world) {
@@ -59,6 +61,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         dataTracker.startTracking(SADDLED, false);
         dataTracker.startTracking(REINED, false);
         dataTracker.startTracking(VANILLA_SADDLE, false);
+        dataTracker.startTracking(CHESTED, false);
     }
 
     @Override protected void initGoals() {
@@ -116,10 +119,27 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     public boolean isSaddled() { return dataTracker.get(SADDLED); }
     public boolean hasReins() { return dataTracker.get(REINED); }
     public boolean hasVanillaSaddle() { return dataTracker.get(VANILLA_SADDLE); }
+    public boolean hasChest() { return dataTracker.get(CHESTED); }
+    public ItemStack chest() { return chest; }
+
+    @Override public boolean canBeLeashedBy(PlayerEntity player) { return !isLeashed(); }
 
     @Override protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         if (player.isSpectator()) return ActionResult.PASS;
         ItemStack stack = player.getStackInHand(hand);
+        if (stack.isOf(DrakeEquipment.RIDERS_CHEST) && !hasChest()) {
+            if (!getWorld().isClient) {
+                chest = stack.copyWithCount(1);
+                dataTracker.set(CHESTED, true);
+                if (!player.isCreative()) stack.decrement(1);
+                playSound(SoundEvents.ENTITY_DONKEY_CHEST, 1, 1);
+            }
+            return ActionResult.success(getWorld().isClient);
+        }
+        if (hasChest() && player.isSneaking()) {
+            if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) RiderChestInventory.open(serverPlayer, this);
+            return ActionResult.success(getWorld().isClient);
+        }
         if (DrakeEquipment.isSaddle(stack) && !isSaddled() || stack.isOf(DrakeEquipment.REINS) && !hasReins()) {
             if (!getWorld().isClient) {
                 if (DrakeEquipment.isSaddle(stack)) {
@@ -156,6 +176,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         super.writeCustomDataToNbt(nbt);
         nbt.put("DrakeSaddle", saddle.writeNbt(new NbtCompound()));
         nbt.put("DrakeReins", reins.writeNbt(new NbtCompound()));
+        nbt.put("DrakeChest", chest.writeNbt(new NbtCompound()));
         nbt.putInt("CurseContactCooldown", contactCooldown);
         nbt.putBoolean("DrakeNaturalSaddle", naturalSaddle);
         nbt.putBoolean("DrakeNaturalReins", naturalReins);
@@ -165,6 +186,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         super.readCustomDataFromNbt(nbt);
         saddle = ItemStack.fromNbt(nbt.getCompound("DrakeSaddle"));
         reins = ItemStack.fromNbt(nbt.getCompound("DrakeReins"));
+        chest = ItemStack.fromNbt(nbt.getCompound("DrakeChest"));
+        if (!chest.isOf(DrakeEquipment.RIDERS_CHEST)) chest = ItemStack.EMPTY;
+        dataTracker.set(CHESTED, !chest.isEmpty());
         naturalSaddle = nbt.getBoolean("DrakeNaturalSaddle");
         naturalReins = nbt.getBoolean("DrakeNaturalReins");
         if (!nbt.contains("DrakeNaturalSaddle") && saddle.isEmpty()) {
@@ -183,6 +207,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         super.dropEquipment(source, lootingMultiplier, allowDrops);
         if (!saddle.isEmpty() && (!naturalSaddle || allowDrops && dropsNaturalGear("stableDrakeSaddleDropChance", lootingMultiplier))) dropStack(saddle);
         if (!reins.isEmpty() && (!naturalReins || allowDrops && dropsNaturalGear("stableDrakeReinsDropChance", lootingMultiplier))) dropStack(reins);
+        if (!chest.isEmpty()) dropStack(chest);
+        chest = ItemStack.EMPTY;
+        dataTracker.set(CHESTED, false);
         saddle = reins = ItemStack.EMPTY;
     }
 

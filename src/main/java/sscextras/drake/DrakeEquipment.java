@@ -37,6 +37,7 @@ public final class DrakeEquipment {
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")) VanillaSaddleTrinket.register();
         DrakeRiding.register();
         DrakeFaction.register();
+        DrakeLeashing.register();
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (player.isSpectator()) return ActionResult.PASS;
             if (hand == Hand.MAIN_HAND && player.isSneaking() && entity instanceof net.minecraft.entity.mob.MobEntity passenger
