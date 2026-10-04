@@ -10,7 +10,15 @@
         "type": "ssc-extras:quadruped_instinct"
       },
       {
-        "type": "origins:moving"
+        "type": "origins:or",
+        "conditions": [
+          {
+            "type": "origins:moving"
+          },
+          {
+            "type": "origins:sneaking"
+          }
+        ]
       }
     ]
   }

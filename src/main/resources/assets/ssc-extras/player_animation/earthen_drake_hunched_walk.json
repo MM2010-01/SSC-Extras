@@ -9,7 +9,7 @@
           "position": {
             "vector": [
               0,
-              -1.5,
+              0,
               0
             ]
           }
@@ -24,7 +24,7 @@
           },
           "rotation": {
             "vector": [
-              25,
+              2.5,
               0,
               0
             ]
@@ -34,17 +34,17 @@
           "position": {
             "vector": [
               0,
-              -1.3,
-              -2.6
+              0,
+              0
             ]
           }
         },
         "leftArm": {
           "position": {
             "vector": [
-              -0.6,
-              -1,
-              -2.2
+              0,
+              0,
+              0
             ]
           },
           "rotation": {
@@ -88,9 +88,9 @@
         "rightArm": {
           "position": {
             "vector": [
-              0.6,
-              -1,
-              -2.2
+              0,
+              0,
+              0
             ]
           },
           "rotation": {
@@ -134,9 +134,9 @@
         "leftLeg": {
           "position": {
             "vector": [
-              -0.5,
-              1.5,
-              4.8
+              0,
+              0,
+              0.3
             ]
           },
           "rotation": {
@@ -180,9 +180,9 @@
         "rightLeg": {
           "position": {
             "vector": [
-              0.5,
-              1.5,
-              4.8
+              0,
+              0,
+              0.3
             ]
           },
           "rotation": {

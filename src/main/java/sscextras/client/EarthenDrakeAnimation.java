@@ -10,6 +10,7 @@ import net.minecraft.util.math.Vec3d;
 import net.onixary.shapeShifterCurseFabric.render.form_render.DefaultModelAnimationSystem;
 import net.onixary.shapeShifterCurseFabric.render.form_render.FormModel;
 import net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderer;
+import org.joml.Vector3f;
 
 public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     private int stage;
@@ -22,6 +23,11 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     @Override public void processAnimation(FormRenderer formRenderer, FormModel model, PlayerEntityRenderer renderer,
             PlayerEntity player, float limbAngle, float limbDistance, float tickDelta, float age, float headYaw, float headPitch) {
         super.processAnimation(formRenderer, model, renderer, player, limbAngle, limbDistance, tickDelta, age, headYaw, headPitch);
+        if (stage == 2) {
+            var body = model.getCachedGeoBone("bipedBody");
+            anchorHip(model.getCachedGeoBone("bipedLeftLeg"), body);
+            anchorHip(model.getCachedGeoBone("bipedRightLeg"), body);
+        }
         for (int i = 0; i < 5; i++) {
             var tail = model.getCachedGeoBone("tail_" + i);
             if (tail == null) continue;
@@ -30,7 +36,10 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             tail.setRotZ(0);
             if (i == 0 && stage == 2) {
                 var body = model.getCachedGeoBone("bipedBody");
-                tail.setRotX(tail.getRotX() - body.getRotX() - .12f);
+                if (body != null) {
+                    tail.setPosZ((body.getPivotZ() - tail.getPivotZ()) * MathHelper.sin(body.getRotX()));
+                    tail.setRotX(tail.getRotX() - body.getRotX());
+                }
             }
         }
         var jaw = model.getCachedGeoBone("jaw");
@@ -39,6 +48,18 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
                     ? .10f + Math.abs(MathHelper.sin(age * 1.4f)) * .12f : .015f;
             jaw.setRotX(opening);
         }
+    }
+
+    private static void anchorHip(GeoBone leg, GeoBone body) {
+        if (leg == null || body == null) return;
+        // Follow the animated pelvis, retaining SSC's native leg swing and state blending.
+        float x = leg.getPivotX() - body.getPivotX();
+        float y = leg.getPivotY() - body.getPivotY();
+        float z = leg.getPivotZ() - body.getPivotZ();
+        var hip = new Vector3f(x, y, z - 1).rotateX(body.getRotX()).rotateY(body.getRotY()).rotateZ(body.getRotZ());
+        leg.setPosX(body.getPosX() + hip.x - x);
+        leg.setPosY(body.getPosY() + hip.y - y);
+        leg.setPosZ(body.getPosZ() + hip.z - z);
     }
 
     @Override public GeoBone processAnimationFirstPerson(GeoBone bone, FormRenderer formRenderer, FormModel model,

@@ -13,6 +13,15 @@ import sscextras.drake.EarthenDrake;
 
 @Mixin(value = CodexData.class, remap = false)
 public abstract class CodexInstinctMixin {
+    @Inject(method = "getPlayerStatusText", at = @At("RETURN"), cancellable = true)
+    private static void sscExtras$drakeTransformationStatus(PlayerEntity player, CallbackInfoReturnable<Text> cir) {
+        int stage = EarthenDrake.stage(player);
+        if (stage >= 0) {
+            cir.setReturnValue(cir.getReturnValue().copy().append("\n\n")
+                    .append(Text.translatable("codex.form.ssc-extras.earthen_drake_" + stage + ".status")));
+        }
+    }
+
     @Inject(method = "getDescText", at = @At("HEAD"), cancellable = true)
     private static void sscExtras$permanentWarning(CodexData.ContentType type, PlayerEntity player,
                                                    CallbackInfoReturnable<Text> cir) {

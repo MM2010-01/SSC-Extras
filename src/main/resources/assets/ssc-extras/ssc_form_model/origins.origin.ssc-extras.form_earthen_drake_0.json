@@ -6,6 +6,7 @@
   "model": "ssc-extras:geo/form/earthen_drake_0.geo.json",
   "texture": "ssc-extras:textures/form/earthen_drake.png",
   "hidden": [],
+  "texture_mask": "ssc-extras:textures/form/earthen_drake_mask.png",
   "animation_system": "ssc-extras:earthen_drake",
   "animation_system_config": {
     "stage": 0
