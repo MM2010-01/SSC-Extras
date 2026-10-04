@@ -21,25 +21,39 @@ import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public final class DrakeStablePiece extends StructurePiece {
-    private boolean firstDrake, secondDrake;
-    private String firstName = "", secondName = "";
+    private final boolean[] spawned;
+    private final String[] names;
 
     public DrakeStablePiece(int x, int y, int z) {
-        super(DrakeStable.PIECE, 0, new BlockBox(x, y, z, x + 21, y + 7, z + 12));
+        this(x, y, z, 3);
+    }
+
+    public DrakeStablePiece(int x, int y, int z, int stalls) {
+        super(DrakeStable.PIECE, 0, new BlockBox(x, y, z, x + stalls * 7, y + 7, z + 12));
+        spawned = new boolean[residentCount()];
+        names = new String[residentCount()];
+        java.util.Arrays.fill(names, "");
         setOrientation(Direction.SOUTH);
     }
 
     public DrakeStablePiece(NbtCompound nbt) {
         super(DrakeStable.PIECE, nbt);
-        firstDrake = nbt.getBoolean("FirstDrake");
-        secondDrake = nbt.getBoolean("SecondDrake");
-        firstName = nbt.getString("FirstName"); secondName = nbt.getString("SecondName");
+        spawned = new boolean[residentCount()];
+        names = new String[residentCount()];
+        for (int i = 0; i < names.length; i++) {
+            var key = i == 0 ? "First" : i == 1 ? "Second" : "Resident" + i;
+            spawned[i] = nbt.getBoolean(key + "Drake");
+            names[i] = nbt.getString(key + "Name");
+        }
     }
 
     @Override protected void writeNbt(StructureContext context, NbtCompound nbt) {
-        nbt.putBoolean("FirstDrake", firstDrake);
-        nbt.putBoolean("SecondDrake", secondDrake);
-        nbt.putString("FirstName", firstName()); nbt.putString("SecondName", secondName());
+        ensureNames();
+        for (int i = 0; i < names.length; i++) {
+            var key = i == 0 ? "First" : i == 1 ? "Second" : "Resident" + i;
+            nbt.putBoolean(key + "Drake", spawned[i]);
+            nbt.putString(key + "Name", names[i]);
+        }
     }
 
     @Override public void generate(StructureWorldAccess world, StructureAccessor accessor, ChunkGenerator generator,
@@ -79,7 +93,7 @@ public final class DrakeStablePiece extends StructurePiece {
             addBlock(world, Blocks.DARK_OAK_SIGN.getDefaultState().with(SignBlock.ROTATION, 8), x, 1, 2, chunkBox);
             var pos = offsetPos(x, 1, 2);
             if (chunkBox.contains(pos) && world.getBlockEntity(pos) instanceof SignBlockEntity sign) {
-                var text = new SignText().withMessage(1, Text.literal(stall == 0 ? firstName() : stall == 1 ? secondName() : ""));
+                var text = new SignText().withMessage(1, Text.literal(stall < residentCount() ? name(stall) : ""));
                 // Generation block entities have no world yet; live text setters send world updates.
                 var encoded = SignText.CODEC.encodeStart(NbtOps.INSTANCE, text).result().orElseThrow();
                 var data = sign.createNbt();
@@ -87,13 +101,15 @@ public final class DrakeStablePiece extends StructurePiece {
                 sign.readNbt(data);
             }
         }
-        if (!firstDrake) firstDrake = spawn(world, chunkBox, 3, 8, firstName());
-        if (!secondDrake) secondDrake = spawn(world, chunkBox, 10, 8, secondName());
+        for (int i = 0; i < residentCount(); i++)
+            if (!spawned[i]) spawned[i] = spawn(world, chunkBox, i * 7 + 3, 8, name(i));
     }
 
-    public BlockPos reservedStall() { return getBoundingBox().getBlockCountX() >= 22 ? offsetPos(17, 1, 8) : null; }
+    public int stallCount() { return (getBoundingBox().getBlockCountX() - 1) / 7; }
+    public int residentCount() { return stallCount() == 2 ? 2 : stallCount() - 1; }
+    public BlockPos reservedStall() { return stallCount() >= 3 ? offsetPos((stallCount() - 1) * 7 + 3, 1, 8) : null; }
     public BlockPos gate(int stall) { return offsetPos(stall * 7 + 3, 1, 3); }
-    public BlockPos reservedGate() { return gate(2); }
+    public BlockPos reservedGate() { return gate(stallCount() - 1); }
     public BlockPos gateAt(net.minecraft.util.math.Vec3d position) {
         var box = getBoundingBox();
         int stall = (int)Math.floor((position.x - box.getMinX()) / 7);
@@ -106,16 +122,17 @@ public final class DrakeStablePiece extends StructurePiece {
             if (pos.equals(gate(stall)) || pos.equals(gate(stall).east())) return true;
         return false;
     }
-    public BlockPos reservedTie() { return offsetPos(17, 1, 12); }
+    public BlockPos reservedTie() { return offsetPos((stallCount() - 1) * 7 + 3, 1, 12); }
     public BlockPos sign(int stall) { return offsetPos(stall * 7 + 2, 1, 2); }
-    public String firstName() { ensureNames(); return firstName; }
-    public String secondName() { ensureNames(); return secondName; }
+    public String firstName() { return name(0); }
+    public String secondName() { return name(1); }
+    public String name(int stall) { ensureNames(); return names[stall]; }
+    public String[] residentNames() { ensureNames(); return names.clone(); }
 
     private void ensureNames() {
-        if (!firstName.isEmpty() && !secondName.isEmpty()) return;
         var random = Random.create(getBoundingBox().getCenter().asLong());
-        if (firstName.isEmpty()) firstName = DrakeMountNames.choose(random);
-        if (secondName.isEmpty()) secondName = DrakeMountNames.choose(random, firstName);
+        for (int i = 0; i < names.length; i++)
+            if (names[i].isEmpty()) names[i] = DrakeMountNames.choose(random, names);
     }
 
     private boolean spawn(StructureWorldAccess world, BlockBox chunkBox, int x, int z, String name) {
@@ -127,7 +144,6 @@ public final class DrakeStablePiece extends StructurePiece {
         drake.setPersistent();
         drake.setCustomName(Text.literal(name));
         drake.setStableHome(this, x / 7);
-        drake.setPositionTarget(pos, 16);
         world.spawnEntityAndPassengers(drake);
         return true;
     }

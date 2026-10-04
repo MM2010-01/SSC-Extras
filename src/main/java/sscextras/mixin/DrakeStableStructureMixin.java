@@ -28,13 +28,15 @@ public abstract class DrakeStableStructureMixin {
             NoiseConfig noise, StructureTemplateManager templates, long seed, ChunkPos chunk, int references,
             HeightLimitView world, Predicate<RegistryEntry<Biome>> allowed, CallbackInfoReturnable<StructureStart> cir) {
         StructureStart start = cir.getReturnValue();
-        if (!start.hasChildren() || !new Identifier("minecraft", "pillager_outpost").equals(
-                registries.get(RegistryKeys.STRUCTURE).getId((Structure)(Object)this))) return;
+        var id = registries.get(RegistryKeys.STRUCTURE).getId((Structure)(Object)this);
+        boolean mansion = new Identifier("minecraft", "mansion").equals(id);
+        if (!start.hasChildren() || !mansion && !new Identifier("minecraft", "pillager_outpost").equals(id)) return;
         var bounds = start.getBoundingBox();
+        int stalls = mansion ? 6 : 3;
         int x = bounds.getMaxX() + 6, z = bounds.getCenter().getZ() - 6;
-        int y = generator.getHeight(x + 7, z + 6, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
+        int y = generator.getHeight(x + stalls * 7 / 2, z + 6, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
         var pieces = new ArrayList<>(start.getChildren());
-        pieces.add(new DrakeStablePiece(x, y, z));
+        pieces.add(new DrakeStablePiece(x, y, z, stalls));
         cir.setReturnValue(new StructureStart(start.getStructure(), start.getPos(), start.getReferences(), new StructurePiecesList(pieces)));
     }
 }

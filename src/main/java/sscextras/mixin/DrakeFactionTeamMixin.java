@@ -13,6 +13,8 @@ public abstract class DrakeFactionTeamMixin {
     @Inject(method = "isTeammate", at = @At("HEAD"), cancellable = true)
     private void sscExtras$drakeAllegiance(Entity other, CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity)(Object)this;
+        if (self instanceof sscextras.drake.DrakeVisitorEntity && DrakeFaction.member(other)
+                || other instanceof sscextras.drake.DrakeVisitorEntity && DrakeFaction.member(self)) cir.setReturnValue(true);
         if (self instanceof sscextras.drake.StableDrakeEntity && DrakeFaction.member(other)
                 || other instanceof sscextras.drake.StableDrakeEntity && DrakeFaction.member(self)) cir.setReturnValue(true);
         if (other instanceof PlayerEntity player && DrakeFaction.member(self) && DrakeFaction.friendly(player)

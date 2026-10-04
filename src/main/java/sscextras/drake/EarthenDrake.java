@@ -56,6 +56,7 @@ public final class EarthenDrake {
 
     public static void register() {
         DrakeInstinct.register();
+        DrakeAttention.register();
         var body = DrakeBodyPower.factory();
         Registry.register(ApoliRegistries.POWER_FACTORY, body.getSerializerId(), body);
         var bodySlam = DrakeBodySlamPower.factory();

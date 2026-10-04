@@ -17,6 +17,8 @@ public final class SscExtrasClient implements ClientModInitializer {
         DrakeLeashRenderer.register();
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
                 sscextras.drake.DrakeStable.DRAKE, StableDrakeRenderer::new);
+        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
+                sscextras.drake.DrakeStable.VISITOR, net.minecraft.client.render.entity.VillagerEntityRenderer::new);
         net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderUtils.register_MAS(
                 sscextras.drake.EarthenDrake.id("earthen_drake"), EarthenDrakeAnimation::new);
         HandledScreens.register(FeralEffigy.SCREEN, EffigyScreen::new);

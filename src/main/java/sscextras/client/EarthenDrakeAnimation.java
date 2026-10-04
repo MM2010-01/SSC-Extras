@@ -33,7 +33,8 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             var tail = model.getCachedGeoBone("tail_" + i);
             if (tail == null) continue;
             // Authored rearward: translate SSC's downward-tail sway onto the yaw axis.
-            tail.setRotY(tail.getRotZ());
+            tail.setRotY(tail.getRotZ() + (sscextras.drake.DrakeAttention.beingPetted(player)
+                    ? sscextras.drake.DrakeAttention.wag(age, i) : 0));
             tail.setRotZ(0);
             if (i == 0 && stage == 2) {
                 var body = model.getCachedGeoBone("bipedBody");

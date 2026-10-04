@@ -37,7 +37,7 @@ public final class TamingCollar {
                 ItemStack displaced = slot.get(player);
                 if (displaced.isEmpty()) continue;
                 slot.set(player, ItemStack.EMPTY);
-                if (slot.get(player).isEmpty()) player.getInventory().offerOrDrop(displaced);
+                if (slot.get(player).isEmpty() && !displaced.isOf(Collars.CURSED)) player.getInventory().offerOrDrop(displaced);
             }
             if (!destination.get(player).isEmpty()) return false;
             var stack = Collars.TAMING.getDefaultStack();

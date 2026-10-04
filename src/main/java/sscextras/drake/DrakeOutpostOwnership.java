@@ -26,7 +26,7 @@ import net.minecraft.world.PersistentState;
 import net.minecraft.world.World;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,17 +48,18 @@ public final class DrakeOutpostOwnership extends PersistentState {
         long nextOutsideHint, seenSince = -1, recallUntil;
         int witness;
         Claim(RegistryKey<World> world, BlockBox stable, String name) { this.world = world; this.stable = stable; this.name = name; }
-        public BlockPos sign() { return new BlockPos(stable.getMinX() + 16, stable.getMinY() + 1, stable.getMinZ() + 2); }
-        public BlockPos tie() { return new BlockPos(stable.getMinX() + 17, stable.getMinY() + 1, stable.getMinZ() + 12); }
-        public Box stall() { return new Box(stable.getMinX() + 15, stable.getMinY() + 1, stable.getMinZ() + 4,
-                stable.getMinX() + 21, stable.getMinY() + 5, stable.getMinZ() + 12); }
+        public BlockPos sign() { return new BlockPos(stable.getMaxX() - 5, stable.getMinY() + 1, stable.getMinZ() + 2); }
+        public BlockPos tie() { return new BlockPos(stable.getMaxX() - 4, stable.getMinY() + 1, stable.getMinZ() + 12); }
+        public Box stall() { return new Box(stable.getMaxX() - 6, stable.getMinY() + 1, stable.getMinZ() + 4,
+                stable.getMaxX(), stable.getMinY() + 5, stable.getMinZ() + 12); }
         public boolean matches(World other, DrakeStablePiece piece) {
             return world.equals(other.getRegistryKey()) && stable.equals(piece.getBoundingBox());
         }
     }
 
-    private final Map<UUID, Claim> mounts = new HashMap<>();
-    private final Map<GlobalPos, String> pendingSigns = new HashMap<>();
+    private final Map<UUID, Claim> mounts = new LinkedHashMap<>();
+    private final Map<GlobalPos, String> pendingSigns = new LinkedHashMap<>();
+    private final Map<UUID, java.util.Set<GlobalPos>> introductions = new LinkedHashMap<>();
 
     public static DrakeOutpostOwnership get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(DrakeOutpostOwnership::read,
@@ -98,7 +99,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         release(player);
         var data = get(player.getServer());
         var claim = new Claim(player.getWorld().getRegistryKey(), stable.getBoundingBox(),
-                DrakeMountNames.choose(player.getRandom(), stable.firstName(), stable.secondName()));
+                DrakeMountNames.choose(player.getRandom(), stable.residentNames()));
         data.mounts.put(player.getUuid(), claim);
         data.updateSign(player.getServer(), GlobalPos.create(claim.world, claim.sign()), claim.name, true);
         data.markDirty();
@@ -145,10 +146,31 @@ public final class DrakeOutpostOwnership extends PersistentState {
             release(player); return;
         }
         display(player, claim.name);
+        introduce(player, claim);
         DrakeRoaming.tick(player, claim);
         if (player.getWorld().getRegistryKey().equals(claim.world)
                 && DrakeLeashing.holder(player) instanceof LeashKnotEntity ownedKnot
                 && ownedKnot.getDecorationBlockPos().equals(claim.tie())) issueCollar(player, claim);
+    }
+
+    private static void introduce(PlayerEntity player, Claim claim) {
+        if (EarthenDrake.stage(player) < 0 || player.isSleeping() || !player.isAlive() || player.isSpectator()
+                || !claim.world.equals(player.getWorld().getRegistryKey())
+                || !DrakeCaptureGoal.near(claim.stable, player.getPos(), 16)
+                || net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager.getPlayerTransformData(player).isTransforming) return;
+        var data = get(player.getServer());
+        var site = GlobalPos.create(claim.world, new BlockPos(claim.stable.getMinX(), claim.stable.getMinY(), claim.stable.getMinZ()));
+        var seen = data.introductions.computeIfAbsent(player.getUuid(), id -> new java.util.LinkedHashSet<>());
+        if (seen.contains(site)) return;
+        for (var guard : player.getWorld().getEntitiesByClass(net.minecraft.entity.mob.PillagerEntity.class,
+                player.getBoundingBox().expand(16), entity -> entity.isAlive() && !entity.hasActiveRaid()
+                        && !DrakeFaction.fighting(entity) && entity.getVisibilityCache().canSee(player))) {
+            var home = ((DrakeStableNavigation)guard.getNavigation()).stable();
+            if (home == null || !claim.matches(player.getWorld(), home)) continue;
+            guard.getLookControl().lookAt(player, 30, 30);
+            DrakeDialogue.say(player, "stable_rules");
+            seen.add(site); data.markDirty(); return;
+        }
     }
 
     public static void register() {
@@ -193,6 +215,11 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static DrakeOutpostOwnership read(NbtCompound nbt) {
         var data = new DrakeOutpostOwnership();
+        for (var element : nbt.getList("Introductions", NbtElement.COMPOUND_TYPE)) {
+            var tag = (NbtCompound)element;
+            if (tag.containsUuid("Player")) data.introductions.computeIfAbsent(tag.getUuid("Player"), id -> new java.util.LinkedHashSet<>())
+                    .add(GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("World"))), BlockPos.fromLong(tag.getLong("Pos"))));
+        }
         for (var element : nbt.getList("Mounts", NbtElement.COMPOUND_TYPE)) {
             var tag = (NbtCompound)element;
             int[] box = tag.getIntArray("Stable");
@@ -228,6 +255,12 @@ public final class DrakeOutpostOwnership extends PersistentState {
             var tag = new NbtCompound(); tag.putString("World", pos.getDimension().getValue().toString());
             tag.putLong("Pos", pos.getPos().asLong()); tag.putString("Name", name); signs.add(tag);
         });
-        nbt.put("Mounts", mounts); nbt.put("Signs", signs); return nbt;
+        var introductions = new NbtList();
+        this.introductions.forEach((id, sites) -> sites.forEach(site -> {
+            var tag = new NbtCompound(); tag.putUuid("Player", id);
+            tag.putString("World", site.getDimension().getValue().toString()); tag.putLong("Pos", site.getPos().asLong());
+            introductions.add(tag);
+        }));
+        nbt.put("Mounts", mounts); nbt.put("Signs", signs); nbt.put("Introductions", introductions); return nbt;
     }
 }

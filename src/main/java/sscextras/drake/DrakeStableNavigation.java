@@ -20,17 +20,20 @@ import java.util.Set;
 public final class DrakeStableNavigation extends MobNavigation {
     private DrakeStablePiece stable;
     private BlockPos guardHome;
+    private boolean managedGuard, legacyGuard;
     private int nextStableSearch;
     private final Map<BlockPos, Integer> openedGates = new HashMap<>();
 
     public DrakeStableNavigation(MobEntity entity, World world) { super(entity, world); }
 
     private boolean canOpenGates() {
-        return entity instanceof net.minecraft.entity.mob.PillagerEntity || entity.getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity;
+        return entity instanceof net.minecraft.entity.mob.PillagerEntity || entity instanceof DrakeVisitorEntity
+                || entity.getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity;
     }
 
     public DrakeStablePiece stable() {
         if (!(world instanceof ServerWorld server)) return null;
+        if (entity instanceof DrakeVisitorEntity visitor) return stable = visitor.stable();
         if (entity.age >= nextStableSearch) {
             nextStableSearch = entity.age + 100;
             stable = DrakeCaptureGoal.findStable(server, guardHome == null ? entity.getBlockPos() : guardHome);
@@ -40,11 +43,18 @@ public final class DrakeStableNavigation extends MobNavigation {
     }
 
     public void home(DrakeStablePiece home) { stable = home; guardHome = home.getBoundingBox().getCenter(); }
+    public boolean managedGuard() { return managedGuard; }
+    public boolean legacyGuard() { return legacyGuard; }
+    public void managedGuard(boolean managed) { managedGuard = managed; legacyGuard = false; }
     public void writeHome(net.minecraft.nbt.NbtCompound nbt) {
         if (guardHome != null) nbt.putLong("SscExtrasStableHome", guardHome.asLong());
+        nbt.putBoolean("SscExtrasManagedGuard", managedGuard);
+        nbt.putBoolean("SscExtrasLegacyGuard", legacyGuard);
     }
     public void readHome(net.minecraft.nbt.NbtCompound nbt) {
         guardHome = nbt.contains("SscExtrasStableHome") ? BlockPos.fromLong(nbt.getLong("SscExtrasStableHome")) : null;
+        managedGuard = nbt.getBoolean("SscExtrasManagedGuard");
+        legacyGuard = nbt.getBoolean("SscExtrasLegacyGuard") || guardHome != null && !nbt.contains("SscExtrasManagedGuard");
         stable = null; nextStableSearch = 0;
     }
 
@@ -72,7 +82,9 @@ public final class DrakeStableNavigation extends MobNavigation {
                 var player = player();
                 if (player == null) return super.getStart();
                 var pos = BlockPos.ofFloored(player.getX(), player.getY() + (player.isOnGround() ? .5 : 0), player.getZ());
-                if (!player.isOnGround() && !player.isTouchingWater()) {
+                if (canSwim() && player.isTouchingWater()) {
+                    while (pos.getY() < world.getTopY() - 1 && cachedWorld.getFluidState(pos.up()).isIn(net.minecraft.registry.tag.FluidTags.WATER)) pos = pos.up();
+                } else if (!player.isOnGround()) {
                     while (pos.getY() > world.getBottomY() && (cachedWorld.getBlockState(pos).isAir()
                             || cachedWorld.getBlockState(pos).canPathfindThrough(cachedWorld, pos, net.minecraft.entity.ai.pathing.NavigationType.LAND))) pos = pos.down();
                     pos = pos.up();
@@ -91,6 +103,7 @@ public final class DrakeStableNavigation extends MobNavigation {
     public Path leadPath(net.minecraft.entity.player.PlayerEntity player) {
         var nodes = playerNodes(player);
         nodes.setCanEnterOpenDoors(true);
+        nodes.setCanSwim(canSwim());
         var pos = player.getBlockPos();
         var cache = new net.minecraft.world.chunk.ChunkCache(world, pos.add(-16, -16, -16), pos.add(16, 16, 16));
         return new PathNodeNavigator(nodes, 1024).findPathToAny(cache, entity, Set.of(entity.getBlockPos()), 24, 0, 1);
@@ -98,6 +111,13 @@ public final class DrakeStableNavigation extends MobNavigation {
 
     @Override protected Vec3d getPos() {
         return entity.getVehicle() instanceof net.minecraft.entity.player.PlayerEntity player ? player.getPos() : super.getPos();
+    }
+
+    @Override public Path findPathTo(BlockPos target, int distance) {
+        if (canSwim() && world.getFluidState(target).isIn(net.minecraft.registry.tag.FluidTags.WATER)) {
+            while (target.getY() < world.getTopY() - 1 && world.getFluidState(target.up()).isIn(net.minecraft.registry.tag.FluidTags.WATER)) target = target.up();
+        }
+        return super.findPathTo(target, distance);
     }
 
     @Override protected void continueFollowingPath() {

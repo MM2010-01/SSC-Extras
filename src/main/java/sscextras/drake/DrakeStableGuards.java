@@ -21,6 +21,19 @@ public final class DrakeStableGuards {
     public static final int MINIMUM = 4;
     private DrakeStableGuards() { }
 
+    public static boolean canSpawn(ServerWorld world, BlockPos pos) {
+        var nearby = world.getEntitiesByClass(PillagerEntity.class, new Box(pos).expand(DrakeCaptureGoal.RANGE * 3), entity -> entity.isAlive());
+        if (nearby.size() < 5) return true;
+        var stable = DrakeCaptureGoal.findStable(world, pos);
+        if (stable == null) return true;
+        int inner = 0, outer = 0;
+        for (var guard : nearby) {
+            if (DrakeCaptureGoal.near(stable, guard.getPos())) outer++;
+            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) inner++;
+        }
+        return outer < 10 && (!DrakeCaptureGoal.near(stable.getBoundingBox(), Vec3d.ofCenter(pos), DrakeRoaming.RANGE) || inner < 5);
+    }
+
     public static void register() {
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             if (world.getTime() % 200 != 0 || !world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)
@@ -29,7 +42,10 @@ public final class DrakeStableGuards {
             for (var player : world.getPlayers()) {
                 if (player.isSpectator()) continue;
                 var stable = DrakeCaptureGoal.findStable(world, player.getBlockPos());
-                if (stable != null && checked.add(stable.getBoundingBox())) replenish(world, stable);
+                if (stable != null && checked.add(stable.getBoundingBox())) {
+                    replenish(world, stable);
+                    DrakeVisits.tick(world, stable);
+                }
             }
         });
     }
@@ -38,8 +54,9 @@ public final class DrakeStableGuards {
         if (!world.isChunkLoaded(stable.gate(0)) || world.getDifficulty() == Difficulty.PEACEFUL
                 || !world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) return;
         int count = 0, nearby = 0, outer = 0;
-        for (var guard : world.getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE),
-                entity -> entity.isAlive())) {
+        var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE), entity -> entity.isAlive());
+        guards.sort(java.util.Comparator.comparing(guard -> !((DrakeStableNavigation)guard.getNavigation()).managedGuard()));
+        for (var guard : guards) {
             if (!DrakeCaptureGoal.near(stable, guard.getPos())) continue;
             outer++;
             if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) nearby++;
@@ -47,7 +64,13 @@ public final class DrakeStableGuards {
             var navigation = (DrakeStableNavigation)guard.getNavigation();
             var home = navigation.stable();
             if (home != null && home.getBoundingBox().equals(stable.getBoundingBox())) {
-                guard.setPersistent(); count++;
+                if (count < MINIMUM && !guard.hasCustomName()) {
+                    guard.setPersistent(); navigation.managedGuard(true); count++;
+                } else if ((navigation.legacyGuard() || navigation.managedGuard()) && !guard.hasCustomName()
+                        && !guard.hasVehicle() && !guard.hasPassengers() && !guard.isLeashed() && !DrakeFaction.fighting(guard)) {
+                    ((sscextras.mixin.MobPersistenceAccessor)guard).sscExtras$persistent(false);
+                    navigation.managedGuard(false);
+                }
             }
         }
         for (int i = count; i < MINIMUM; i++) {
@@ -56,7 +79,7 @@ public final class DrakeStableGuards {
             if (guard == null) return;
             boolean placed = false;
             for (int attempt = 0; attempt < 24; attempt++) {
-                int x = stable.getBoundingBox().getMinX() - 12 + world.random.nextInt(46);
+                int x = stable.getBoundingBox().getMinX() - 12 + world.random.nextInt(stable.getBoundingBox().getBlockCountX() + 24);
                 int z = stable.getBoundingBox().getMinZ() - 6 - world.random.nextInt(36);
                 var column = new BlockPos(x, 0, z);
                 if (!world.isChunkLoaded(column)) continue;
@@ -71,6 +94,7 @@ public final class DrakeStableGuards {
             guard.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
             guard.setPersistent();
             ((DrakeStableNavigation)guard.getNavigation()).home(stable);
+            ((DrakeStableNavigation)guard.getNavigation()).managedGuard(true);
             world.spawnEntity(guard);
             outer++;
             if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) nearby++;

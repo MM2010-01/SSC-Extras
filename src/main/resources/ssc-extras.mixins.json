@@ -4,6 +4,7 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "DrakeAttentionMixin",
     "TamingCollarPlacementMixin",
     "DrakeMountNameMixin",
     "DrakeMountTabNameMixin",
@@ -14,6 +15,8 @@
     "DrakeFactionTeamMixin",
     "DrakeFactionDamageMixin",
     "DrakePillagerGoalMixin",
+    "DrakePillagerSpawnMixin",
+    "MobPersistenceAccessor",
     "DrakeClawEnchantmentMixin",
     "DrakeClawEnchantingTableMixin",
     "DrakeStableStructureMixin",
@@ -47,6 +50,8 @@
     "CollarVoiceMixin"
   ],
   "client": [
+    "DrakePettingIllagerModelMixin",
+    "DrakePettingVillagerModelMixin",
     "BlindingReinOverlayMixin",
     "BlindingReinFogMixin",
     "DrakeAutomaticEatingMixin",

@@ -13,6 +13,7 @@ public final class DrakeGearModel {
     public static final Identifier TEXTURE = EarthenDrake.id("textures/entity/drake_gear.png");
     private static final Identifier VANILLA_SADDLE_TEXTURE = EarthenDrake.id("textures/entity/drake_gear_vanilla.png");
     private final ModelPart reins, reinsMetal, blinkers, saddle, saddleMetal, chest, chestMetal, leftClaws, rightClaws;
+    private final float shieldX, openShieldX;
 
     public DrakeGearModel(int stage) {
         this(stage, false);
@@ -66,7 +67,8 @@ public final class DrakeGearModel {
         }
         root.addChild("rings", rings, ModelTransform.NONE);
         var shields = root.addChild("blinkers", ModelPartBuilder.create(), ModelTransform.NONE);
-        float shieldX = mature ? 2.75f : stage == 2 ? 4.35f : helmet ? 5.25f : 4.8f;
+        shieldX = mature ? 2.75f : stage == 2 ? 4.35f : helmet ? 5.25f : 4.8f;
+        openShieldX = mature ? 3.15f : shieldX;
         float shieldY = mature ? 13.3f : 26.2f;
         float shieldZ = mature ? 6.25f : -.8f;
         for (int side : new int[]{-1, 1}) {
@@ -156,8 +158,12 @@ public final class DrakeGearModel {
             reins.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
             reinsMetal.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
             if (showBlinkers) {
-                blinkers.getChild("shield_-1").yaw = blinkersClosed ? 0 : -(float)Math.PI / 2;
-                blinkers.getChild("shield_1").yaw = blinkersClosed ? 0 : (float)Math.PI / 2;
+                var left = blinkers.getChild("shield_-1");
+                var right = blinkers.getChild("shield_1");
+                left.pivotX = -(blinkersClosed ? shieldX : openShieldX);
+                right.pivotX = blinkersClosed ? shieldX : openShieldX;
+                left.yaw = blinkersClosed ? 0 : -(float)Math.PI;
+                right.yaw = blinkersClosed ? 0 : (float)Math.PI;
                 blinkers.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
             }
         } else if (bone.equals("bipedBody")) {

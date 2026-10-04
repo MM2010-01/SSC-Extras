@@ -75,7 +75,7 @@ public final class DrakeCaptureGoal extends Goal {
 
     public static DrakeStablePiece findStable(ServerWorld world, BlockPos pos) {
         var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
-        if (outpost == null) return null;
+        var mansion = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "mansion"));
         var checked = new HashSet<net.minecraft.structure.StructureStart>();
         var chunk = new ChunkPos(pos);
         DrakeStablePiece closest = null;
@@ -83,7 +83,7 @@ public final class DrakeCaptureGoal extends Goal {
         int chunks = RANGE / 16 + 1;
         for (int x = chunk.x - chunks; x <= chunk.x + chunks; x++) for (int z = chunk.z - chunks; z <= chunk.z + chunks; z++) {
             if (!world.isChunkLoaded(x, z)) continue;
-            for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(x, z), structure -> structure == outpost)) {
+            for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(x, z), structure -> structure == outpost || structure == mansion)) {
                 if (!checked.add(start)) continue;
                 for (var piece : start.getChildren()) if (piece instanceof DrakeStablePiece candidate && near(candidate, Vec3d.ofCenter(pos))) {
                     double next = candidate.getBoundingBox().getCenter().getSquaredDistance(pos);
@@ -219,10 +219,11 @@ public final class DrakeCaptureGoal extends Goal {
             ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
             return;
         }
-        if (pillager.squaredDistanceTo(gate) < 2.25 && pillager.squaredDistanceTo(player) < 16) atGate = true;
+        if (Math.abs(pillager.getX() - gate.x) < .2 && Math.abs(pillager.getZ() - gate.z) < .45
+                && pillager.getY() >= gate.y - .2 && pillager.squaredDistanceTo(player) < 16) atGate = true;
         Vec3d destination = atGate ? Vec3d.ofBottomCenter(stable.reservedTie().north(2)).add(.5, 0, 0) : gate;
         if (pillager.squaredDistanceTo(player) > 7 * 7) pillager.getNavigation().stop();
-        else if (atGate) {
+        else if (atGate || pillager.squaredDistanceTo(gate) < 2.25) {
             pillager.getNavigation().stop();
             pillager.getMoveControl().moveTo(destination.x, destination.y, destination.z, .8);
         }

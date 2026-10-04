@@ -1,4 +1,5 @@
 {
+  "entity.ssc-extras.drake_visitor": "Visiting Villager",
   "message.ssc-extras.drake.hay_patch": "Drakes need a flat patch of at least 2 by 2 hay bales to sleep.",
   "codex.ssc-extras.instincts_2": "You sense that indulging your instincts further could make this transformation permanent. Refraining from them lets your instincts gradually subside.",
   "itemGroup.ssc-extras": "SSC Extras",
@@ -145,5 +146,6 @@
   "message.ssc-extras.drake.pillager.recall_leashed": "Pillager: Come along, %s. Follow the lead; it's time to return to the stable.",
   "message.ssc-extras.drake.pillager.stable_arrived": "Pillager: %s, back where you belong. Stay tied here and settle down.",
   "message.ssc-extras.drake.pillager.feed": "Pillager: Hungry, %s? Here. Eat your meat.",
-  "message.ssc-extras.drake.pillager.reward": "Pillager: Good work, %s. You've earned this meat."
+  "message.ssc-extras.drake.pillager.reward": "Pillager: Good work, %s. You've earned this meat.",
+  "message.ssc-extras.drake.pillager.stable_rules": "Pillager: Listen carefully, %s. Stay within 64 blocks of the stable. No escaping; we'll bring you back if you're caught. Return to your stall before nightfall. Those are the rules."
 }

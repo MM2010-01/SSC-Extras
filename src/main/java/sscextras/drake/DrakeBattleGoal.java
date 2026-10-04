@@ -19,7 +19,7 @@ import java.util.EnumSet;
 
 public final class DrakeBattleGoal extends Goal {
     public interface Rider { DrakeBattleGoal sscExtras$battleGoal(); }
-    private enum Phase { APPROACH, EXIT, FIGHT, PATROL, RETURN, ENTER, LEAVE }
+    private enum Phase { APPROACH, EXIT, FIGHT, PATROL, RETURN, ALIGN, ENTER, LEAVE }
     private enum Purpose { BATTLE, PATROL, RECALL }
     private final PillagerEntity pillager;
     private final CrossbowAttackGoal<PillagerEntity> attack;
@@ -41,7 +41,7 @@ public final class DrakeBattleGoal extends Goal {
 
     public static DrakeBattleGoal of(PillagerEntity pillager) { return ((Rider)pillager).sscExtras$battleGoal(); }
     public LivingEntity mount() { return phase == null && !pendingRecall ? null : mount; }
-    public boolean returning() { return phase == Phase.RETURN || phase == Phase.ENTER || phase == Phase.LEAVE; }
+    public boolean returning() { return phase == Phase.RETURN || phase == Phase.ALIGN || phase == Phase.ENTER || phase == Phase.LEAVE; }
     public boolean pathing() { return returning() || phase == Phase.PATROL; }
     public boolean patrolling() { return purpose == Purpose.PATROL && phase != null; }
     public void shot(LivingEntity target) { if (purpose == Purpose.BATTLE && phase == Phase.FIGHT && target == enemy) engaged = true; }
@@ -132,7 +132,10 @@ public final class DrakeBattleGoal extends Goal {
         if (chooseMount()) return true;
         if (enemy != null || !pillager.getWorld().isDay() || pillager.age < nextPatrolSearch) return false;
         nextPatrolSearch = pillager.age + 200;
-        if (pillager.getRandom().nextInt(5) != 0) return false;
+        boolean called = pillager.getWorld().getPlayers().stream().anyMatch(player -> DrakeAttention.called(player)
+                && available(player) && pillager.squaredDistanceTo(player) <= 32 * 32
+                && pillager.getVisibilityCache().canSee(player));
+        if (pillager.getRandom().nextInt(5) >= (called ? 3 : 1)) return false;
         purpose = Purpose.PATROL;
         return chooseMount();
     }
@@ -143,11 +146,14 @@ public final class DrakeBattleGoal extends Goal {
                 Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE), this::available));
         for (var player : pillager.getWorld().getPlayers()) if (available(player)) candidates.add(player);
         while (!candidates.isEmpty()) {
-            var candidate = candidates.remove(pillager.getRandom().nextInt(candidates.size()));
+            int total = candidates.stream().mapToInt(candidate -> DrakeAttention.called(candidate) ? 3 : 1).sum();
+            int choice = pillager.getRandom().nextInt(total), index = 0;
+            while ((choice -= DrakeAttention.called(candidates.get(index)) ? 3 : 1) >= 0) index++;
+            var candidate = candidates.remove(index);
             if (purpose != Purpose.BATTLE && (!pillager.getVisibilityCache().canSee(candidate)
                     || pillager.squaredDistanceTo(candidate) > 32 * 32)) continue;
             if (purpose == Purpose.RECALL && (!(candidate instanceof StableDrakeEntity drake)
-                    || pillager.getWorld().isDay() && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeRoaming.RANGE)
+                    || pillager.getWorld().isDay() && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), 8)
                     || !pillager.getWorld().isDay() && stable.gate(drake.homeStall()).equals(stable.gateAt(candidate.getPos())))) continue;
             if (purpose == Purpose.PATROL && (((DrakeRiding.State)candidate).sscExtras$nextPatrol() > pillager.getWorld().getTime()
                     || !DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeRoaming.RANGE)
@@ -266,8 +272,14 @@ public final class DrakeBattleGoal extends Goal {
             pillager.setTarget(null);
             var outside = Vec3d.ofBottomCenter(homeGate.north(3)).add(.5, 0, 0);
             pathTo(outside, 1);
-            if (mount.squaredDistanceTo(outside) < 2.25) { phase = Phase.ENTER; navigation().stop(); }
-            return;
+            if (mount.squaredDistanceTo(outside) >= 2.25) return;
+            phase = Phase.ALIGN; navigation().stop();
+        }
+        if (phase == Phase.ALIGN) {
+            if (Math.abs(mount.getX() - homeGate.getX() - 1) < .2
+                    && Math.abs(mount.getZ() - homeGate.getZ() + 2.5) < .45 && mount.getY() >= homeGate.getY() - .2)
+                phase = Phase.ENTER;
+            else return;
         }
         if (phase == Phase.ENTER) {
             navigation().open(homeGate);
@@ -321,12 +333,13 @@ public final class DrakeBattleGoal extends Goal {
 
     private void pathTo(Vec3d target, double speed) {
         if (pillager.age >= nextPath) {
-            navigation().startMovingTo(target.x, target.y, target.z, speed);
+            navigation().startMovingAlong(navigation().findPathTo(target.x, target.y, target.z, phase == Phase.RETURN ? 0 : 1), speed);
             nextPath = pillager.age + 10;
         }
     }
 
     public Vec3d directDestination() {
+        if (phase == Phase.ALIGN) return Vec3d.ofBottomCenter(homeGate.north(3)).add(.5, 0, 0);
         if (phase == Phase.EXIT) return new Vec3d(exitGate.getX() + 1, exitGate.getY(), exitGate.getZ() - 4);
         if (phase == Phase.ENTER) return new Vec3d(homeGate.getX() + 1, homeGate.getY(), homeGate.getZ() + 5);
         return null;

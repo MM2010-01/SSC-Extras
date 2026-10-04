@@ -1,4 +1,5 @@
 {
+  "entity.ssc-extras.drake_visitor": "来访村民",
   "message.ssc-extras.drake.hay_patch": "地龙需要至少2×2的平坦干草块才能睡觉。",
   "codex.ssc-extras.instincts_2": "你隐约感觉到继续放纵本能可能会让这副形态永久定型。克制本能则能让它逐渐平息。",
   "itemGroup.ssc-extras": "SSC Extras",
@@ -145,5 +146,6 @@
   "message.ssc-extras.drake.pillager.recall_leashed": "掠夺者：跟上，%s。顺着拴绳走，该回兽栏了。",
   "message.ssc-extras.drake.pillager.stable_arrived": "掠夺者：%s，回到你该待的地方了。乖乖拴在这里，安分些。",
   "message.ssc-extras.drake.pillager.feed": "掠夺者：饿了，%s？给，把肉吃了。",
-  "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。"
+  "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。",
+  "message.ssc-extras.drake.pillager.stable_rules": "掠夺者：听好了，%s。白天只能在兽栏周围64格内活动。不许逃跑，抓到了就带回来。天黑前回自己的栏位。这就是规矩。"
 }

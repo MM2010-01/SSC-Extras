@@ -25,7 +25,8 @@
     "ssc-extras:drake/no_offhand",
     "ssc-extras:drake/sprint",
     "shape-shifter-curse:form_camera_bobbing_feral",
-    "ssc-extras:drake/melee_2"
+    "ssc-extras:drake/melee_2",
+    "ssc-extras:drake/sound_key"
   ],
   "icon": {
     "item": "minecraft:pointed_dripstone"

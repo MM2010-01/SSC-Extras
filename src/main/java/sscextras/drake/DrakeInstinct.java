@@ -38,7 +38,8 @@ public final class DrakeInstinct {
         var claim = DrakeOutpostOwnership.claim(player);
         if (claim != null && claim.world.equals(world.getRegistryKey()) && insideStall(claim.stable, player.getPos())) return amount * 1.5f;
         var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
-        for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(player.getBlockPos()), structure -> structure == outpost))
+        var mansion = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "mansion"));
+        for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(player.getBlockPos()), structure -> structure == outpost || structure == mansion))
             for (var piece : start.getChildren())
                 if (piece instanceof DrakeStablePiece && insideStall(piece.getBoundingBox(), player.getPos())) return amount * 1.5f;
         return amount;
@@ -73,6 +74,11 @@ public final class DrakeInstinct {
             }
             return ActionResult.PASS;
         });
+    }
+
+    public static void pet(PlayerEntity player) {
+        if (!player.getWorld().isClient && EarthenDrake.stage(player) < 3 && canGain(player))
+            InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_DRAKE_PET", .5f);
     }
 
     private static boolean canGain(PlayerEntity player) {

@@ -63,14 +63,16 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     public void setStableHome(DrakeStablePiece stable, int stall) {
         homeStable = stable.getBoundingBox(); homeStall = stall; homeWorld = getWorld().getRegistryKey().getValue().toString();
+        setPositionTarget(new net.minecraft.util.math.BlockPos(homeStable.getMinX() + homeStall * 7 + 3, homeStable.getMinY() + 1, homeStable.getMinZ() + 8), 8);
+        ((DrakeStableNavigation)getNavigation()).home(stable);
     }
 
     public int homeStall() { return homeStall; }
 
     public boolean belongsTo(DrakeStablePiece stable) {
         if (homeStable == null && stable.getBoundingBox().contains(getBlockPos()) && hasCustomName()) {
-            if (getCustomName().getString().equals(stable.firstName())) setStableHome(stable, 0);
-            else if (getCustomName().getString().equals(stable.secondName())) setStableHome(stable, 1);
+            for (int i = 0; i < stable.residentCount(); i++)
+                if (getCustomName().getString().equals(stable.name(i))) { setStableHome(stable, i); break; }
         }
         return homeStable != null && homeStable.equals(stable.getBoundingBox())
                 && homeWorld.equals(getWorld().getRegistryKey().getValue().toString());
@@ -102,8 +104,13 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
             @Override public boolean shouldContinue() { return !riderControls() && super.shouldContinue(); }
         });
         goalSelector.add(5, new WanderAroundFarGoal(this, .65) {
-            @Override public boolean canStart() { return !riderControls() && super.canStart(); }
-            @Override public boolean shouldContinue() { return !riderControls() && super.shouldContinue(); }
+            @Override public boolean canStart() { return !riderControls() && !DrakeAttention.beingPetted(StableDrakeEntity.this) && super.canStart(); }
+            @Override public boolean shouldContinue() { return !riderControls() && !DrakeAttention.beingPetted(StableDrakeEntity.this) && super.shouldContinue(); }
+            @Override protected Vec3d getWanderTarget() {
+                if (homeStable == null || !homeWorld.equals(getWorld().getRegistryKey().getValue().toString())) return super.getWanderTarget();
+                return new Vec3d(homeStable.getMinX() + homeStall * 7 + 2 + random.nextDouble() * 3,
+                        homeStable.getMinY() + 1, homeStable.getMinZ() + 5 + random.nextDouble() * 5);
+            }
         });
         goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8));
         goalSelector.add(7, new LookAroundGoal(this));
@@ -140,7 +147,8 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
             if (!(getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity)) getNavigation().stop();
             setTarget(null);
         }
-        if (getTarget() instanceof PlayerEntity player && !eligible(player)) setTarget(null);
+        if (getTarget() instanceof PlayerEntity player && (!eligible(player)
+                || homeStable != null && !DrakeCaptureGoal.near(homeStable, player.getPos(), 8))) setTarget(null);
         super.tickMovement();
     }
 
@@ -251,8 +259,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         int[] box = nbt.getIntArray("StableHome");
         if (box.length == 6) {
             homeStable = new net.minecraft.util.math.BlockBox(box[0], box[1], box[2], box[3], box[4], box[5]);
-            homeStall = Math.max(0, Math.min(1, nbt.getInt("HomeStall")));
+            homeStall = Math.max(0, Math.min((homeStable.getBlockCountX() - 1) / 7 - 1, nbt.getInt("HomeStall")));
             homeWorld = nbt.getString("HomeWorld");
+            setPositionTarget(new net.minecraft.util.math.BlockPos(homeStable.getMinX() + homeStall * 7 + 3, homeStable.getMinY() + 1, homeStable.getMinZ() + 8), 8);
         }
     }
 

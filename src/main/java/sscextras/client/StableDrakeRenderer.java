@@ -45,7 +45,8 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
             getBone("bipedLeftLeg").ifPresent(bone -> bone.setRotX(-swing));
             getBone("bipedRightLeg").ifPresent(bone -> bone.setRotX(swing));
             for (int i = 0; i < 5; i++) {
-                float yaw = MathHelper.sin(time * .04f - i * .55f) * .035f;
+                float yaw = DrakeAttention.beingPetted(drake) ? DrakeAttention.wag(time, i)
+                        : MathHelper.sin(time * .04f - i * .55f) * .035f;
                 getBone("tail_" + i).ifPresent(bone -> bone.setRotY(yaw));
             }
             getBone("bipedHead").ifPresent(bone -> {
