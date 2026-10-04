@@ -48,6 +48,10 @@ public final class CuffModel {
     }
 
     public void render(MatrixStack matrices, VertexConsumerProvider buffers, int light, boolean geoCoordinates) {
+        render(matrices, buffers, light, geoCoordinates, taming ? 0xB342EB : 0x52BDC2);
+    }
+
+    public void render(MatrixStack matrices, VertexConsumerProvider buffers, int light, boolean geoCoordinates, int color) {
         var buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
         band.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, taming ? .09f : .57f, taming ? .08f : .62f, taming ? .13f : .67f, 1);
         rims.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, taming ? .28f : .88f, taming ? .24f : .92f, taming ? .34f : .94f, 1);
@@ -57,12 +61,12 @@ public final class CuffModel {
             matrices.push();
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((geoCoordinates ? 90 : -90) * side));
             matrices.translate(0, 0, -((side % 2 == 0 ? depth : width) / 2 + .3f) / 16);
-            engrave(matrices.peek(), buffer, light, taming ? side % 2 == 0 ? "curse" : "rune" : INSCRIPTION[side], pixel, geoCoordinates);
+            engrave(matrices.peek(), buffer, light, taming ? side % 2 == 0 ? "curse" : "rune" : INSCRIPTION[side], pixel, geoCoordinates, color);
             matrices.pop();
         }
     }
 
-    private void engrave(MatrixStack.Entry pose, VertexConsumer buffer, int light, String text, float pixel, boolean geoCoordinates) {
+    private void engrave(MatrixStack.Entry pose, VertexConsumer buffer, int light, String text, float pixel, boolean geoCoordinates, int color) {
         int length = -1;
         for (int i = 0; i < text.length(); i++) length += glyphWidth(text.charAt(i)) + 1;
         float x = length * pixel / 2, y = -3.5f * pixel;
@@ -71,7 +75,8 @@ public final class CuffModel {
             int width = glyphWidth(letter);
             // A dark upper edge makes the cyan lettering read as a cut into the metal.
             glyph(pose, buffer, light, letter, width, x + .025f, y - .025f, -.002f, pixel, .20f, .28f, .30f, geoCoordinates);
-            glyph(pose, buffer, light, letter, width, x, y, -.004f, pixel, taming ? .7f : .32f, taming ? .26f : .74f, taming ? .92f : .76f, geoCoordinates);
+            glyph(pose, buffer, taming ? light : net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE,
+                    letter, width, x, y, -.004f, pixel, (color >> 16 & 255) / 255f, (color >> 8 & 255) / 255f, (color & 255) / 255f, geoCoordinates);
             x -= (width + 1) * pixel;
         }
     }

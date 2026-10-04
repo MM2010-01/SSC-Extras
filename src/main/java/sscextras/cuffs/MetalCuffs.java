@@ -62,6 +62,11 @@ public final class MetalCuffs {
         return (float) (remaining / capacity);
     }
 
+    public static int engravingColor(ItemStack stack) {
+        double remaining = stack.getMaxDamage() - stack.getDamage() - wear(stack);
+        return remaining < 240 ? 0xEF4035 : remaining < 600 ? 0xF99A36 : 0x52BDC2;
+    }
+
     /** Called before any gain is capped, so every blocked point is charged in full. */
     public static float apply(PlayerEntity player, float current, float gain) {
         float value = current + gain;

@@ -13,6 +13,8 @@
     "shape-shifter-curse:form_instinct_use_catalyst",
     "ssc-extras:drake/body_3",
     "ssc-extras:drake/armor_restrictions_3",
+    "ssc-extras:drake/swim_3",
+    "ssc-extras:drake/paw_pads_3",
     "ssc-extras:drake/attributes_3",
     "ssc-extras:drake/claws_3",
     "ssc-extras:drake/no_tool_use",
@@ -24,7 +26,9 @@
     "ssc-extras:drake/complete_scales",
     "ssc-extras:drake/body_slam",
     "shape-shifter-curse:feral_form_step_sound_speed_up",
-    "ssc-extras:drake/netherite_claws"
+    "ssc-extras:drake/netherite_claws",
+    "ssc-extras:drake/sound",
+    "ssc-extras:drake/sound_key"
   ],
   "icon": {
     "item": "minecraft:pointed_dripstone"

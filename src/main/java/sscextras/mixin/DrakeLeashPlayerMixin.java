@@ -22,6 +22,7 @@ public abstract class DrakeLeashPlayerMixin extends LivingEntity implements Drak
 
     @Override public float getStepHeight() {
         float height = super.getStepHeight();
+        if (sscextras.drake.EarthenDrake.onAllFours((PlayerEntity)(Object)this)) return 1;
         var holder = DrakeLeashing.holder((PlayerEntity)(Object)this);
         double distance = holder instanceof PillagerEntity ? squaredDistanceTo(holder) : 0;
         return distance > 9 && distance <= 100 ? Math.max(1, height) : height;

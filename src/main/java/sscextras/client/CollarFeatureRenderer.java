@@ -21,7 +21,7 @@ import sscextras.drake.EarthenDrake;
 public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> {
     private static final Identifier TEXTURE = new Identifier("ssc-extras", "textures/entity/collar.png");
     private final ModelPart strap, buckle, charm;
-    private final CuffModel taming = new CuffModel(7, 5.5f, true);
+    private final CuffModel taming = new CuffModel(7.5f, 7.5f, true);
 
     public CollarFeatureRenderer(PlayerEntityRenderer renderer) {
         super(renderer);
@@ -54,23 +54,23 @@ public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientP
         if (player.isInvisible() || player.isSpectator()) return;
         var collar = CollarSlots.visibleCollar(player);
         if (collar.isEmpty()) return;
+        matrices.push();
+        int drakeStage = EarthenDrake.stage(player);
+        if (drakeStage == 3) {
+            getContextModel().body.rotate(matrices);
+            matrices.translate(0, 0.6475, -0.410625);
+        } else getContextModel().head.rotate(matrices);
+        matrices.translate(0, drakeStage == 2 ? 0.18 : drakeStage == 3 ? 0.14 : 1.0 / 16,
+                drakeStage == 2 ? 0.09 : drakeStage == 3 ? 0.07 : 0);
+        if (drakeStage == 3) matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(35));
+        float scale = drakeStage == 2 ? 0.72f : drakeStage == 3 ? 0.65f : 0.8f;
+        matrices.scale(drakeStage == 3 ? 0.78f : scale, scale, drakeStage == 3 ? 0.88f : scale);
         if (collar.isOf(Collars.TAMING)) {
-            if (EarthenDrake.stage(player) >= 0) return;
-            matrices.push();
-            getContextModel().head.rotate(matrices);
-            matrices.translate(0, .025, 0);
+            if (drakeStage == 3) matrices.scale(0.9f, 1, 0.87f);
             taming.render(matrices, vertices, light, false);
             matrices.pop();
             return;
         }
-        matrices.push();
-        int drakeStage = EarthenDrake.stage(player);
-        if (drakeStage == 3) matrices.translate(0, 0.66, -0.453333);
-        getContextModel().head.rotate(matrices);
-        matrices.translate(0, drakeStage == 2 ? 0.18 : drakeStage == 3 ? 0.14 : 1.0 / 16,
-                drakeStage == 2 ? 0.09 : drakeStage == 3 ? 0.07 : 0);
-        float scale = drakeStage == 2 ? 0.72f : drakeStage == 3 ? 0.65f : 0.8f;
-        matrices.scale(scale, scale, scale);
         var buffer = vertices.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
         boolean cursed = collar.isOf(Collars.CURSED);
         strap.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, cursed ? 0.49f : 0.78f,

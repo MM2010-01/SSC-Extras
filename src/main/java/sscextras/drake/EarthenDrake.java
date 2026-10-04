@@ -95,6 +95,17 @@ public final class EarthenDrake {
         return stage < 1 ? original : Math.max(1, (int)Math.ceil(original / (stage == 1 ? 1.5 : 2.0)));
     }
 
+    public static void eatHeldMeat(PlayerEntity player) {
+        if (!player.getWorld().isClient && !player.isUsingItem() && wantsMouthMeat(player))
+            player.setCurrentHand(net.minecraft.util.Hand.MAIN_HAND);
+    }
+
+    public static boolean wantsMouthMeat(PlayerEntity player) {
+        if (!player.isAlive() || player.isSpectator() || player.isCreative() || player.isSleeping() || !player.canConsume(false)) return false;
+        var food = player.getMainHandStack().getItem().getFoodComponent();
+        return food != null && food.isMeat() && stage(player) >= 2;
+    }
+
     /** A temporary native tool lets normal mining speed, harvest levels and loot rules apply. */
     public static ItemStack clawTool(PlayerEntity player, BlockState block) {
         int stage = stage(player);

@@ -31,7 +31,7 @@ public final class DrakeLeashing {
     private DrakeLeashing() { }
     public static boolean eligible(PlayerEntity player) {
         return player.isAlive() && !player.isSpectator()
-                && (EarthenDrake.stage(player) >= 2 || originalWithCursedHarness(player));
+                && (EarthenDrake.stage(player) >= 0 || originalWithCursedHarness(player));
     }
     public static boolean originalWithCursedHarness(PlayerEntity player) {
         var form = FormAbilityManager.getForm(player);
@@ -49,18 +49,39 @@ public final class DrakeLeashing {
     public static boolean attach(PlayerEntity player, Entity holder) {
         if (!eligible(player) || holder == player || !holder.isAlive() || holder.getWorld() != player.getWorld()) return false;
         var leash = ((State)player).sscExtras$leash();
+        var previous = leash.holder;
+        leash.pillagerTied = holder instanceof net.minecraft.entity.mob.PillagerEntity || leash.linked() && leash.pillagerTied;
         leash.holder = holder; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
+        leash.leadPath = null; leash.nextPath = 0;
         ((State)player).sscExtras$leashHolderId(holder.getId());
+        if (previous != holder) removeEmptyKnot(previous);
         if (player.isSleeping()) player.wakeUp();
         refreshPosture(player);
         return true;
     }
+    public static boolean attachPillager(PlayerEntity player, Entity holder) {
+        if (!attach(player, holder)) return false;
+        ((State)player).sscExtras$leash().pillagerTied = true;
+        return true;
+    }
     public static void detach(PlayerEntity player, boolean drop) {
         var leash = ((State)player).sscExtras$leash();
-        if (drop && leash.linked() && !player.getWorld().isClient) player.dropItem(Items.LEAD);
+        var previous = leash.holder;
+        if (drop && leash.linked() && !leash.pillagerTied && !player.getWorld().isClient) player.dropItem(Items.LEAD);
         leash.holder = null; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
+        leash.leadPath = null;
+        leash.pillagerTied = false;
         ((State)player).sscExtras$leashHolderId(0);
+        removeEmptyKnot(previous);
         refreshPosture(player);
+    }
+
+    private static void removeEmptyKnot(Entity previous) {
+        if (!(previous instanceof LeashKnotEntity knot) || knot.getWorld().isClient) return;
+        if (knot.getWorld().getPlayers().stream().anyMatch(player -> holder(player) == knot)) return;
+        if (!knot.getWorld().getEntitiesByClass(net.minecraft.entity.mob.MobEntity.class, knot.getBoundingBox().expand(10),
+                mob -> mob.getHoldingEntity() == knot).isEmpty()) return;
+        knot.discard();
     }
 
     private static void refreshPosture(PlayerEntity player) {
@@ -71,7 +92,7 @@ public final class DrakeLeashing {
     public static void register() {
         UseEntityCallback.EVENT.register((actor, world, hand, entity, hit) -> {
             if (actor.isSpectator()) return ActionResult.PASS;
-            if (entity instanceof PlayerEntity drake && EarthenDrake.stage(drake) >= 2 && eligible(drake)) {
+            if (entity instanceof PlayerEntity drake && EarthenDrake.stage(drake) >= 0 && eligible(drake)) {
                 if (holder(drake) == actor) {
                     if (!world.isClient) detach(drake, !actor.isCreative());
                     return ActionResult.SUCCESS;
@@ -116,12 +137,20 @@ public final class DrakeLeashing {
         private UUID uuid;
         private BlockPos fence;
         private int waitTicks;
+        private boolean pillagerTied, legacy;
+        private net.minecraft.entity.ai.pathing.Path leadPath;
+        private long nextPath;
         private boolean linked() { return holder != null || uuid != null || fence != null; }
 
         public void tick(PlayerEntity player) {
             if (player.getWorld().isClient || !linked()) return;
             if (!eligible(player) || player.hasVehicle()) { detach(player, true); return; }
             if (holder == null) {
+                if (legacy && fence != null) {
+                    var claim = DrakeOutpostOwnership.claim(player);
+                    if (claim != null && claim.world.equals(player.getWorld().getRegistryKey()) && claim.tie().equals(fence)) pillagerTied = true;
+                }
+                legacy = false;
                 if (fence != null && player.getWorld().getBlockState(fence).isIn(BlockTags.FENCES))
                     attach(player, LeashKnotEntity.getOrCreate(player.getWorld(), fence));
                 else if (uuid != null) {
@@ -136,7 +165,18 @@ public final class DrakeLeashing {
             if (distance > 10) { detach(player, true); return; }
             boolean pillagerLead = holder instanceof net.minecraft.entity.mob.PillagerEntity;
             if (distance > (pillagerLead ? 3 : 6)) {
-                Vec3d direction = delta.multiply(1 / distance);
+                Vec3d pull = delta;
+                if (holder instanceof net.minecraft.entity.mob.PillagerEntity pillager
+                        && (leadPath != null || player.horizontalCollision || holder.getY() > player.getY() + .5)) {
+                    if (player.getWorld().getTime() >= nextPath) {
+                        nextPath = player.getWorld().getTime() + 10;
+                        leadPath = ((DrakeStableNavigation)pillager.getNavigation()).leadPath(player);
+                    }
+                    DrakeRiding.advancePath(leadPath, player);
+                    if (leadPath != null && !leadPath.isFinished()) pull = leadPath.getNodePosition(player).subtract(player.getPos());
+                    else leadPath = null;
+                }
+                Vec3d direction = pull.normalize();
                 player.addVelocity(pillagerLead ? direction.x * .4 : Math.copySign(direction.x * direction.x * .4, direction.x),
                         Math.copySign(direction.y * direction.y * .4, direction.y),
                         pillagerLead ? direction.z * .4 : Math.copySign(direction.z * direction.z * .4, direction.z));
@@ -148,6 +188,7 @@ public final class DrakeLeashing {
         public void write(NbtCompound nbt) {
             if (!linked()) return;
             var data = new NbtCompound();
+            data.putBoolean("PillagerTied", pillagerTied);
             if (holder instanceof LeashKnotEntity knot) data.put("Fence", NbtHelper.fromBlockPos(knot.getDecorationBlockPos()));
             else if (holder != null) data.putUuid("Holder", holder.getUuid());
             else if (fence != null) data.put("Fence", NbtHelper.fromBlockPos(fence));
@@ -157,7 +198,9 @@ public final class DrakeLeashing {
 
         public void read(NbtCompound nbt) {
             holder = null; uuid = null; fence = null; waitTicks = 0;
+            leadPath = null; nextPath = 0;
             var data = nbt.getCompound("DrakeLeash");
+            pillagerTied = data.getBoolean("PillagerTied"); legacy = !data.contains("PillagerTied");
             if (data.contains("Fence")) fence = NbtHelper.toBlockPos(data.getCompound("Fence"));
             else if (data.containsUuid("Holder")) uuid = data.getUuid("Holder");
         }

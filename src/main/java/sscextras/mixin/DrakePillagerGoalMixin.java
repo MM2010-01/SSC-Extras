@@ -32,11 +32,19 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void sscExtras$gearDisplay(CallbackInfo ci) { dataTracker.startTracking(SSC_EXTRAS_OFFERED_GEAR, ItemStack.EMPTY); }
 
-    public void sscExtras$showEquipment(ItemStack stack) { dataTracker.set(SSC_EXTRAS_OFFERED_GEAR, stack); }
+    public void sscExtras$showEquipment(ItemStack stack) {
+        if (!ItemStack.areEqual(dataTracker.get(SSC_EXTRAS_OFFERED_GEAR), stack)) dataTracker.set(SSC_EXTRAS_OFFERED_GEAR, stack);
+    }
     public void sscExtras$defend(PlayerEntity player, LivingEntity enemy) { sscExtras$defendGoal.offer(player, enemy); }
     public DrakeCaptureGoal sscExtras$captureGoal() { return sscExtras$captureGoal; }
     public sscextras.drake.DrakeBattleGoal sscExtras$battleGoal() { return sscExtras$battleGoal; }
     public PlayerEntity sscExtras$recruiting() { return sscExtras$equipGoal == null ? null : sscExtras$equipGoal.wearer(); }
+
+    @Inject(method = "shoot", at = @At("RETURN"))
+    private void sscExtras$battleShot(LivingEntity target, ItemStack crossbow, net.minecraft.entity.projectile.ProjectileEntity projectile,
+            float spray, CallbackInfo ci) {
+        if (sscExtras$battleGoal != null) sscExtras$battleGoal.shot(target);
+    }
 
     @Override public boolean canTarget(LivingEntity target) {
         return !(target instanceof PlayerEntity player && DrakeFaction.missingPiece(player) != null

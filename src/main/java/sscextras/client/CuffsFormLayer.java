@@ -16,7 +16,7 @@ public final class CuffsFormLayer extends GeoRenderLayer<FormAnimatable> {
     private final CuffModel normal = new CuffModel(4.15f, 4.15f), drakeWrist = new CuffModel(4.9f, 4.8f),
             drakeAnkle = new CuffModel(3.05f, 2.75f), mature = new CuffModel(2.35f, 2.35f);
     private boolean wrists, ankles;
-    private int stage;
+    private int stage, wristColor, ankleColor;
 
     public CuffsFormLayer(FormRenderer renderer) { super(renderer); form = renderer; }
 
@@ -28,6 +28,8 @@ public final class CuffsFormLayer extends GeoRenderLayer<FormAnimatable> {
         stage = EarthenDrake.stage(player);
         wrists = !MetalCuffs.equipped(player, false, true).isEmpty();
         ankles = !MetalCuffs.equipped(player, true, true).isEmpty();
+        wristColor = MetalCuffs.engravingColor(MetalCuffs.equipped(player, false, true));
+        ankleColor = MetalCuffs.engravingColor(MetalCuffs.equipped(player, true, true));
     }
 
     @Override public void renderForBone(MatrixStack matrices, FormAnimatable animatable, GeoBone bone, RenderLayer renderType,
@@ -66,7 +68,7 @@ public final class CuffsFormLayer extends GeoRenderLayer<FormAnimatable> {
             matrices.translate(0, -3.5f / 16, 0);
         } else matrices.translate(x / 16, y / 16, z / 16);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180));
-        cuff.render(matrices, buffers, light, true);
+        cuff.render(matrices, buffers, light, true, name.contains("Arm") || name.contains("front_paw") ? wristColor : ankleColor);
         matrices.pop();
         buffers.getBuffer(renderType);
     }

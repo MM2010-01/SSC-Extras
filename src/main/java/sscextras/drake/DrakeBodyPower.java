@@ -32,17 +32,22 @@ public final class DrakeBodyPower extends Power {
 
     @Override public void onAdded() { update(true, false); }
     @Override public void onRespawn() { update(true, false); }
-    @Override public void tick() { update(false, true); }
+    @Override public void tick() {
+        update(false, true);
+        if (stage >= 2 && entity instanceof PlayerEntity player) EarthenDrake.eatHeldMeat(player);
+    }
 
     private void update(boolean force, boolean sync) {
         if (entity.getWorld().isClient || !(entity instanceof PlayerEntity player)) return;
         boolean next = stage == 3 || stage == 2 && (player.isSprinting() || player.isSneaking()
-                || player.hasPassengers() || DrakeLeashing.attached(player) || player.getHungerManager().getFoodLevel() <= 6);
+                || player.hasPassengers() || DrakeLeashing.attached(player) || sscextras.collar.TamingCollar.worn(player)
+                || player.getHungerManager().getFoodLevel() <= 6);
         if (!force && next == allFours) return;
         boolean changed = next != allFours;
         allFours = next;
         if (changed && stage == 2 && next && player.getHungerManager().getFoodLevel() <= 6
-                && !player.isSprinting() && !player.isSneaking() && !player.hasPassengers() && !DrakeLeashing.attached(player))
+                && !player.isSprinting() && !player.isSneaking() && !player.hasPassengers() && !DrakeLeashing.attached(player)
+                && !sscextras.collar.TamingCollar.worn(player))
             player.sendMessage(Text.translatable("message.ssc-extras.drake.hunger_collapse").formatted(Formatting.YELLOW), false);
         float scale = switch (stage) { case 1 -> 2.0f / 1.8f; case 2 -> 2.2f / 1.8f; case 3 -> 1.5f; default -> 1.0f; };
         float height = stage == 3 ? 1.65f : stage == 2 && allFours ? 1.4f : 1.8f * scale;

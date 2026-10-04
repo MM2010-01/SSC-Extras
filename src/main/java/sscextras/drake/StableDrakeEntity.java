@@ -75,7 +75,8 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     }
 
     private boolean riderControls() {
-        return getFirstPassenger() instanceof net.minecraft.entity.LivingEntity rider && DrakeRiding.canControl(this, rider);
+        return DrakeBattleGoal.assigned(this)
+                || getFirstPassenger() instanceof net.minecraft.entity.LivingEntity rider && DrakeRiding.canControl(this, rider);
     }
 
     @Override protected net.minecraft.entity.ai.pathing.EntityNavigation createNavigation(World world) {

@@ -5,8 +5,18 @@
     "value": -0.75
   },
   "damage_condition": {
-    "type": "origins:in_tag",
-    "tag": "minecraft:bypasses_invulnerability",
-    "inverted": true
+    "type": "origins:and",
+    "conditions": [
+      {
+        "type": "origins:in_tag",
+        "tag": "minecraft:bypasses_invulnerability",
+        "inverted": true
+      },
+      {
+        "type": "origins:in_tag",
+        "tag": "minecraft:is_fall",
+        "inverted": true
+      }
+    ]
   }
 }

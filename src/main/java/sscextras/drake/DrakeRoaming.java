@@ -28,17 +28,19 @@ public final class DrakeRoaming {
         if (edge && !claim.warnedEdge && !claim.outside && player.getWorld().isDay()) hint(player, "roam_edge");
         claim.warnedEdge = edge;
         long time = player.getWorld().getTime();
-        if (inside) {
+        if (inside && !edge) {
             claim.outside = claim.spotted = false;
             claim.seenSince = -1; claim.witness = 0;
             return;
         }
-        if (!claim.outside && time >= claim.nextOutsideHint) {
+        if (!inside && !claim.outside && time >= claim.nextOutsideHint) {
             hint(player, "roam_outside"); claim.nextOutsideHint = time + 600;
         }
-        claim.outside = true;
+        claim.outside = !inside;
+        if (inside) { claim.spotted = false; claim.seenSince = -1; }
         var previous = player.getWorld().getEntityById(claim.witness);
-        PillagerEntity witness = previous instanceof PillagerEntity pillager && canSee(pillager, player) && belongs(pillager, claim) ? pillager : null;
+        PillagerEntity witness = previous instanceof PillagerEntity pillager && tracking(pillager, player, claim)
+                && time < claim.recallUntil ? pillager : null;
         if (witness == null) {
             claim.seenSince = -1; claim.witness = 0;
             if (time % 20 != 0) return;
@@ -47,23 +49,30 @@ public final class DrakeRoaming {
                     .min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
         }
         if (witness == null) { claim.seenSince = -1; claim.witness = 0; return; }
+        claim.witness = witness.getId();
+        if (!witness.getVisibilityCache().canSee(player)) { claim.seenSince = -1; return; }
+        claim.recallUntil = time + 1200;
+        if (inside) return;
         if (!claim.spotted) { hint(player, "roam_spotted"); claim.spotted = true; }
-        if (claim.witness != witness.getId() || claim.seenSince < 0) {
-            claim.witness = witness.getId(); claim.seenSince = time;
-        }
+        if (claim.seenSince < 0) claim.seenSince = time;
         if (!claim.tryingToEscape && time - claim.seenSince >= 100) {
             claim.tryingToEscape = true;
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
             hint(player, "escape_marked");
         }
-        if (claim.tryingToEscape) claim.recallUntil = time + 1200;
+    }
+
+    private static boolean tracking(PillagerEntity pillager, PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        return pillager.isAlive() && !pillager.isAiDisabled() && !pillager.hasVehicle()
+                && pillager.squaredDistanceTo(player) <= DrakeCaptureGoal.RANGE * DrakeCaptureGoal.RANGE
+                && belongs(pillager, claim) && DrakeCaptureGoal.near(claim.stable, player.getPos());
     }
 
     public static PlayerEntity following(PillagerEntity pillager) {
         for (var player : pillager.getWorld().getPlayers()) {
             var claim = DrakeOutpostOwnership.claim(player);
-            if (claim != null && claim.outside && !claim.tryingToEscape && claim.witness == pillager.getId()
-                    && canSee(pillager, player) && belongs(pillager, claim) && DrakeCaptureGoal.near(claim.stable, player.getPos())) return player;
+            if (claim != null && (claim.outside || claim.warnedEdge) && !DrakeLeashing.attached(player) && claim.witness == pillager.getId()
+                    && player.getWorld().getTime() < claim.recallUntil && tracking(pillager, player, claim)) return player;
         }
         return null;
     }

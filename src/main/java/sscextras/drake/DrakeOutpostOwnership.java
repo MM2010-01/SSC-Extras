@@ -1,6 +1,5 @@
 package sscextras.drake;
 
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.SignBlock;
@@ -22,7 +21,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.World;
@@ -88,6 +86,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
             if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {
                 claim.escapes++;
                 claim.tryingToEscape = false;
+                if (claim.escapes == 3) player.sendMessage(Text.translatable("message.ssc-extras.drake.last_escape_warning")
+                        .formatted(net.minecraft.util.Formatting.DARK_PURPLE), false);
                 get(player.getServer()).markDirty();
             }
             if (claim.escapes > 3) sscextras.collar.TamingCollar.equip(player);
@@ -148,31 +148,25 @@ public final class DrakeOutpostOwnership extends PersistentState {
         if (player.getWorld().getRegistryKey().equals(claim.world)
                 && DrakeLeashing.holder(player) instanceof LeashKnotEntity ownedKnot
                 && ownedKnot.getDecorationBlockPos().equals(claim.tie())) issueCollar(player, claim);
-        if (player.getWorld().getRegistryKey().equals(claim.world) && player.getWorld().isDay() && EarthenDrake.stage(player) >= 0
-                && !claim.tryingToEscape
-                && DrakeLeashing.holder(player) instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(claim.tie())) {
-            DrakeLeashing.detach(player, true);
-        }
     }
 
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            var data = get(server);
+            var signs = data.pendingSigns.entrySet().iterator();
+            while (signs.hasNext()) {
+                var entry = signs.next();
+                var world = server.getWorld(entry.getKey().getDimension());
+                if (world != null && world.isChunkLoaded(entry.getKey().getPos())) {
+                    writeSign(world, entry.getKey().getPos(), entry.getValue(), false);
+                    signs.remove(); data.markDirty();
+                }
+            }
             for (var player : server.getPlayerManager().getPlayerList()) {
                 if (server.getTicks() % 20 == 0) tick(player);
                 else {
                     var claim = claim(player);
                     if (claim != null) DrakeRoaming.tick(player, claim);
-                }
-            }
-        });
-        ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
-            var data = get(world.getServer());
-            var iterator = data.pendingSigns.entrySet().iterator();
-            while (iterator.hasNext()) {
-                var entry = iterator.next();
-                if (entry.getKey().getDimension().equals(world.getRegistryKey()) && new ChunkPos(entry.getKey().getPos()).equals(chunk.getPos())) {
-                    writeSign(world, entry.getKey().getPos(), entry.getValue(), false);
-                    iterator.remove(); data.markDirty();
                 }
             }
         });

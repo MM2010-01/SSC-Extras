@@ -30,6 +30,11 @@ public final class DrakeGuardGoal extends Goal {
         if (following != null) return true;
         if (pillager.age < nextPatrol) return false;
         nextPatrol = pillager.age + 40 + pillager.getRandom().nextInt(60);
+        patrol = patrolPath(pillager, stable);
+        return patrol != null;
+    }
+
+    public static Path patrolPath(PillagerEntity pillager, DrakeStablePiece stable) {
         var box = stable.getBoundingBox();
         for (int i = 0; i < 8; i++) {
             int x = box.getMinX() - 60 + pillager.getRandom().nextInt(box.getBlockCountX() + 120);
@@ -38,10 +43,10 @@ public final class DrakeGuardGoal extends Goal {
             if (!pillager.getWorld().isChunkLoaded(column) || !DrakeCaptureGoal.near(box, Vec3d.ofCenter(column), DrakeRoaming.RANGE)) continue;
             var pos = pillager.getWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, column);
             if (box.contains(pos) || pillager.squaredDistanceTo(Vec3d.ofBottomCenter(pos)) < 16) continue;
-            patrol = navigation().findPathTo(pos, 0);
-            if (patrol != null && patrol.reachesTarget()) return true;
+            var path = ((DrakeStableNavigation)pillager.getNavigation()).findPathTo(pos, 0);
+            if (path != null && path.reachesTarget()) return path;
         }
-        return false;
+        return null;
     }
 
     @Override public void start() {
@@ -59,6 +64,8 @@ public final class DrakeGuardGoal extends Goal {
         var spotted = DrakeRoaming.following(pillager);
         if (spotted != null) following = spotted;
         if (following == null) return;
+        var claim = DrakeOutpostOwnership.claim(following);
+        pillager.setSprinting(claim != null && claim.tryingToEscape);
         pillager.getLookControl().lookAt(following, 30, 30);
         if (pillager.squaredDistanceTo(following) < 9) navigation().stop();
         else if (pillager.age >= nextPath) {
@@ -67,5 +74,5 @@ public final class DrakeGuardGoal extends Goal {
         }
     }
 
-    @Override public void stop() { following = null; patrol = null; navigation().stop(); }
+    @Override public void stop() { following = null; patrol = null; pillager.setSprinting(false); navigation().stop(); }
 }

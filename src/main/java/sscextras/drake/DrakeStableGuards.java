@@ -37,9 +37,13 @@ public final class DrakeStableGuards {
     public static void replenish(ServerWorld world, DrakeStablePiece stable) {
         if (!world.isChunkLoaded(stable.gate(0)) || world.getDifficulty() == Difficulty.PEACEFUL
                 || !world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) return;
-        int count = 0;
+        int count = 0, nearby = 0, outer = 0;
         for (var guard : world.getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE),
-                entity -> entity.isAlive() && !entity.hasActiveRaid())) {
+                entity -> entity.isAlive())) {
+            if (!DrakeCaptureGoal.near(stable, guard.getPos())) continue;
+            outer++;
+            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) nearby++;
+            if (guard.hasActiveRaid()) continue;
             var navigation = (DrakeStableNavigation)guard.getNavigation();
             var home = navigation.stable();
             if (home != null && home.getBoundingBox().equals(stable.getBoundingBox())) {
@@ -47,6 +51,7 @@ public final class DrakeStableGuards {
             }
         }
         for (int i = count; i < MINIMUM; i++) {
+            if (outer >= 10 || nearby >= 5) return;
             var guard = EntityType.PILLAGER.create(world);
             if (guard == null) return;
             boolean placed = false;
@@ -67,6 +72,8 @@ public final class DrakeStableGuards {
             guard.setPersistent();
             ((DrakeStableNavigation)guard.getNavigation()).home(stable);
             world.spawnEntity(guard);
+            outer++;
+            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) nearby++;
         }
     }
 }

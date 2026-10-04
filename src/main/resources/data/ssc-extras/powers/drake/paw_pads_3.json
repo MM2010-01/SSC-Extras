@@ -1,0 +1,11 @@
+{
+  "type": "origins:modify_damage_taken",
+  "modifier": {
+    "operation": "multiply_total",
+    "value": -0.75
+  },
+  "damage_condition": {
+    "type": "origins:in_tag",
+    "tag": "minecraft:is_fall"
+  }
+}

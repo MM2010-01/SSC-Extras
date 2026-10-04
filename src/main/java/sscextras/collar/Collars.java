@@ -258,4 +258,40 @@ public final class Collars {
         return strength * 0.05f / CreatureInstinct.costMultiplier(form);
     }
 
+    public static java.util.function.Consumer<net.minecraft.entity.Entity> ambientVoice(PlayerFormBase form) {
+        if (form == null || form.getGroup() == null || !form.getGroup().hasForm(3)) return null;
+        var originId = form.getGroup().getForm(3).getFormOriginID();
+        if (!net.onixary.shapeShifterCurseFabric.integration.origins.origin.OriginRegistry.contains(originId)) return null;
+        for (var power : net.onixary.shapeShifterCurseFabric.integration.origins.origin.OriginRegistry.get(originId).getPowerTypes()) {
+            var id = power.getIdentifier();
+            int sound = id.getPath().lastIndexOf("_sound");
+            if (sound >= 0) {
+                var ambient = new Identifier(id.getNamespace(), id.getPath().substring(0, sound + 6));
+                if (io.github.apace100.apoli.power.PowerTypeRegistry.contains(ambient))
+                    power = io.github.apace100.apoli.power.PowerTypeRegistry.get(ambient);
+            }
+            var factory = power.getFactory();
+            if (factory != null && power.getIdentifier().getPath().endsWith("sound")
+                    && factory.getFactory().getSerializerId().getPath().equals("action_over_time"))
+                return factory.getDataInstance().get("entity_action");
+        }
+        return null;
+    }
+
+    public static void voice(PlayerEntity player, ItemStack collar) {
+        if (player.age % 200 != 0 || !player.isAlive() || player.isSleeping() || player.isSilent() || player.isSpectator()
+                || player.getRandom().nextFloat() >= .3f) return;
+        var form = FormAbilityManager.getForm(player);
+        if (form.getIndex() < 0) {
+            form = CreatureInstinct.getTarget(player);
+            if (form == null) {
+                form = infusionForm(collar);
+                var curse = infusion(collar);
+                if (form == null && curse != null) form = curse.getToForm(player);
+            }
+        }
+        var action = ambientVoice(form);
+        if (action != null) action.accept(player);
+    }
+
 }

@@ -1,0 +1,17 @@
+{
+  "type": "origins:active_self",
+  "cooldown": 20,
+  "hud_render": {
+    "should_render": false
+  },
+  "key": {
+    "key": "key.shape-shifter-curse.make_sound",
+    "continuous": false
+  },
+  "entity_action": {
+    "type": "origins:play_sound",
+    "sound": "minecraft:entity.ravager.roar",
+    "volume": 0.8,
+    "pitch": 1
+  }
+}

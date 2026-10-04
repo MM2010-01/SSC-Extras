@@ -14,6 +14,7 @@
     "ssc-extras:drake/body_1",
     "ssc-extras:drake/claw_hit_instinct",
     "ssc-extras:drake/armor_restrictions_1",
+    "ssc-extras:drake/swim_1",
     "ssc-extras:drake/attributes_1",
     "ssc-extras:drake/claws_1"
   ],

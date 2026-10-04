@@ -4,6 +4,7 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "TamingCollarPlacementMixin",
     "DrakeMountNameMixin",
     "DrakeMountTabNameMixin",
     "DrakeHaySleepMixin",
@@ -41,9 +42,11 @@
     "InfusionEnchantmentMixin",
     "InfusionMendingMixin",
     "InfusionArmorEffectsMixin",
-    "InfusionPowderSnowMixin"
+    "InfusionPowderSnowMixin",
+    "DrakeVoiceMixin"
   ],
   "client": [
+    "DrakeAutomaticEatingMixin",
     "InstinctBarRendererMixin",
     "TransformOverlayMixin",
     "DrakeMouthItemMixin",

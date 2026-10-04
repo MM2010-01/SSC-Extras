@@ -83,6 +83,8 @@ public final class CollarItem extends AccessoryItem {
             }
             Collars.ensureNaturalCurse(stack, player.getRandom());
             refreshBinding(stack, player);
+            Collars.voice(player, stack);
+            if (taming) TamingCollar.name(player, stack);
             if (stack.hasNbt() && stack.getNbt().getBoolean(Collars.AWAKENING)
                     && !net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager.getPlayerTransformData(player).isTransforming) {
                 stack.getNbt().remove(Collars.AWAKENING);

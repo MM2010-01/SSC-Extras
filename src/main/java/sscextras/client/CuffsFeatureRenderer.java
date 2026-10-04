@@ -19,6 +19,8 @@ public final class CuffsFeatureRenderer extends FeatureRenderer<AbstractClientPl
         if (player.isInvisible() || player.isSpectator()) return;
         boolean wrists = !MetalCuffs.equipped(player, false, true).isEmpty(), ankles = !MetalCuffs.equipped(player, true, true).isEmpty();
         if (!wrists && !ankles) return;
+        int wristColor = MetalCuffs.engravingColor(MetalCuffs.equipped(player, false, true));
+        int ankleColor = MetalCuffs.engravingColor(MetalCuffs.equipped(player, true, true));
         boolean leftArm = true, rightArm = true, leftLeg = true, rightLeg = true;
         for (var renderer : FormRenderUtils.getPlayerAllFormRenderer(player)) {
             leftArm &= !renderer.realModel.Hidden_LeftArm; rightArm &= !renderer.realModel.Hidden_RightArm;
@@ -29,17 +31,17 @@ public final class CuffsFeatureRenderer extends FeatureRenderer<AbstractClientPl
         CuffModel wristModel = thin ? slim : normal;
         float wristX = thin ? .5f : 1;
         var model = getContextModel();
-        if (wrists && leftArm) renderLimb(matrices, buffers, light, model.leftArm, wristModel, wristX, 7.6f);
-        if (wrists && rightArm) renderLimb(matrices, buffers, light, model.rightArm, wristModel, -wristX, 7.6f);
-        if (ankles && leftLeg) renderLimb(matrices, buffers, light, model.leftLeg, boots ? armored : normal, 0, 9.6f);
-        if (ankles && rightLeg) renderLimb(matrices, buffers, light, model.rightLeg, boots ? armored : normal, 0, 9.6f);
+        if (wrists && leftArm) renderLimb(matrices, buffers, light, model.leftArm, wristModel, wristX, 7.6f, wristColor);
+        if (wrists && rightArm) renderLimb(matrices, buffers, light, model.rightArm, wristModel, -wristX, 7.6f, wristColor);
+        if (ankles && leftLeg) renderLimb(matrices, buffers, light, model.leftLeg, boots ? armored : normal, 0, 9.6f, ankleColor);
+        if (ankles && rightLeg) renderLimb(matrices, buffers, light, model.rightLeg, boots ? armored : normal, 0, 9.6f, ankleColor);
     }
 
-    private static void renderLimb(MatrixStack matrices, VertexConsumerProvider buffers, int light, ModelPart limb, CuffModel cuff, float x, float y) {
+    private static void renderLimb(MatrixStack matrices, VertexConsumerProvider buffers, int light, ModelPart limb, CuffModel cuff, float x, float y, int color) {
         matrices.push();
         limb.rotate(matrices);
         matrices.translate(x / 16, y / 16, 0);
-        cuff.render(matrices, buffers, light, false);
+        cuff.render(matrices, buffers, light, false, color);
         matrices.pop();
     }
 }

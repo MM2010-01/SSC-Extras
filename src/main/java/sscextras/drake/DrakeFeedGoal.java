@@ -47,7 +47,7 @@ public final class DrakeFeedGoal extends Goal {
     }
 
     @Override public boolean canStart() {
-        if (pillager.hasVehicle() || pillager.age < nextSearch) return false;
+        if (pillager.hasVehicle() || pillager.age < nextSearch || DrakeFaction.fighting(pillager)) return false;
         nextSearch = pillager.age + 40;
         player = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12), candidate ->
                 hungry(candidate) && DrakeOutpostOwnership.claim(candidate).nextMeal <= pillager.getWorld().getTime()).stream()
@@ -65,7 +65,7 @@ public final class DrakeFeedGoal extends Goal {
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(meal);
     }
 
-    @Override public boolean shouldContinue() { return !thrown && player != null && hungry(player) && pillager.age - started < 160; }
+    @Override public boolean shouldContinue() { return !thrown && player != null && hungry(player) && !DrakeFaction.fighting(pillager) && pillager.age - started < 160; }
 
     @Override public void tick() {
         pillager.getLookControl().lookAt(player, 30, 30);

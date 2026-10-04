@@ -41,6 +41,7 @@ public final class TamingCollar {
             }
             if (!destination.get(player).isEmpty()) return false;
             var stack = Collars.TAMING.getDefaultStack();
+            name(player, stack);
             destination.set(player, stack);
             if (!destination.get(player).isOf(Collars.TAMING)) return false;
             Collars.TAMING.onEquip(destination.get(player), player, new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
@@ -53,6 +54,13 @@ public final class TamingCollar {
         player.getInventory().markDirty();
         player.currentScreenHandler.sendContentUpdates();
         return true;
+    }
+
+    public static void name(PlayerEntity player, ItemStack stack) {
+        var claim = sscextras.drake.DrakeOutpostOwnership.claim(player);
+        if (claim == null) return;
+        var name = Text.translatable("item.ssc-extras.named_cursed_taming_collar", claim.name);
+        if (!stack.hasCustomName() || !stack.getName().equals(name)) stack.setCustomName(name);
     }
 
     private static void restore(PlayerEntity player, DrakeAccessoryItem item) {
@@ -82,7 +90,7 @@ public final class TamingCollar {
     public static void register() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             var block = world.getBlockState(hit.getBlockPos());
-            return block.getBlock() instanceof FenceGateBlock && !block.get(FenceGateBlock.OPEN) && restricted(player)
+            return restricted(player) && block.getBlock() instanceof FenceGateBlock && !block.get(FenceGateBlock.OPEN)
                     ? ActionResult.FAIL : ActionResult.PASS;
         });
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> restricted(player) ? ActionResult.FAIL : ActionResult.PASS);

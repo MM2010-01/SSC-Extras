@@ -58,6 +58,12 @@ public final class DrakeFaction {
         return member(target) && harnessed(player);
     }
 
+    public static boolean fighting(PillagerEntity pillager) {
+        var target = pillager.getTarget();
+        return target != null && target.isAlive() && !pillager.isTeammate(target)
+                && !(target instanceof PlayerEntity player && friendly(player));
+    }
+
     public static boolean blocksDamage(Entity target, DamageSource source) {
         Entity attacker = source.getAttacker();
         return attacker instanceof PlayerEntity player && blocksAttack(player, target)
@@ -106,6 +112,7 @@ public final class DrakeFaction {
         private PlayerEntity player;
         private boolean defending;
         private long offeredAt;
+        private int nextSearch;
         private final TargetPredicate predicate = TargetPredicate.createAttackable().setBaseMaxDistance(32);
 
         public DefendGoal(PillagerEntity pillager) {
@@ -127,7 +134,16 @@ public final class DrakeFaction {
             if (!canDefend(pillager, player) || pillager.getWorld().getTime() - offeredAt > 100
                     || target == null || !target.isAlive()) {
                 player = null; target = null;
-                return false;
+                if (pillager.age < nextSearch) return false;
+                nextSearch = pillager.age + 20;
+                for (var enemy : pillager.getWorld().getEntitiesByClass(net.minecraft.entity.mob.HostileEntity.class,
+                        pillager.getBoundingBox().expand(32), enemy -> enemy.isAlive() && !member(enemy)
+                                && enemy.getTarget() instanceof PlayerEntity victim && canDefend(pillager, victim)
+                                && pillager.getVisibilityCache().canSee(enemy))) {
+                    offer((PlayerEntity)enemy.getTarget(), enemy);
+                    if (target != null) break;
+                }
+                if (target == null) return false;
             }
             return canTrack(target, predicate);
         }
@@ -178,7 +194,7 @@ public final class DrakeFaction {
         }
 
         @Override public boolean canStart() {
-            if (pillager.hasVehicle() || pillager.age < nextSearch) return false;
+            if (pillager.hasVehicle() || pillager.age < nextSearch || fighting(pillager)) return false;
             var rules = pillager.getWorld().getGameRules();
             if (!rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_DRAKE)
                     && !rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)) return false;
@@ -190,7 +206,7 @@ public final class DrakeFaction {
         }
 
         @Override public boolean shouldContinue() {
-            return wearer != null && !pillager.hasVehicle() && missingPiece(wearer) != null
+            return wearer != null && !pillager.hasVehicle() && !fighting(pillager) && missingPiece(wearer) != null
                     && wearer.getWorld() == pillager.getWorld() && inRange(pillager, wearer);
         }
 

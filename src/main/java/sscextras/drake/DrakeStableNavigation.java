@@ -49,7 +49,36 @@ public final class DrakeStableNavigation extends MobNavigation {
     }
 
     @Override protected PathNodeNavigator createPathNodeNavigator(int range) {
-        nodeMaker = new LandPathNodeMaker() {
+        nodeMaker = playerNodes(null);
+        nodeMaker.setCanEnterOpenDoors(true);
+        return new PathNodeNavigator(nodeMaker, Math.max(range, 2048));
+    }
+
+    private LandPathNodeMaker playerNodes(net.minecraft.entity.player.PlayerEntity origin) {
+        return new LandPathNodeMaker() {
+            private net.minecraft.entity.player.PlayerEntity player() {
+                return origin != null ? origin : entity.getVehicle() instanceof net.minecraft.entity.player.PlayerEntity player
+                        && DrakeRiding.canCarryPillager(player) ? player : null;
+            }
+            @Override public void init(net.minecraft.world.chunk.ChunkCache cache, MobEntity mob) {
+                super.init(cache, mob);
+                var player = player();
+                if (player != null) {
+                    entityBlockXSize = entityBlockZSize = net.minecraft.util.math.MathHelper.floor(player.getWidth() + 1);
+                    entityBlockYSize = net.minecraft.util.math.MathHelper.floor(player.getHeight() + 1);
+                }
+            }
+            @Override public net.minecraft.entity.ai.pathing.PathNode getStart() {
+                var player = player();
+                if (player == null) return super.getStart();
+                var pos = BlockPos.ofFloored(player.getX(), player.getY() + (player.isOnGround() ? .5 : 0), player.getZ());
+                if (!player.isOnGround() && !player.isTouchingWater()) {
+                    while (pos.getY() > world.getBottomY() && (cachedWorld.getBlockState(pos).isAir()
+                            || cachedWorld.getBlockState(pos).canPathfindThrough(cachedWorld, pos, net.minecraft.entity.ai.pathing.NavigationType.LAND))) pos = pos.down();
+                    pos = pos.up();
+                }
+                return getStart(pos);
+            }
             @Override public PathNodeType getDefaultNodeType(BlockView world, int x, int y, int z) {
                 var pos = new BlockPos(x, y, z);
                 if (canOpenGates() && stable != null && stable.isGate(pos) && world.getBlockState(pos).getBlock() instanceof FenceGateBlock)
@@ -57,8 +86,25 @@ public final class DrakeStableNavigation extends MobNavigation {
                 return super.getDefaultNodeType(world, x, y, z);
             }
         };
-        nodeMaker.setCanEnterOpenDoors(true);
-        return new PathNodeNavigator(nodeMaker, Math.max(range, 2048));
+    }
+
+    public Path leadPath(net.minecraft.entity.player.PlayerEntity player) {
+        var nodes = playerNodes(player);
+        nodes.setCanEnterOpenDoors(true);
+        var pos = player.getBlockPos();
+        var cache = new net.minecraft.world.chunk.ChunkCache(world, pos.add(-16, -16, -16), pos.add(16, 16, 16));
+        return new PathNodeNavigator(nodes, 1024).findPathToAny(cache, entity, Set.of(entity.getBlockPos()), 24, 0, 1);
+    }
+
+    @Override protected Vec3d getPos() {
+        return entity.getVehicle() instanceof net.minecraft.entity.player.PlayerEntity player ? player.getPos() : super.getPos();
+    }
+
+    @Override protected void continueFollowingPath() {
+        if (entity.getVehicle() instanceof net.minecraft.entity.player.PlayerEntity player) {
+            DrakeRiding.advancePath(currentPath, player);
+            checkTimeouts(player.getPos());
+        } else super.continueFollowingPath();
     }
 
     @Override protected Path findPathToAny(Set<BlockPos> positions, int range, boolean head, int distance, float followRange) {

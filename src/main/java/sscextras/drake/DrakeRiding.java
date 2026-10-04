@@ -21,7 +21,10 @@ public final class DrakeRiding {
     public static final TagKey<net.minecraft.entity.EntityType<?>> HUMANOID_PASSENGERS = TagKey.of(
             RegistryKeys.ENTITY_TYPE, EarthenDrake.id("drake_humanoid_passengers"));
 
-    public record Input(float sideways, float forward, boolean jump, float yaw, long tick, int rider) {
+    public record Input(float sideways, float forward, boolean jump, float yaw, long tick, int rider, boolean sprint) {
+        public Input(float sideways, float forward, boolean jump, float yaw, long tick, int rider) {
+            this(sideways, forward, jump, yaw, tick, rider, false);
+        }
         public boolean moving() { return Math.abs(sideways) > .001f || Math.abs(forward) > .001f || jump; }
     }
 
@@ -33,6 +36,8 @@ public final class DrakeRiding {
         boolean sscExtras$tracksDrakePassenger();
         PillagerEntity sscExtras$battleRider();
         void sscExtras$battleRider(PillagerEntity rider);
+        long sscExtras$nextPatrol();
+        void sscExtras$nextPatrol(long tick);
     }
 
     private DrakeRiding() { }
@@ -84,7 +89,7 @@ public final class DrakeRiding {
     private static void publishInput(Entity mount, Input input) {
         Input previous = ((State) mount).sscExtras$getRiderInput();
         if (previous != null && previous.rider() == input.rider() && previous.sideways() == input.sideways()
-                && previous.forward() == input.forward() && previous.jump() == input.jump()
+                && previous.forward() == input.forward() && previous.jump() == input.jump() && previous.sprint() == input.sprint()
                 && Math.abs(MathHelper.wrapDegrees(previous.yaw() - input.yaw())) < .5f && input.tick() - previous.tick() < 10) return;
         ((State) mount).sscExtras$setRiderInput(input);
         if (!(mount instanceof ServerPlayerEntity owner)) return;
@@ -94,6 +99,7 @@ public final class DrakeRiding {
         packet.writeFloat(input.forward());
         packet.writeFloat(input.yaw());
         packet.writeBoolean(input.jump());
+        packet.writeBoolean(input.sprint());
         ServerPlayNetworking.send(owner, INPUT, packet);
     }
 
@@ -105,28 +111,37 @@ public final class DrakeRiding {
         var battle = DrakeBattleGoal.of(pillager);
         Vec3d direct = battle != null && battle.mount() == mount ? battle.directDestination() : null;
         float forward = 0, yaw = mount.getYaw();
-        boolean jump = false;
-        boolean moving = direct != null || battle != null && battle.mount() == mount && battle.returning()
+        boolean jump = false, sprint = false;
+        boolean moving = direct != null || battle != null && battle.mount() == mount && battle.pathing()
                 || enemy != null && enemy.isAlive() && enemy != mount && !pillager.isTeammate(enemy);
         if (canControl(mount, pillager) && moving && (direct != null || path != null && !path.isFinished())) {
-            // Mounted navigation must advance waypoints at the drake's feet, not the rider's raised seat.
-            while (direct == null && !path.isFinished()) {
-                var node = path.getNodePosition(mount instanceof StableDrakeEntity ? mount : pillager);
-                double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
-                if (dx * dx + dz * dz >= .36 || Math.abs(node.y - mount.getY()) >= 1) break;
-                path.next();
-            }
+            if (direct == null) advancePath(path, mount);
             if (direct != null || !path.isFinished()) {
-                var node = direct != null ? direct : path.getNodePosition(mount instanceof StableDrakeEntity ? mount : pillager);
+                var node = direct != null ? direct : path.getNodePosition(mount);
                 double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
                 yaw = (float)(MathHelper.atan2(dz, dx) * 180 / Math.PI) - 90;
                 forward = direct != null ? .8f : MathHelper.clamp((float)pillager.getMoveControl().getSpeed(), 0, 1);
-                jump = node.y > mount.getY() + .5 && dx * dx + dz * dz < 2.25;
+                sprint = direct == null && path != null && path.getEnd() != null
+                        && mount.squaredDistanceTo(Vec3d.ofBottomCenter(path.getTarget())) > 100
+                        && (!(mount instanceof PlayerEntity player) || player.getHungerManager().getFoodLevel() > 6);
+                if (sprint) forward = 1;
+                jump = node.y > mount.getY() + 1 && dx * dx + dz * dz < 2.25;
             }
         }
         Input previous = ((State)mount).sscExtras$getRiderInput();
         if (forward != 0 || jump || previous != null && previous.rider() == pillager.getId() && previous.moving())
-            publishInput(mount, new Input(0, forward, jump, yaw, mount.getWorld().getTime(), pillager.getId()));
+            publishInput(mount, new Input(0, forward, jump, yaw, mount.getWorld().getTime(), pillager.getId(), sprint));
+    }
+
+    public static void advancePath(net.minecraft.entity.ai.pathing.Path path, LivingEntity mount) {
+        while (path != null && !path.isFinished()) {
+            var node = path.getNodePosition(mount);
+            double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
+            boolean descending = path.getCurrentNodeIndex() + 1 < path.getLength()
+                    && path.getNode(path.getCurrentNodeIndex() + 1).y < node.y;
+            if (dx * dx + dz * dz >= .36 || node.y > mount.getY() + .5 && !descending) break;
+            path.next();
+        }
     }
 
     public static Input input(Entity mount) {
@@ -139,6 +154,8 @@ public final class DrakeRiding {
 
     public static Vec3d movement(LivingEntity mount, Vec3d own) {
         Input input = input(mount);
+        if (mount.getFirstPassenger() instanceof PillagerEntity)
+            mount.setSprinting(input != null && input.sprint());
         if (input == null) return own;
         mount.setYaw(input.yaw());
         mount.setHeadYaw(input.yaw());

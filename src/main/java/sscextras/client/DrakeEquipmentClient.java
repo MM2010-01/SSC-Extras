@@ -18,10 +18,10 @@ public final class DrakeEquipmentClient {
         ClientPlayNetworking.registerGlobalReceiver(DrakeRiding.INPUT, (client, handler, buf, sender) -> {
             int rider = buf.readInt();
             float sideways = buf.readFloat(), forward = buf.readFloat(), yaw = buf.readFloat();
-            boolean jump = buf.readBoolean();
+            boolean jump = buf.readBoolean(), sprint = buf.readBoolean();
             client.execute(() -> {
                 if (client.player != null) ((DrakeRiding.State)client.player).sscExtras$setRiderInput(
-                        new DrakeRiding.Input(sideways, forward, jump, yaw, client.world.getTime(), rider));
+                        new DrakeRiding.Input(sideways, forward, jump, yaw, client.world.getTime(), rider, sprint));
             });
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
