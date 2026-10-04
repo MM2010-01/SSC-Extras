@@ -28,7 +28,8 @@ public final class DrakeGearFeatureRenderer extends FeatureRenderer<AbstractClie
         getContextModel().body.rotate(matrices);
         matrices.scale(1, -1, -1);
         matrices.translate(0, -1.5, 0);
-        gear.render("bipedBody", matrices, buffers, light, false, saddle, false, false);
+        gear.render("bipedBody", matrices, buffers, light, false, saddle, false, false,
+                DrakeEquipment.saddle(player).isOf(net.minecraft.item.Items.SADDLE));
         matrices.pop();
     }
 }

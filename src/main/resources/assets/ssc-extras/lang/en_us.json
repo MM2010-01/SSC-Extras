@@ -51,7 +51,7 @@
   "codex.form.ssc-extras.earthen_drake_2.appearance": "Most of your body is covered in earthy scales, with pale plates along your throat, chest and abdomen. A sloping neck carries your heavy head forward, beneath swept horns and a broad muzzle.\nYour slightly forward-leaning frame stands 2.2 blocks tall. Digitigrade hind legs rest on broad, clawed toes, with raised heels and a thick tail extending behind your hips.\nEach forepaw has three thick, clawed digits and pads underneath, with no thumb. You stand with your torso leaning slightly forward and drop onto all fours to run or sneak.",
   "codex.form.ssc-extras.earthen_drake_2.pros": "Your powerful build grants 4 additional hearts and 50% knockback resistance. Thick scales provide 15 points of natural armor.\nWith an empty main hand, your claws dig like iron tools and strike with the base damage of an iron sword (6). Your strength increases all melee damage by 25%.\nRunning on all fours increases your sprinting speed by 20%.\nYou eat twice as fast. Raw food nourish you as well as their cooked versions.",
   "codex.form.ssc-extras.earthen_drake_2.cons": "Your altered proportions no longer fit any armor. You carry items in your mouth, but tools and weapons slip free when you try to dig or strike with them. You cannot operate bows, crossbows, shields or fishing rods, and offhand items fall away.\nWhen hunger falls to 3 drumsticks or less, you can no longer maintain your upright stance and must walk on all fours until you have eaten enough.",
-  "codex.form.ssc-extras.earthen_drake_2.instincts": "Waiting for food to cook feels increasingly unnecessary. Raw food tempt you to eat them as they are.\nIndulging that appetite strengthens your draconic instincts.\nYou begin to desire to dig the earth and strike your enemies with your claws.\nSneaking or moving on all fours exhilarates you and strengthens your draconic instincts. The longer you stay low, the more comfortable it feels.",
+  "codex.form.ssc-extras.earthen_drake_2.instincts": "Waiting for food to cook feels increasingly unnecessary. Raw food tempt you to eat them as they are.\nIndulging that appetite strengthens your draconic instincts.\nYou begin to desire to dig the earth and strike your enemies with your claws.\nSneaking or moving on all fours exhilarates you and strengthens your draconic instincts. The longer you stay low, the more comfortable it feels.\nCarrying a rider keeps you on all fours and strengthens this instinct twice as quickly.",
   "ssc-extras.earthen_drake_2.model_name": "Earthen Drake (Stage 2)",
   "origin.ssc-extras.form_earthen_drake_2.name": "Earthen Drake (Stage 2)",
   "origin.ssc-extras.form_earthen_drake_2.description": "Standing upright takes an unfamiliar effort. Whenever you break into a run, your body knows another way to move.",
@@ -75,12 +75,13 @@
   "item.ssc-extras.stable_drake_spawn_egg": "Earthen Drake Spawn Egg",
   "entity.ssc-extras.stable_drake": "Earthen Drake",
   "container.ssc-extras.riders_chest": "%s — Rider's Chest",
-  "tooltip.ssc-extras.cursed_reins": "Inflicts Drake Curse. A rider can steer a saddled permanent drake.",
+  "tooltip.ssc-extras.cursed_reins": "Inflicts Drake Curse. A rider can steer a saddled permanent drake while giving movement input.",
   "tooltip.ssc-extras.cursed_saddle": "Inflicts Drake Curse. Allows other players to ride a permanent drake.",
-  "tooltip.ssc-extras.drake_binding": "Wearing both Cursed Reins and Cursed Saddle binds both items.",
+  "tooltip.ssc-extras.drake_binding": "Wearing Cursed Reins with either saddle binds both items.",
   "tooltip.ssc-extras.drake_faction": "Together: friendly to the pillager faction; cannot attack its members.",
-  "tooltip.ssc-extras.drake_missing_piece": "Pillagers try to equip the missing piece when only one is worn.",
+  "tooltip.ssc-extras.drake_missing_piece": "The nearest pillager tries to equip the missing piece.",
   "tooltip.ssc-extras.riders_chest": "54 shared slots. Sneak-use the drake, or use your SSC secondary ability, to open.",
-  "tooltip.ssc-extras.netherite_claw_tips": "Netherite empty-hand tools and claws. Enchantable.",
-  "tooltip.ssc-extras.drake_permanent": "Requires permanent Earthen Drake form."
+  "tooltip.ssc-extras.netherite_claw_tips": "Netherite empty-hand tools and claws. Accepts tool and sword enchantments.",
+  "tooltip.ssc-extras.drake_permanent": "Requires permanent Earthen Drake form.",
+  "tooltip.ssc-extras.drake_pillager_rider": "Stage 2+: sneak-use a pillager to carry it; sneak again to remove it."
 }

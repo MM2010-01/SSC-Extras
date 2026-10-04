@@ -65,7 +65,7 @@ public final class EarthenDrakeForm extends Form_FeralBase {
         if (stage < 2) return null;
         var state = AnimStateEnum.getStateEnum(stateId);
         if (stage == 3) return quadruped.controller(state);
-        if (!EarthenDrake.onAllFours(player)) {
+        if (!player.hasPassengers() && !EarthenDrake.onAllFours(player)) {
             if (state == AnimStateEnum.ANIM_STATE_WALK) return hunchedWalk;
             if (state == AnimStateEnum.ANIM_STATE_IDLE || state == AnimStateEnum.ANIM_STATE_USE_ITEM
                     || state == AnimStateEnum.ANIM_STATE_ATTACK || state == AnimStateEnum.ANIM_STATE_MINING) return hunchedIdle;

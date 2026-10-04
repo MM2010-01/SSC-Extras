@@ -28,6 +28,15 @@ public final class DrakeRiding {
 
     private DrakeRiding() { }
 
+    public static boolean canCarryPillager(PlayerEntity player) {
+        return player.isAlive() && EarthenDrake.stage(player) >= 2 && DrakeFaction.harnessed(player);
+    }
+
+    public static boolean accepts(PlayerEntity mount, Entity passenger) {
+        return passenger instanceof PlayerEntity && DrakeEquipment.canRide(mount)
+                || passenger instanceof net.minecraft.entity.mob.PillagerEntity && canCarryPillager(mount);
+    }
+
     public static void register() {
         ServerPlayNetworking.registerGlobalReceiver(INPUT, (server, rider, handler, buf, sender) -> {
             float sideways = buf.readFloat(), forward = buf.readFloat(), yaw = buf.readFloat();

@@ -10,6 +10,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.onixary.shapeShifterCurseFabric.util.Accessory.AccessoryUtils;
@@ -32,13 +33,24 @@ public final class DrakeEquipment {
         Registry.register(Registries.ITEM, EarthenDrake.id("riders_chest"), RIDERS_CHEST);
         Registry.register(Registries.ITEM, EarthenDrake.id("netherite_claw_tips"), CLAW_TIPS);
         CuriosCompat.register(REINS, SADDLE, RIDERS_CHEST, CLAW_TIPS);
+        CuriosCompat.register(Items.SADDLE, SADDLE);
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")) VanillaSaddleTrinket.register();
         DrakeRiding.register();
         DrakeFaction.register();
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (player.isSpectator() || !(entity instanceof PlayerEntity drake)
-                    || EarthenDrake.stage(drake) != 3) return ActionResult.PASS;
+            if (player.isSpectator()) return ActionResult.PASS;
+            if (hand == Hand.MAIN_HAND && player.isSneaking() && entity instanceof net.minecraft.entity.mob.PillagerEntity pillager
+                    && DrakeRiding.canCarryPillager(player) && !player.hasPassengers() && !player.hasVehicle()
+                    && pillager.isAlive() && !pillager.hasVehicle() && !pillager.hasPassengers()) {
+                if (!world.isClient) {
+                    pillager.getNavigation().stop();
+                    if (!pillager.startRiding(player)) return ActionResult.FAIL;
+                }
+                return ActionResult.SUCCESS;
+            }
+            if (!(entity instanceof PlayerEntity drake) || EarthenDrake.stage(drake) < 2) return ActionResult.PASS;
             ItemStack held = player.getStackInHand(hand);
-            if (held.isOf(REINS) || held.isOf(SADDLE) || held.isOf(RIDERS_CHEST)) {
+            if (held.isOf(REINS) || isSaddle(held) || held.isOf(RIDERS_CHEST)) {
                 return tryEquip(drake, held, !player.isCreative()) ? ActionResult.SUCCESS : ActionResult.FAIL;
             }
             if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
@@ -60,8 +72,9 @@ public final class DrakeEquipment {
     }
 
     public static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume) {
-        if (!player.isAlive() || player.isSpectator() || source.isEmpty()
-                || !(source.getItem() instanceof DrakeAccessoryItem item)) return false;
+        DrakeAccessoryItem item = source.isOf(Items.SADDLE) ? SADDLE
+                : source.getItem() instanceof DrakeAccessoryItem accessory ? accessory : null;
+        if (!player.isAlive() || player.isSpectator() || source.isEmpty() || item == null) return false;
         var io = slots();
         if (io == null) return false;
         String group = CuriosCompat.instance == null ? item.group : "";
@@ -81,7 +94,8 @@ public final class DrakeEquipment {
             item.onEquip(equipped, player, data);
             if (consume) source.decrement(1);
             player.currentScreenHandler.sendContentUpdates();
-            player.playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1, 1);
+            player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.ENTITY_HORSE_SADDLE, SoundCategory.PLAYERS, 1, 1);
             return true;
         }
         return false;
@@ -103,16 +117,18 @@ public final class DrakeEquipment {
 
     public static boolean visible(PlayerEntity player, DrakeAccessoryItem item) {
         var stacks = stacks(player, item);
-        for (int i = 0; i < stacks.size(); i++) if (stacks.get(i).isOf(item)
+        for (int i = 0; i < stacks.size(); i++) if ((stacks.get(i).isOf(item) || item == SADDLE && stacks.get(i).isOf(Items.SADDLE))
                 && (CuriosCompat.instance == null || CuriosCompat.instance.visible(player, item.curiosSlot(), i))) return true;
         return false;
     }
 
     public static void tickEquipped(PlayerEntity player, ItemStack stack) {
-        if (stack.isOf(REINS) || stack.isOf(SADDLE)) {
-            stack.getOrCreateNbt().putString(Collars.INFUSION, Registries.STATUS_EFFECT.getId(EarthenDrake.CURSE).toString());
-            Collars.applyCurse(player, stack);
-            ItemStack reins = equipped(player, REINS), saddle = equipped(player, SADDLE);
+        if (stack.isOf(REINS) || isSaddle(stack)) {
+            if (!stack.isOf(Items.SADDLE)) {
+                stack.getOrCreateNbt().putString(Collars.INFUSION, Registries.STATUS_EFFECT.getId(EarthenDrake.CURSE).toString());
+                Collars.applyCurse(player, stack);
+            }
+            ItemStack reins = equipped(player, REINS), saddle = saddle(player);
             if (!reins.isEmpty() && !saddle.isEmpty()) {
                 bind(reins);
                 bind(saddle);
@@ -126,7 +142,14 @@ public final class DrakeEquipment {
 
     public static boolean canRide(Entity entity) {
         return entity instanceof PlayerEntity player && player.isAlive() && EarthenDrake.stage(player) == 3
-                && !equipped(player, SADDLE).isEmpty() || entity instanceof StableDrakeEntity drake && drake.isSaddled();
+                && !saddle(player).isEmpty() || entity instanceof StableDrakeEntity drake && drake.isSaddled();
+    }
+
+    public static boolean isSaddle(ItemStack stack) { return stack.isOf(SADDLE) || stack.isOf(Items.SADDLE); }
+
+    public static ItemStack saddle(PlayerEntity player) {
+        if (!player.isSpectator()) for (ItemStack stack : stacks(player, SADDLE)) if (isSaddle(stack)) return stack;
+        return ItemStack.EMPTY;
     }
 
     public static boolean hasReins(Entity entity) {

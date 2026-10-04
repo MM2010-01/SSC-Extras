@@ -17,6 +17,9 @@
           },
           {
             "type": "origins:sneaking"
+          },
+          {
+            "type": "ssc-extras:ridden_drake"
           }
         ]
       }

@@ -11,6 +11,7 @@ import sscextras.drake.EarthenDrake;
 /** Equipment uses the same bone transforms as the visible body, including SSC's poses. */
 public final class DrakeGearModel {
     public static final Identifier TEXTURE = EarthenDrake.id("textures/entity/drake_gear.png");
+    private static final Identifier VANILLA_SADDLE_TEXTURE = EarthenDrake.id("textures/entity/drake_gear_vanilla.png");
     private final ModelPart reins, reinsMetal, saddle, saddleMetal, chest, chestMetal, leftClaws, rightClaws;
 
     public DrakeGearModel(int stage) {
@@ -94,7 +95,7 @@ public final class DrakeGearModel {
         var locks = ModelPartBuilder.create().uv(16, 0);
         for (float x : new float[]{-7.2f, 4.05f}) {
             boxes.cuboid(x, 6.4f, -4.8f, 3.15f, 3.6f, 5.2f).cuboid(x - .12f, 9.6f, -4.92f, 3.4f, .65f, 5.45f);
-            locks.cuboid(x + .8f, 8.7f, .35f, 1.2f, 1.15f, .25f);
+            locks.cuboid(x < 0 ? x - .25f : x + 3.15f, 8.7f, -2.8f, .25f, 1.15f, 1.2f);
         }
         root.addChild("chests", boxes, ModelTransform.NONE);
         root.addChild("chest_metal", locks, ModelTransform.NONE);
@@ -122,6 +123,11 @@ public final class DrakeGearModel {
 
     public void render(String bone, MatrixStack matrices, VertexConsumerProvider buffers, int light,
             boolean showReins, boolean showSaddle, boolean showChest, boolean showClaws) {
+        render(bone, matrices, buffers, light, showReins, showSaddle, showChest, showClaws, false);
+    }
+
+    public void render(String bone, MatrixStack matrices, VertexConsumerProvider buffers, int light,
+            boolean showReins, boolean showSaddle, boolean showChest, boolean showClaws, boolean vanillaSaddle) {
         if (bone.equals("@left@_front_paw")) bone = "right_front_paw";
         if (!(bone.equals("bipedHead") && showReins || bone.equals("bipedBody") && (showSaddle || showChest)
                 || showClaws && (bone.equals("left_front_paw") || bone.equals("right_front_paw")))) return;
@@ -130,7 +136,12 @@ public final class DrakeGearModel {
             reins.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
             reinsMetal.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
         } else if (bone.equals("bipedBody")) {
-            if (showSaddle) { saddle.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV); saddleMetal.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV); }
+            if (showSaddle) {
+                if (vanillaSaddle) buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(VANILLA_SADDLE_TEXTURE));
+                saddle.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
+                saddleMetal.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
+                if (vanillaSaddle) buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
+            }
             if (showChest) { chest.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV); chestMetal.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV); }
         } else if (showClaws && bone.equals("left_front_paw")) leftClaws.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
         else if (showClaws && bone.equals("right_front_paw")) rightClaws.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);

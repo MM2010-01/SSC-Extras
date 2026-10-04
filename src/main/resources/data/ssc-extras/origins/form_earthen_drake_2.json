@@ -14,6 +14,7 @@
     "ssc-extras:drake/body_2",
     "ssc-extras:drake/claw_hit_instinct",
     "ssc-extras:drake/quadruped_instinct",
+    "ssc-extras:drake/ridden_instinct",
     "ssc-extras:drake/armor_restrictions_2",
     "ssc-extras:drake/attributes_2",
     "ssc-extras:drake/claws_2",

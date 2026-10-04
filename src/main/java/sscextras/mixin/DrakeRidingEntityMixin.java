@@ -25,23 +25,29 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
 
     @Inject(method = {"addPassenger", "removePassenger"}, at = @At("TAIL"))
     private void sscExtras$syncOwnerPassenger(Entity passenger, CallbackInfo ci) {
-        if ((Object)this instanceof ServerPlayerEntity owner && (sscExtras$syncPassengers || DrakeEquipment.canRide(owner))) {
+        if ((Object)this instanceof ServerPlayerEntity owner && (sscExtras$syncPassengers || DrakeEquipment.canRide(owner)
+                || DrakeRiding.canCarryPillager(owner))) {
             // Vanilla sends passenger changes to observers, excluding the mounted player's own client.
             owner.networkHandler.sendPacket(new EntityPassengersSetS2CPacket(owner));
             sscExtras$syncPassengers = owner.hasPassengers();
+            sscExtras$riderInput = null;
+            if (EarthenDrake.stage(owner) == 2)
+                io.github.apace100.apoli.component.PowerHolderComponent.getPowers(owner, DrakeBodyPower.class)
+                        .forEach(DrakeBodyPower::refreshSize);
         }
     }
 
     @Inject(method = "canAddPassenger", at = @At("HEAD"), cancellable = true)
     private void sscExtras$drakePassenger(Entity passenger, CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity)(Object)this;
-        if (self instanceof PlayerEntity && DrakeEquipment.canRide(self))
-            cir.setReturnValue(passenger instanceof PlayerEntity && !self.hasPassengers() && !self.hasVehicle());
+        if (self instanceof PlayerEntity player && (DrakeEquipment.canRide(self) || DrakeRiding.canCarryPillager(player)))
+            cir.setReturnValue(DrakeRiding.accepts(player, passenger) && !self.hasPassengers() && !self.hasVehicle());
     }
 
     @Inject(method = "getMountedHeightOffset", at = @At("HEAD"), cancellable = true)
     private void sscExtras$saddleHeight(CallbackInfoReturnable<Double> cir) {
         Entity self = (Entity)(Object)this;
         if (self instanceof PlayerEntity player && EarthenDrake.stage(player) == 3) cir.setReturnValue(1.15);
+        else if (self instanceof PlayerEntity player && EarthenDrake.stage(player) == 2 && self.hasPassengers()) cir.setReturnValue(.95);
     }
 }

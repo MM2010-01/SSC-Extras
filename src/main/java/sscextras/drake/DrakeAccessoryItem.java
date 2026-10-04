@@ -5,6 +5,7 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
@@ -32,6 +33,7 @@ public class DrakeAccessoryItem extends AccessoryItem {
     @Override public boolean canEquip(ItemStack stack, LivingEntity entity, SlotData data) {
         return entity instanceof PlayerEntity player && CollarSlots.isActive(data)
                 && data.slot().getPath().equals(data.slot().getNamespace().equals("curios") ? curiosSlot() : group + "/" + slot)
+                && (!stack.isOf(Items.SADDLE) || EarthenDrake.stage(player) >= 0)
                 && (!permanentOnly || EarthenDrake.stage(player) == 3);
     }
 
@@ -58,6 +60,7 @@ public class DrakeAccessoryItem extends AccessoryItem {
             tooltip.add(Text.translatable("tooltip.ssc-extras.drake_binding").formatted(Formatting.DARK_PURPLE));
             tooltip.add(Text.translatable("tooltip.ssc-extras.drake_faction").formatted(Formatting.GRAY));
             tooltip.add(Text.translatable("tooltip.ssc-extras.drake_missing_piece").formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable("tooltip.ssc-extras.drake_pillager_rider").formatted(Formatting.GRAY));
         }
     }
 

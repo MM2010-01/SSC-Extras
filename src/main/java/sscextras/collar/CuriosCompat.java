@@ -46,14 +46,16 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
     }
 
     public static void register(AccessoryItem... items) {
+        for (AccessoryItem item : items) register(item, item);
+    }
+
+    public static void register(Item item, AccessoryItem behavior) {
         if (!FabricLoader.getInstance().isModLoaded("curios")) return;
         try {
             CuriosCompat bridge = instance == null ? new CuriosCompat() : instance;
-            for (AccessoryItem item : items) {
-                Object adapter = Proxy.newProxyInstance(bridge.itemInterface.getClassLoader(), new Class<?>[]{bridge.itemInterface},
-                        (proxy, method, args) -> bridge.dispatch(item, proxy, method, args));
-                bridge.register.invoke(null, item, adapter);
-            }
+            Object adapter = Proxy.newProxyInstance(bridge.itemInterface.getClassLoader(), new Class<?>[]{bridge.itemInterface},
+                    (proxy, method, args) -> bridge.dispatch(behavior, proxy, method, args));
+            bridge.register.invoke(null, item, adapter);
             instance = bridge;
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Could not register SSC Extras collars with Curios", exception);

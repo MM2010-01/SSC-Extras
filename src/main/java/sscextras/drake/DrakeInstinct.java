@@ -25,6 +25,9 @@ public final class DrakeInstinct {
                 (data, entity) -> entity instanceof PlayerEntity player && canGain(player)
                         && player.isOnGround() && !player.hasVehicle() && EarthenDrake.onAllFours(player));
         Registry.register(ApoliRegistries.ENTITY_CONDITION, quadruped.getSerializerId(), quadruped);
+        var ridden = new ConditionFactory<Entity>(EarthenDrake.id("ridden_drake"), new SerializableData(),
+                (data, entity) -> entity instanceof PlayerEntity player && EarthenDrake.stage(player) == 2 && player.hasPassengers());
+        Registry.register(ApoliRegistries.ENTITY_CONDITION, ridden.getSerializerId(), ridden);
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (hand == Hand.MAIN_HAND && canGain(player) && player.canModifyBlocks()
                     && player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()) {

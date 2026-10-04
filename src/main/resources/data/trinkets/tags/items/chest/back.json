@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "ssc-extras:cursed_saddle"
+    "ssc-extras:cursed_saddle",
+    "minecraft:saddle"
   ]
 }

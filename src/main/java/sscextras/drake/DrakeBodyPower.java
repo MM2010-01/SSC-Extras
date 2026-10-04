@@ -35,7 +35,7 @@ public final class DrakeBodyPower extends Power {
     private void update(boolean force, boolean sync) {
         if (entity.getWorld().isClient || !(entity instanceof PlayerEntity player)) return;
         boolean next = stage == 3 || stage == 2 && (player.isSprinting() || player.isSneaking()
-                || player.getHungerManager().getFoodLevel() <= 6);
+                || player.hasPassengers() || player.getHungerManager().getFoodLevel() <= 6);
         if (!force && next == allFours) return;
         boolean changed = next != allFours;
         allFours = next;

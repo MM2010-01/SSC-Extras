@@ -31,6 +31,7 @@ import sscextras.CreatureInstinct;
 public final class StableDrakeEntity extends PathAwareEntity implements GeoEntity {
     private static final TrackedData<Boolean> SADDLED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> REINED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> VANILLA_SADDLE = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
     private int contactCooldown;
     private ItemStack saddle = ItemStack.EMPTY, reins = ItemStack.EMPTY;
@@ -56,6 +57,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         super.initDataTracker();
         dataTracker.startTracking(SADDLED, false);
         dataTracker.startTracking(REINED, false);
+        dataTracker.startTracking(VANILLA_SADDLE, false);
     }
 
     @Override protected void initGoals() {
@@ -112,14 +114,16 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     public void riderJump() { jump(); }
     public boolean isSaddled() { return dataTracker.get(SADDLED); }
     public boolean hasReins() { return dataTracker.get(REINED); }
+    public boolean hasVanillaSaddle() { return dataTracker.get(VANILLA_SADDLE); }
 
     @Override protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         if (player.isSpectator()) return ActionResult.PASS;
         ItemStack stack = player.getStackInHand(hand);
-        if (stack.isOf(DrakeEquipment.SADDLE) && !isSaddled() || stack.isOf(DrakeEquipment.REINS) && !hasReins()) {
+        if (DrakeEquipment.isSaddle(stack) && !isSaddled() || stack.isOf(DrakeEquipment.REINS) && !hasReins()) {
             if (!getWorld().isClient) {
-                if (stack.isOf(DrakeEquipment.SADDLE)) {
+                if (DrakeEquipment.isSaddle(stack)) {
                     saddle = stack.copyWithCount(1); naturalSaddle = false; dataTracker.set(SADDLED, true);
+                    dataTracker.set(VANILLA_SADDLE, stack.isOf(net.minecraft.item.Items.SADDLE));
                 } else {
                     reins = stack.copyWithCount(1); naturalReins = false; dataTracker.set(REINED, true);
                 }
@@ -168,7 +172,8 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         if (!nbt.contains("DrakeNaturalReins") && reins.isEmpty()) {
             reins = new ItemStack(DrakeEquipment.REINS); naturalReins = true;
         }
-        dataTracker.set(SADDLED, saddle.isOf(DrakeEquipment.SADDLE));
+        dataTracker.set(SADDLED, DrakeEquipment.isSaddle(saddle));
+        dataTracker.set(VANILLA_SADDLE, saddle.isOf(net.minecraft.item.Items.SADDLE));
         dataTracker.set(REINED, reins.isOf(DrakeEquipment.REINS));
         contactCooldown = nbt.getInt("CurseContactCooldown");
     }
