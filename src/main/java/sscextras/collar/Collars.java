@@ -41,6 +41,7 @@ public final class Collars {
     public static final String AWAKENING = "SscExtrasAwakening";
     public static final CollarItem FERALIZING = new CollarItem(false);
     public static final CollarItem CURSED = new CollarItem(true);
+    public static final CollarItem TAMING = new CollarItem(true, true);
     public static final CleansingKeyItem CLEANSING_KEY = new CleansingKeyItem();
     public static final StatusEffect CURSE_CLEANSED = new StatusEffect(StatusEffectCategory.BENEFICIAL, 0x52bdc2) { };
     public static final RecipeSerializer<CollarInfusionRecipe> INFUSION_RECIPE = new SpecialRecipeSerializer<>(CollarInfusionRecipe::new);
@@ -51,9 +52,11 @@ public final class Collars {
         Registry.register(Registries.STATUS_EFFECT, new Identifier("ssc-extras", "curse_cleansed"), CURSE_CLEANSED);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "feralizing_collar"), FERALIZING);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cursed_feralizing_collar"), CURSED);
+        Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cursed_taming_collar"), TAMING);
         Registry.register(Registries.ITEM, new Identifier("ssc-extras", "cleansing_key"), CLEANSING_KEY);
         Registry.register(Registries.RECIPE_SERIALIZER, new Identifier("ssc-extras", "collar_infusion"), INFUSION_RECIPE);
-        CuriosCompat.register(FERALIZING, CURSED);
+        CuriosCompat.register(FERALIZING, CURSED, TAMING);
+        TamingCollar.register();
         if (CuriosCompat.instance != null) {
             ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> CollarSlots.recoverLegacy(handler.player));
         }
@@ -62,6 +65,7 @@ public final class Collars {
                 .icon(FERALIZING::getDefaultStack).entries((context, entries) -> {
             entries.add(FERALIZING);
             entries.add(CURSED.getDefaultStack());
+            entries.add(TAMING.getDefaultStack());
             entries.add(sscextras.cuffs.MetalCuffs.ITEM);
             entries.add(CLEANSING_KEY);
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
@@ -175,6 +179,10 @@ public final class Collars {
     }
 
     public static void ensureNaturalCurse(ItemStack stack, Random random) {
+        if (stack.isOf(TAMING)) {
+            if (!stack.hasNbt() || !stack.getNbt().contains(INFUSION)) stack.getOrCreateNbt().putString(INFUSION, Registries.STATUS_EFFECT.getId(sscextras.drake.EarthenDrake.CURSE).toString());
+            return;
+        }
         if (!stack.isOf(CURSED) || (stack.hasNbt()
                 && (stack.getNbt().contains(INFUSION) || stack.getNbt().contains(INFUSION_FORM)))) return;
         var choices = naturalCurses();

@@ -117,5 +117,15 @@
   "power.ssc-extras.drake/body_slam.description": "向前冲刺最多3格，撞到敌人或障碍物时停下，对前方敌人造成相当于自身最大生命值的横扫伤害。消耗1格饥饿值，冷却5秒。",
   "death.attack.ssc-extras.body_slam": "%1$s被%2$s的躯体冲撞压扁了",
   "death.attack.ssc-extras.body_slam.player": "%1$s被%2$s的躯体冲撞压扁了",
-  "death.attack.ssc-extras.body_slam.item": "%1$s被%2$s的躯体冲撞压扁了"
+  "death.attack.ssc-extras.body_slam.item": "%1$s被%2$s的躯体冲撞压扁了",
+  "item.ssc-extras.cursed_taming_collar": "诅咒驯服项圈",
+  "message.ssc-extras.drake.roam_edge": "你正在接近地龙兽栏的活动范围边缘……",
+  "message.ssc-extras.drake.roam_outside": "你已经走出了兽栏的活动范围……",
+  "message.ssc-extras.drake.roam_spotted": "一名掠夺者刚刚发现你走出了活动范围……",
+  "message.ssc-extras.drake.escape_marked": "掠夺者认为你正在试图逃跑……",
+  "message.ssc-extras.drake.taming_collar": "由于你多次逃跑，一名掠夺者把诅咒驯服项圈锁在了你的脖子上。",
+  "message.ssc-extras.drake.struggle_free": "你挣脱了拴绳！",
+  "message.ssc-extras.drake.battle_treat": "战斗结束后，一名掠夺者给了你一些食物作为奖励。",
+  "tooltip.ssc-extras.taming_collar.restrictions": "无法打开栅栏门、破坏方块或随意解开自己的拴绳。",
+  "tooltip.ssc-extras.taming_collar.release": "可用净化钥匙移除。右击自己的拴绳结尝试挣脱（成功率5%）。"
 }

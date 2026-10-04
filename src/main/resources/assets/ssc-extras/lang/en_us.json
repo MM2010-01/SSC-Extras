@@ -117,5 +117,15 @@
   "power.ssc-extras.drake/body_slam.description": "Rush forward up to 3 blocks, stopping on an enemy or obstacle. Sweep enemies in front for damage equal to your maximum health. Costs 1 drumstick (2 hunger points); 5-second cooldown.",
   "death.attack.ssc-extras.body_slam": "%1$s was crushed by %2$s's Body Slam",
   "death.attack.ssc-extras.body_slam.player": "%1$s was crushed by %2$s's Body Slam",
-  "death.attack.ssc-extras.body_slam.item": "%1$s was crushed by %2$s's Body Slam"
+  "death.attack.ssc-extras.body_slam.item": "%1$s was crushed by %2$s's Body Slam",
+  "item.ssc-extras.cursed_taming_collar": "Cursed Taming Collar",
+  "message.ssc-extras.drake.roam_edge": "You are getting close to the edge of the drake stable...",
+  "message.ssc-extras.drake.roam_outside": "You have roamed outside your stable...",
+  "message.ssc-extras.drake.roam_spotted": "A pillager just spotted you outside the range...",
+  "message.ssc-extras.drake.escape_marked": "The pillagers think you are trying to escape...",
+  "message.ssc-extras.drake.taming_collar": "After your repeated escapes, a pillager locks a cursed taming collar around your neck.",
+  "message.ssc-extras.drake.struggle_free": "You struggle free of the leash!",
+  "message.ssc-extras.drake.battle_treat": "A pillager rewards you with a treat after the battle.",
+  "tooltip.ssc-extras.taming_collar.restrictions": "Prevents opening fence gates, breaking blocks, and freely untying your leash.",
+  "tooltip.ssc-extras.taming_collar.release": "A Cleansing Key removes it. Right-click your leash knot to struggle (5% chance)."
 }

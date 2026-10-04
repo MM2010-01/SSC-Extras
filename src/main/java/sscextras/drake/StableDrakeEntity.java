@@ -39,6 +39,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     private ItemStack saddle = ItemStack.EMPTY, reins = ItemStack.EMPTY;
     private ItemStack chest = ItemStack.EMPTY;
     private boolean naturalSaddle = true, naturalReins = true;
+    private net.minecraft.util.math.BlockBox homeStable;
+    private int homeStall;
+    private String homeWorld = "";
 
     public StableDrakeEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
@@ -56,6 +59,29 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 16).add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, .5);
     }
 
+    public void setStableHome(DrakeStablePiece stable, int stall) {
+        homeStable = stable.getBoundingBox(); homeStall = stall; homeWorld = getWorld().getRegistryKey().getValue().toString();
+    }
+
+    public int homeStall() { return homeStall; }
+
+    public boolean belongsTo(DrakeStablePiece stable) {
+        if (homeStable == null && stable.getBoundingBox().contains(getBlockPos()) && hasCustomName()) {
+            if (getCustomName().getString().equals(stable.firstName())) setStableHome(stable, 0);
+            else if (getCustomName().getString().equals(stable.secondName())) setStableHome(stable, 1);
+        }
+        return homeStable != null && homeStable.equals(stable.getBoundingBox())
+                && homeWorld.equals(getWorld().getRegistryKey().getValue().toString());
+    }
+
+    private boolean riderControls() {
+        return getFirstPassenger() instanceof net.minecraft.entity.LivingEntity rider && DrakeRiding.canControl(this, rider);
+    }
+
+    @Override protected net.minecraft.entity.ai.pathing.EntityNavigation createNavigation(World world) {
+        return new DrakeStableNavigation(this, world);
+    }
+
     @Override protected void initDataTracker() {
         super.initDataTracker();
         dataTracker.startTracking(SADDLED, false);
@@ -67,12 +93,12 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     @Override protected void initGoals() {
         goalSelector.add(0, new SwimGoal(this));
         goalSelector.add(2, new MeleeAttackGoal(this, 1, true) {
-            @Override public boolean canStart() { return DrakeRiding.input(StableDrakeEntity.this) == null && super.canStart(); }
-            @Override public boolean shouldContinue() { return DrakeRiding.input(StableDrakeEntity.this) == null && super.shouldContinue(); }
+            @Override public boolean canStart() { return !riderControls() && super.canStart(); }
+            @Override public boolean shouldContinue() { return !riderControls() && super.shouldContinue(); }
         });
         goalSelector.add(5, new WanderAroundFarGoal(this, .65) {
-            @Override public boolean canStart() { return DrakeRiding.input(StableDrakeEntity.this) == null && super.canStart(); }
-            @Override public boolean shouldContinue() { return DrakeRiding.input(StableDrakeEntity.this) == null && super.shouldContinue(); }
+            @Override public boolean canStart() { return !riderControls() && super.canStart(); }
+            @Override public boolean shouldContinue() { return !riderControls() && super.shouldContinue(); }
         });
         goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8));
         goalSelector.add(7, new LookAroundGoal(this));
@@ -105,7 +131,10 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     @Override public void tickMovement() {
         if (contactCooldown > 0) contactCooldown--;
-        if (DrakeRiding.input(this) != null) { getNavigation().stop(); setTarget(null); }
+        if (riderControls()) {
+            if (!(getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity)) getNavigation().stop();
+            setTarget(null);
+        }
         if (getTarget() instanceof PlayerEntity player && !eligible(player)) setTarget(null);
         super.tickMovement();
     }
@@ -160,7 +189,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         return super.interactMob(player, hand);
     }
 
-    @Override protected boolean canAddPassenger(Entity entity) { return isSaddled() && entity instanceof PlayerEntity && !hasPassengers(); }
+    @Override protected boolean canAddPassenger(Entity entity) {
+        return isSaddled() && (entity instanceof PlayerEntity || hasReins() && entity instanceof net.minecraft.entity.mob.PillagerEntity) && !hasPassengers();
+    }
     @Override public double getMountedHeightOffset() { return 1.15; }
     @Override public boolean canImmediatelyDespawn(double distanceSquared) { return false; }
     @Override public boolean isDisallowedInPeaceful() { return false; }
@@ -180,6 +211,11 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         nbt.putInt("CurseContactCooldown", contactCooldown);
         nbt.putBoolean("DrakeNaturalSaddle", naturalSaddle);
         nbt.putBoolean("DrakeNaturalReins", naturalReins);
+        if (homeStable != null) {
+            nbt.putIntArray("StableHome", new int[]{homeStable.getMinX(), homeStable.getMinY(), homeStable.getMinZ(),
+                    homeStable.getMaxX(), homeStable.getMaxY(), homeStable.getMaxZ()});
+            nbt.putInt("HomeStall", homeStall); nbt.putString("HomeWorld", homeWorld);
+        }
     }
 
     @Override public void readCustomDataFromNbt(NbtCompound nbt) {
@@ -201,6 +237,12 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         dataTracker.set(VANILLA_SADDLE, saddle.isOf(net.minecraft.item.Items.SADDLE));
         dataTracker.set(REINED, reins.isOf(DrakeEquipment.REINS));
         contactCooldown = nbt.getInt("CurseContactCooldown");
+        int[] box = nbt.getIntArray("StableHome");
+        if (box.length == 6) {
+            homeStable = new net.minecraft.util.math.BlockBox(box[0], box[1], box[2], box[3], box[4], box[5]);
+            homeStall = Math.max(0, Math.min(1, nbt.getInt("HomeStall")));
+            homeWorld = nbt.getString("HomeWorld");
+        }
     }
 
     @Override protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {

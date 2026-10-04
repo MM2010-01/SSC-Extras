@@ -18,10 +18,16 @@ import java.util.List;
 
 public final class CollarItem extends AccessoryItem {
     private final boolean cursed;
+    private final boolean taming;
 
     public CollarItem(boolean cursed) {
+        this(cursed, false);
+    }
+
+    public CollarItem(boolean cursed, boolean taming) {
         super(new Settings().maxCount(1));
         this.cursed = cursed;
+        this.taming = taming;
     }
 
     public int strength() { return cursed ? 2 : 1; }
@@ -33,7 +39,7 @@ public final class CollarItem extends AccessoryItem {
     }
 
     private void refreshBinding(ItemStack stack, PlayerEntity player) {
-        if (cursed && FormAbilityManager.getForm(player).getIndex() == 3) {
+        if (cursed && !taming && FormAbilityManager.getForm(player).getIndex() == 3) {
             // Curios checks the enchantment before consulting canUnequip.
             if (EnchantmentHelper.hasBindingCurse(stack)) {
                 var enchantments = EnchantmentHelper.get(stack);
@@ -86,7 +92,7 @@ public final class CollarItem extends AccessoryItem {
     }
 
     @Override public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
-        if (!world.isClient && entity instanceof PlayerEntity player && cursed) {
+        if (!world.isClient && entity instanceof PlayerEntity player && cursed && !taming) {
             // Curios also ticks equipped stacks here, with slot -1.
             if (slot < 0 || slot >= player.getInventory().size() || player.getInventory().getStack(slot) != stack) return;
             Collars.ensureNaturalCurse(stack, player.getRandom());
@@ -97,15 +103,20 @@ public final class CollarItem extends AccessoryItem {
 
     @Override public boolean canUnequip(ItemStack stack, LivingEntity entity, SlotData slot) {
         if (entity instanceof PlayerEntity player && player.isCreative()) return true;
+        if (taming) return false;
         if (cursed) return entity instanceof PlayerEntity player && FormAbilityManager.getForm(player).getIndex() == 3;
         return super.canUnequip(stack, entity, slot);
+    }
+
+    @Override public boolean canEquip(ItemStack stack, LivingEntity entity, SlotData slot) {
+        return !(entity instanceof PlayerEntity player && !taming && TamingCollar.worn(player)) && super.canEquip(stack, entity, slot);
     }
 
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
         tooltip.add(Text.translatable("tooltip.ssc-extras.collar.gain", strength(), strength() * 2).formatted(Formatting.GRAY));
         if (cursed) {
-            tooltip.add(Text.translatable("tooltip.ssc-extras.collar.cursed").formatted(Formatting.DARK_PURPLE));
-            tooltip.add(Text.translatable("tooltip.ssc-extras.collar.release").formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable(taming ? "tooltip.ssc-extras.taming_collar.restrictions" : "tooltip.ssc-extras.collar.cursed").formatted(Formatting.DARK_PURPLE));
+            tooltip.add(Text.translatable(taming ? "tooltip.ssc-extras.taming_collar.release" : "tooltip.ssc-extras.collar.release").formatted(Formatting.GRAY));
         }
         var effect = Collars.infusion(stack);
         var form = Collars.infusionForm(stack);

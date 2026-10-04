@@ -83,6 +83,8 @@ public final class DrakeLeashing {
                 }
             }
             if (entity instanceof LeashKnotEntity knot) {
+                if (holder(actor) == knot && sscextras.collar.TamingCollar.restricted(actor))
+                    return sscextras.collar.TamingCollar.struggle(actor, hand);
                 if (tieHeld(actor, world, knot.getDecorationBlockPos())) return ActionResult.SUCCESS;
                 if (!world.isClient) for (var drake : world.getEntitiesByClass(PlayerEntity.class, knot.getBoundingBox().expand(10),
                         player -> holder(player) == knot)) detach(drake, !actor.isCreative());

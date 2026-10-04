@@ -50,7 +50,7 @@ public final class CleansingKeyItem extends Item {
             AccessoryUtils.AccessoryIO io, String group, String name, int index) {
         if (key.isEmpty() || key.getDamage() >= key.getMaxDamage()) return false;
         ItemStack stack = io.getEntitySlot(player, group, name, index);
-        if (stack == null || !(stack.isOf(Collars.CURSED) || stack.isOf(DrakeEquipment.REINS)
+        if (stack == null || !(stack.isOf(Collars.CURSED) || stack.isOf(Collars.TAMING) || stack.isOf(DrakeEquipment.REINS)
                 || stack.isOf(DrakeEquipment.SADDLE))) return false;
         ItemStack dropped = stack.copy();
         io.setEntitySlot(player, group, name, index, ItemStack.EMPTY);

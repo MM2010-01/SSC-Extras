@@ -43,6 +43,11 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public final BlockBox stable;
         public final String name;
         public long nextMeal;
+        public int escapes;
+        public boolean tryingToEscape;
+        boolean outside, warnedEdge, spotted;
+        long nextOutsideHint, seenSince = -1;
+        int witness;
         Claim(RegistryKey<World> world, BlockBox stable, String name) { this.world = world; this.stable = stable; this.name = name; }
         public BlockPos sign() { return new BlockPos(stable.getMinX() + 16, stable.getMinY() + 1, stable.getMinZ() + 2); }
         public BlockPos tie() { return new BlockPos(stable.getMinX() + 17, stable.getMinY() + 1, stable.getMinZ() + 12); }
@@ -76,7 +81,17 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     public static void capture(PlayerEntity player, DrakeStablePiece stable) {
-        if (owns(player, stable) || BondOfTheBeastCompat.hasOwner(player)) return;
+        if (BondOfTheBeastCompat.hasOwner(player)) return;
+        if (owns(player, stable)) {
+            var claim = claim(player);
+            if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {
+                claim.escapes++;
+                claim.tryingToEscape = false;
+                get(player.getServer()).markDirty();
+            }
+            if (claim.escapes > 3) sscextras.collar.TamingCollar.equip(player);
+            return;
+        }
         release(player);
         var data = get(player.getServer());
         var claim = new Claim(player.getWorld().getRegistryKey(), stable.getBoundingBox(),
@@ -119,7 +134,9 @@ public final class DrakeOutpostOwnership extends PersistentState {
             release(player); return;
         }
         display(player, claim.name);
+        DrakeRoaming.tick(player, claim);
         if (player.getWorld().getRegistryKey().equals(claim.world) && player.getWorld().isDay() && EarthenDrake.stage(player) >= 0
+                && !claim.tryingToEscape
                 && DrakeLeashing.holder(player) instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(claim.tie())) {
             DrakeLeashing.detach(player, true);
         }
@@ -127,7 +144,13 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0) for (var player : server.getPlayerManager().getPlayerList()) tick(player);
+            for (var player : server.getPlayerManager().getPlayerList()) {
+                if (server.getTicks() % 20 == 0) tick(player);
+                else {
+                    var claim = claim(player);
+                    if (claim != null) DrakeRoaming.tick(player, claim);
+                }
+            }
         });
         ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
             var data = get(world.getServer());
@@ -169,6 +192,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
             var claim = new Claim(RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("World"))),
                     new BlockBox(box[0], box[1], box[2], box[3], box[4], box[5]), tag.getString("Name"));
             claim.nextMeal = tag.getLong("NextMeal");
+            claim.escapes = Math.max(0, tag.getInt("Escapes"));
+            claim.tryingToEscape = tag.getBoolean("TryingToEscape");
             data.mounts.put(tag.getUuid("Player"), claim);
         }
         for (var element : nbt.getList("Signs", NbtElement.COMPOUND_TYPE)) {
@@ -185,7 +210,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
             var tag = new NbtCompound(); tag.putUuid("Player", id); tag.putString("World", claim.world.getValue().toString());
             var box = claim.stable;
             tag.putIntArray("Stable", new int[]{box.getMinX(), box.getMinY(), box.getMinZ(), box.getMaxX(), box.getMaxY(), box.getMaxZ()});
-            tag.putString("Name", claim.name); tag.putLong("NextMeal", claim.nextMeal); mounts.add(tag);
+            tag.putString("Name", claim.name); tag.putLong("NextMeal", claim.nextMeal);
+            tag.putInt("Escapes", claim.escapes); tag.putBoolean("TryingToEscape", claim.tryingToEscape); mounts.add(tag);
         });
         var signs = new NbtList();
         pendingSigns.forEach((pos, name) -> {

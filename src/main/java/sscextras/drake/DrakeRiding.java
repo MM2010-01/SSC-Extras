@@ -31,6 +31,8 @@ public final class DrakeRiding {
         RiderChestInventory sscExtras$getChest();
         void sscExtras$setChest(RiderChestInventory inventory);
         boolean sscExtras$tracksDrakePassenger();
+        PillagerEntity sscExtras$battleRider();
+        void sscExtras$battleRider(PillagerEntity rider);
     }
 
     private DrakeRiding() { }
@@ -72,10 +74,11 @@ public final class DrakeRiding {
 
     public static boolean canControl(Entity mount, LivingEntity rider) {
         if (mount == null || !mount.isAlive() || !rider.isAlive() || mount.getFirstPassenger() != rider
-                || !DrakeEquipment.canRide(mount) || !DrakeEquipment.hasReins(mount)) return false;
+                || !(DrakeEquipment.canRide(mount) || rider instanceof PillagerEntity
+                && mount instanceof PlayerEntity player && canCarryPillager(player)) || !DrakeEquipment.hasReins(mount)) return false;
         return rider instanceof PlayerEntity player && !player.isSpectator()
                 || rider instanceof PillagerEntity pillager && !pillager.isAiDisabled()
-                && mount instanceof PlayerEntity drake && EarthenDrake.stage(drake) == 3;
+                && (mount instanceof PlayerEntity drake && EarthenDrake.stage(drake) >= 2 || mount instanceof StableDrakeEntity);
     }
 
     private static void publishInput(Entity mount, Input input) {
@@ -95,25 +98,29 @@ public final class DrakeRiding {
     }
 
     public static void tickPillager(PillagerEntity pillager) {
-        if (!(pillager.getVehicle() instanceof ServerPlayerEntity mount)) return;
+        if (!(pillager.getVehicle() instanceof LivingEntity mount)
+                || !(mount instanceof PlayerEntity || mount instanceof StableDrakeEntity)) return;
         var enemy = pillager.getTarget();
         var path = pillager.getNavigation().getCurrentPath();
+        var battle = DrakeBattleGoal.of(pillager);
+        Vec3d direct = battle != null && battle.mount() == mount ? battle.directDestination() : null;
         float forward = 0, yaw = mount.getYaw();
         boolean jump = false;
-        if (canControl(mount, pillager) && enemy != null && enemy.isAlive() && enemy != mount
-                && !pillager.isTeammate(enemy) && path != null && !path.isFinished()) {
+        boolean moving = direct != null || battle != null && battle.mount() == mount && battle.returning()
+                || enemy != null && enemy.isAlive() && enemy != mount && !pillager.isTeammate(enemy);
+        if (canControl(mount, pillager) && moving && (direct != null || path != null && !path.isFinished())) {
             // Mounted navigation must advance waypoints at the drake's feet, not the rider's raised seat.
-            while (!path.isFinished()) {
-                var node = path.getNodePosition(pillager);
+            while (direct == null && !path.isFinished()) {
+                var node = path.getNodePosition(mount instanceof StableDrakeEntity ? mount : pillager);
                 double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
                 if (dx * dx + dz * dz >= .36 || Math.abs(node.y - mount.getY()) >= 1) break;
                 path.next();
             }
-            if (!path.isFinished()) {
-                var node = path.getNodePosition(pillager);
+            if (direct != null || !path.isFinished()) {
+                var node = direct != null ? direct : path.getNodePosition(mount instanceof StableDrakeEntity ? mount : pillager);
                 double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
                 yaw = (float)(MathHelper.atan2(dz, dx) * 180 / Math.PI) - 90;
-                forward = MathHelper.clamp((float)pillager.getMoveControl().getSpeed(), 0, 1);
+                forward = direct != null ? .8f : MathHelper.clamp((float)pillager.getMoveControl().getSpeed(), 0, 1);
                 jump = node.y > mount.getY() + .5 && dx * dx + dz * dz < 2.25;
             }
         }

@@ -24,6 +24,10 @@ public final class DrakeStableNavigation extends MobNavigation {
 
     public DrakeStableNavigation(MobEntity entity, World world) { super(entity, world); }
 
+    private boolean canOpenGates() {
+        return entity instanceof net.minecraft.entity.mob.PillagerEntity || entity.getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity;
+    }
+
     public DrakeStablePiece stable() {
         if (!(world instanceof ServerWorld server)) return null;
         if (entity.age >= nextStableSearch) {
@@ -37,7 +41,7 @@ public final class DrakeStableNavigation extends MobNavigation {
         nodeMaker = new LandPathNodeMaker() {
             @Override public PathNodeType getDefaultNodeType(BlockView world, int x, int y, int z) {
                 var pos = new BlockPos(x, y, z);
-                if (stable != null && stable.isGate(pos) && world.getBlockState(pos).getBlock() instanceof FenceGateBlock)
+                if (canOpenGates() && stable != null && stable.isGate(pos) && world.getBlockState(pos).getBlock() instanceof FenceGateBlock)
                     return PathNodeType.WALKABLE_DOOR;
                 return super.getDefaultNodeType(world, x, y, z);
             }
@@ -83,7 +87,7 @@ public final class DrakeStableNavigation extends MobNavigation {
     }
 
     @Override public void tick() {
-        if (currentPath != null && !currentPath.isFinished() && stable != null) {
+        if (canOpenGates() && currentPath != null && !currentPath.isFinished() && stable != null) {
             for (int i = currentPath.getCurrentNodeIndex(); i < Math.min(currentPath.getLength(), currentPath.getCurrentNodeIndex() + 3); i++) {
                 var pos = currentPath.getNodePos(i);
                 if (stable.isGate(pos) && entity.squaredDistanceTo(Vec3d.ofCenter(pos)) < 9)
@@ -95,8 +99,11 @@ public final class DrakeStableNavigation extends MobNavigation {
         openedGates.entrySet().removeIf(entry -> {
             var gate = entry.getKey();
             if (entity.age - entry.getValue() < 20) return false;
-            var capture = ((DrakeCaptureGoal.Captor)entity).sscExtras$captureGoal();
+            var capture = entity instanceof DrakeCaptureGoal.Captor captor ? captor.sscExtras$captureGoal() : null;
             if (capture != null && capture.holdsOpen(gate)) return false;
+            var battle = entity instanceof DrakeBattleGoal.Rider rider ? rider.sscExtras$battleGoal() : null;
+            if (battle == null && DrakeBattleGoal.assigned(entity)) battle = DrakeBattleGoal.of(((DrakeRiding.State)entity).sscExtras$battleRider());
+            if (battle != null && battle.holdsOpen(gate)) return false;
             for (var player : world.getPlayers()) {
                 if (DrakeLeashing.holder(player) == entity
                         && (player.getZ() - gate.getZ() - .5) * (entity.getZ() - gate.getZ() - .5) < 0) return false;

@@ -39,7 +39,7 @@ public final class DrakeFaction {
     }
 
     public static boolean member(Entity entity) {
-        return entity instanceof LivingEntity living && (living.getGroup() == EntityGroup.ILLAGER
+        return entity instanceof StableDrakeEntity || entity instanceof LivingEntity living && (living.getGroup() == EntityGroup.ILLAGER
                 || living.getType().isIn(ModTags.Illager_Tag));
     }
 
@@ -73,6 +73,9 @@ public final class DrakeFaction {
             defend(player, enemy);
         if (target instanceof PlayerEntity player && source.getAttacker() instanceof LivingEntity enemy)
             defend(player, enemy);
+        if (target instanceof LivingEntity mount && (mount instanceof StableDrakeEntity
+                || mount instanceof PlayerEntity player && DrakeOutpostOwnership.claim(player) != null)
+                && source.getAttacker() instanceof LivingEntity enemy) DrakeBattleGoal.alert(mount, enemy);
     }
 
     private static boolean cursedHarness(PlayerEntity player) {

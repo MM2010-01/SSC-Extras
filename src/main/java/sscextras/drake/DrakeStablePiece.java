@@ -126,6 +126,7 @@ public final class DrakeStablePiece extends StructurePiece {
         drake.refreshPositionAndAngles(pos.getX() + .5, pos.getY(), pos.getZ() + .5, 180, 0);
         drake.setPersistent();
         drake.setCustomName(Text.literal(name));
+        drake.setStableHome(this, x / 7);
         drake.setPositionTarget(pos, 16);
         world.spawnEntityAndPassengers(drake);
         return true;

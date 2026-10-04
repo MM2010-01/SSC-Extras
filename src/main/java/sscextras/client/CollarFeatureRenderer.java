@@ -21,6 +21,7 @@ import sscextras.drake.EarthenDrake;
 public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>> {
     private static final Identifier TEXTURE = new Identifier("ssc-extras", "textures/entity/collar.png");
     private final ModelPart strap, buckle, charm;
+    private final CuffModel taming = new CuffModel(7, 5.5f, true);
 
     public CollarFeatureRenderer(PlayerEntityRenderer renderer) {
         super(renderer);
@@ -53,6 +54,15 @@ public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientP
         if (player.isInvisible() || player.isSpectator()) return;
         var collar = CollarSlots.visibleCollar(player);
         if (collar.isEmpty()) return;
+        if (collar.isOf(Collars.TAMING)) {
+            if (EarthenDrake.stage(player) >= 0) return;
+            matrices.push();
+            getContextModel().head.rotate(matrices);
+            matrices.translate(0, .025, 0);
+            taming.render(matrices, vertices, light, false);
+            matrices.pop();
+            return;
+        }
         matrices.push();
         int drakeStage = EarthenDrake.stage(player);
         if (drakeStage == 3) matrices.translate(0, 0.66, -0.453333);

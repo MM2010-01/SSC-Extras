@@ -24,6 +24,21 @@ public final class DrakeFeedGoal extends Goal {
         setControls(EnumSet.of(Control.MOVE, Control.LOOK));
     }
 
+    public static void treat(PillagerEntity pillager, PlayerEntity player, int hungerLost) {
+        var food = new ItemStack(MEAT[pillager.getRandom().nextInt(MEAT.length)], 1 + (Math.max(0, hungerLost) + 2) / 3);
+        throwFood(pillager, player, food);
+        player.sendMessage(net.minecraft.text.Text.translatable("message.ssc-extras.drake.battle_treat")
+                .formatted(net.minecraft.util.Formatting.YELLOW), false);
+    }
+
+    private static void throwFood(PillagerEntity pillager, PlayerEntity player, ItemStack meal) {
+        var food = new ItemEntity(pillager.getWorld(), pillager.getX(), pillager.getEyeY() + .25, pillager.getZ(), meal.copy());
+        Vec3d delta = player.getPos().subtract(food.getPos());
+        food.setVelocity(delta.x / 15, .4 + Math.max(0, delta.y) / 15, delta.z / 15);
+        food.setOwner(player.getUuid()); food.setPickupDelay(10);
+        pillager.getWorld().spawnEntity(food);
+    }
+
     private boolean hungry(PlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
         return player.isAlive() && !player.isSpectator() && player.getHungerManager().getFoodLevel() < 10
@@ -57,11 +72,7 @@ public final class DrakeFeedGoal extends Goal {
         if (pillager.squaredDistanceTo(player) > 25) { pillager.getNavigation().startMovingTo(player, .8); return; }
         pillager.getNavigation().stop();
         if (pillager.age - started < 20) return;
-        var food = new ItemEntity(pillager.getWorld(), pillager.getX(), pillager.getEyeY() + .25, pillager.getZ(), meal.copy());
-        Vec3d delta = player.getPos().subtract(food.getPos());
-        food.setVelocity(delta.x / 15, .4 + Math.max(0, delta.y) / 15, delta.z / 15);
-        food.setOwner(player.getUuid()); food.setPickupDelay(10);
-        pillager.getWorld().spawnEntity(food);
+        throwFood(pillager, player, meal);
         thrown = true;
     }
 

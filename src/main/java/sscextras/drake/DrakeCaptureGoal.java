@@ -45,8 +45,11 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     private boolean wants(PlayerEntity player) {
-        return eligible(player) && (DrakeOutpostOwnership.owns(player, stable)
-                ? !pillager.getWorld().isDay() || EarthenDrake.stage(player) < 0 : cursedHarness(player));
+        if (!eligible(player) || DrakeBattleGoal.assigned(player)) return false;
+        if (!DrakeOutpostOwnership.owns(player, stable)) return cursedHarness(player);
+        var claim = DrakeOutpostOwnership.claim(player);
+        return !pillager.getWorld().isDay() || EarthenDrake.stage(player) < 0
+                || claim.tryingToEscape && (DrakeLeashing.holder(player) == pillager || DrakeRoaming.canSee(pillager, player));
     }
 
     public static boolean near(DrakeStablePiece piece, Vec3d position) {

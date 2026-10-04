@@ -16,10 +16,16 @@ public final class CuffModel {
     private static final String[] INSCRIPTION = {"curse", "sup", "press", "ion"};
     private final ModelPart band, rims;
     private final float width, depth;
+    private final boolean taming;
 
     public CuffModel(float width, float depth) {
+        this(width, depth, false);
+    }
+
+    public CuffModel(float width, float depth, boolean taming) {
         this.width = width;
         this.depth = depth;
+        this.taming = taming;
         var data = new ModelData();
         var root = data.getRoot();
         var body = ModelPartBuilder.create();
@@ -43,20 +49,20 @@ public final class CuffModel {
 
     public void render(MatrixStack matrices, VertexConsumerProvider buffers, int light, boolean geoCoordinates) {
         var buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
-        band.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, .57f, .62f, .67f, 1);
-        rims.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, .88f, .92f, .94f, 1);
+        band.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, taming ? .09f : .57f, taming ? .08f : .62f, taming ? .13f : .67f, 1);
+        rims.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, taming ? .28f : .88f, taming ? .24f : .92f, taming ? .34f : .94f, 1);
         buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(GLYPHS));
         float pixel = Math.min(.15f, (Math.min(width, depth) + .4f) / 22);
         for (int side = 0; side < INSCRIPTION.length; side++) {
             matrices.push();
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((geoCoordinates ? 90 : -90) * side));
             matrices.translate(0, 0, -((side % 2 == 0 ? depth : width) / 2 + .3f) / 16);
-            engrave(matrices.peek(), buffer, light, INSCRIPTION[side], pixel, geoCoordinates);
+            engrave(matrices.peek(), buffer, light, taming ? side % 2 == 0 ? "curse" : "rune" : INSCRIPTION[side], pixel, geoCoordinates);
             matrices.pop();
         }
     }
 
-    private static void engrave(MatrixStack.Entry pose, VertexConsumer buffer, int light, String text, float pixel, boolean geoCoordinates) {
+    private void engrave(MatrixStack.Entry pose, VertexConsumer buffer, int light, String text, float pixel, boolean geoCoordinates) {
         int length = -1;
         for (int i = 0; i < text.length(); i++) length += glyphWidth(text.charAt(i)) + 1;
         float x = length * pixel / 2, y = -3.5f * pixel;
@@ -65,7 +71,7 @@ public final class CuffModel {
             int width = glyphWidth(letter);
             // A dark upper edge makes the cyan lettering read as a cut into the metal.
             glyph(pose, buffer, light, letter, width, x + .025f, y - .025f, -.002f, pixel, .20f, .28f, .30f, geoCoordinates);
-            glyph(pose, buffer, light, letter, width, x, y, -.004f, pixel, .32f, .74f, .76f, geoCoordinates);
+            glyph(pose, buffer, light, letter, width, x, y, -.004f, pixel, taming ? .7f : .32f, taming ? .26f : .74f, taming ? .92f : .76f, geoCoordinates);
             x -= (width + 1) * pixel;
         }
     }

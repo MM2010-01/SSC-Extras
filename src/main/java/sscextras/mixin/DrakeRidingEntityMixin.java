@@ -17,11 +17,14 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
     @Unique private DrakeRiding.Input sscExtras$riderInput;
     @Unique private RiderChestInventory sscExtras$chest;
     @Unique private boolean sscExtras$syncPassengers;
+    @Unique private net.minecraft.entity.mob.PillagerEntity sscExtras$battleRider;
     public DrakeRiding.Input sscExtras$getRiderInput() { return sscExtras$riderInput; }
     public void sscExtras$setRiderInput(DrakeRiding.Input input) { sscExtras$riderInput = input; }
     public RiderChestInventory sscExtras$getChest() { return sscExtras$chest; }
     public void sscExtras$setChest(RiderChestInventory inventory) { sscExtras$chest = inventory; }
     public boolean sscExtras$tracksDrakePassenger() { return sscExtras$syncPassengers; }
+    public net.minecraft.entity.mob.PillagerEntity sscExtras$battleRider() { return sscExtras$battleRider; }
+    public void sscExtras$battleRider(net.minecraft.entity.mob.PillagerEntity id) { sscExtras$battleRider = id; }
 
     @Inject(method = {"addPassenger", "removePassenger"}, at = @At("TAIL"))
     private void sscExtras$syncOwnerPassenger(Entity passenger, CallbackInfo ci) {
