@@ -13,6 +13,8 @@ import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManage
 import net.onixary.shapeShifterCurseFabric.status_effects.BaseTransformativeStatusEffect;
 
 public final class CreatureInstinct {
+    public static final float PERMANENT_INSTINCT_COST = 10.0f;
+
     private CreatureInstinct() { }
 
     public static boolean add(PlayerEntity player, BaseTransformativeStatusEffect effect) {
@@ -33,7 +35,8 @@ public final class CreatureInstinct {
             return false;
         }
         boolean original = RegPlayerForms.ORIGINAL_SHIFTER.equals(current);
-        if (!original && (current.getIndex() < 0 || current.getIndex() >= 2
+        if (!original && (current.getIndex() < 0
+                || (current.getIndex() >= 2 && permanentTarget(current) == null)
                 || current.getGroup() == null
                 || !current.getGroup().GroupID.equals(target.getGroup().GroupID))) {
             return false;
@@ -49,13 +52,22 @@ public final class CreatureInstinct {
             }
             state.sscExtras$setTarget(target.FormID);
         }
-        instinct.instinctValue = Math.min(100.0f, instinct.instinctValue + amount);
+        instinct.instinctValue = Math.min(100.0f, instinct.instinctValue + amount / costMultiplier(current));
         RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
         return true;
     }
 
     public static void clearTarget(PlayerEntity player) {
         ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$setTarget(null);
+    }
+
+    public static PlayerFormBase permanentTarget(PlayerFormBase form) {
+        return form.getIndex() == 2 && form.getGroup() != null && form.getGroup().hasForm(3)
+                ? form.getGroup().getForm(3) : null;
+    }
+
+    public static float costMultiplier(PlayerFormBase form) {
+        return permanentTarget(form) != null ? PERMANENT_INSTINCT_COST : 1.0f;
     }
 
     public static PlayerFormBase getTarget(PlayerEntity player) {

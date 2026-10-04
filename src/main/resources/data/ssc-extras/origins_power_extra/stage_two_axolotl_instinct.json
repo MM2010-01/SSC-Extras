@@ -1,0 +1,10 @@
+{
+  "TargetOriginsID": "shape-shifter-curse:form_axolotl_2",
+  "ExtraPowers": [
+    "shape-shifter-curse:form_axolotl_instinct_in_water",
+    "shape-shifter-curse:form_axolotl_instinct_eat_fish",
+    "shape-shifter-curse:form_axolotl_instinct_biome",
+    "shape-shifter-curse:form_axolotl_instinct_near_dripleaf",
+    "shape-shifter-curse:form_axolotl_instinct_attack_fish"
+  ]
+}

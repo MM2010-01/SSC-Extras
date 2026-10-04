@@ -1,0 +1,10 @@
+{
+  "TargetOriginsID": "shape-shifter-curse:form_familiar_fox_2",
+  "ExtraPowers": [
+    "shape-shifter-curse:form_familiar_fox_instinct_in_berry_bush",
+    "shape-shifter-curse:form_familiar_fox_instinct_looking_witch",
+    "shape-shifter-curse:form_familiar_fox_instinct_biome",
+    "shape-shifter-curse:form_instinct_use_catalyst",
+    "shape-shifter-curse:form_instinct_use_golden_apple"
+  ]
+}
