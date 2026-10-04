@@ -13,6 +13,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.text.Text;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
@@ -112,6 +113,7 @@ public final class Collars {
         if (actual == null || !ItemStack.areEqual(actual, equipped)) return false;
         source.decrement(1);
         player.currentScreenHandler.sendContentUpdates();
+        player.sendMessage(Text.translatable("message.ssc-extras.collar.auto_equipped").formatted(Formatting.YELLOW), false);
         return true;
     }
 

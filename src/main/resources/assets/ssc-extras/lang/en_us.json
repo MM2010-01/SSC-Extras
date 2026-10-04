@@ -103,12 +103,13 @@
   "curios.identifier.anklet": "Ankles",
   "message.ssc-extras.drake.hunger_collapse": "Your legs are shaking from exhaustion, and you fall down to all fours. You don't have enough energy to support your upright stance!",
   "message.ssc-extras.drake.pillager_equipped": "A pillager has equipped you with %s.",
+  "message.ssc-extras.collar.auto_equipped": "The cursed collar has fastened itself around your neck!",
   "gamerule.CursedCollarAutoEquipForCursedPlayers": "Cursed collars auto-equip cursed players",
   "gamerule.CursedCollarAutoEquipForCursedPlayers.description": "Cursed collars in inventories or opened containers equip cursed players with empty neck slots. Permanent forms remain exempt.",
   "gamerule.CursedCollarAutoEquipForUncursedPlayers": "Cursed collars auto-equip uncursed players",
   "gamerule.CursedCollarAutoEquipForUncursedPlayers.description": "Cursed collars in inventories or opened containers equip uncursed players with empty neck slots.",
-  "gamerule.PillagerMountRecruitingForDrake": "Pillagers recruit drakes",
-  "gamerule.PillagerMountRecruitingForDrake.description": "Pillagers equip drakes at every stage with missing cursed reins and saddles, and complete the equipment of other players already wearing a cursed piece.",
-  "gamerule.PillagerMountRecruitingForUncursed": "Pillagers recruit uncursed players",
-  "gamerule.PillagerMountRecruitingForUncursed.description": "Pillagers equip uncursed players with cursed reins and saddles, including missing pieces while they remain untransformed."
+  "gamerule.PillagerMountRecruitingForDrake": "Pillagers mount recruit drakes",
+  "gamerule.PillagerMountRecruitingForDrake.description": "Pillagers equip drakes at every stage with missing cursed reins and saddles, and complete the equipment of those who are missing a piece.",
+  "gamerule.PillagerMountRecruitingForUncursed": "Pillagers mount recruit uncursed players",
+  "gamerule.PillagerMountRecruitingForUncursed.description": "Pillagers equip uncursed players with cursed reins and saddles."
 }
