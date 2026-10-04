@@ -21,24 +21,10 @@ public final class CreatureInstinct {
     }
 
     public static boolean add(PlayerEntity player, BaseTransformativeStatusEffect effect, float amount) {
-        if (!(player instanceof ServerPlayerEntity) || !player.isAlive()
-                || player.isCreative() || player.isSpectator() || effect == null
-                || TransformManager.getPlayerTransformData(player).isTransforming) {
-            return false;
-        }
-
+        if (!canGain(player, effect)) return false;
         PlayerFormBase current = FormAbilityManager.getForm(player);
         PlayerFormBase target = effect.getToForm(player);
-        if (target == null || target.getIndex() < 0 || target.getGroup() == null) {
-            return false;
-        }
         boolean original = RegPlayerForms.ORIGINAL_SHIFTER.equals(current);
-        if (!original && (current.getIndex() < 0
-                || (current.getIndex() >= 2 && permanentTarget(current) == null)
-                || current.getGroup() == null
-                || !current.getGroup().GroupID.equals(target.getGroup().GroupID))) {
-            return false;
-        }
 
         PlayerInstinctComponent instinct = RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player);
         InstinctTarget state = (InstinctTarget) instinct;
@@ -55,6 +41,41 @@ public final class CreatureInstinct {
                 + sscextras.collar.Collars.gain(player, amount) / costMultiplier(current));
         RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
         return true;
+    }
+
+    public static boolean canGain(PlayerEntity player, BaseTransformativeStatusEffect effect) {
+        if (!(player instanceof ServerPlayerEntity) || !player.isAlive()
+                || player.isCreative() || player.isSpectator() || effect == null
+                || TransformManager.getPlayerTransformData(player).isTransforming) {
+            return false;
+        }
+        return matchesForm(player, effect);
+    }
+
+    public static boolean matchesForm(PlayerEntity player, BaseTransformativeStatusEffect effect) {
+        if (effect == null) return false;
+        PlayerFormBase current = FormAbilityManager.getForm(player);
+        PlayerFormBase target = effect.getToForm(player);
+        if (target == null || target.getIndex() < 0 || target.getGroup() == null) {
+            return false;
+        }
+        boolean original = RegPlayerForms.ORIGINAL_SHIFTER.equals(current);
+        if (!original && (current.getIndex() < 0
+                || (current.getIndex() >= 2 && permanentTarget(current) == null)
+                || current.getGroup() == null
+                || !current.getGroup().GroupID.equals(target.getGroup().GroupID))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static float cooldownRate(PlayerEntity player, PlayerInstinctComponent instinct) {
+        if (instinct.instinctValue >= 100 || !player.isAlive() || player.isCreative() || player.isSpectator()
+                || TransformManager.getPlayerTransformData(player).isTransforming) return 0;
+        PlayerFormBase form = FormAbilityManager.getForm(player);
+        if (form.equals(RegPlayerForms.ORIGINAL_SHIFTER)) return -0.025f;
+        return permanentTarget(form) != null ? -0.005f : 0;
     }
 
     public static void clearTarget(PlayerEntity player) {

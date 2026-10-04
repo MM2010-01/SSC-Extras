@@ -33,7 +33,8 @@ public abstract class InstinctTickerMixin {
     @Inject(method = "calculateCurrentRate", at = @At("RETURN"), cancellable = true)
     private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
                                            CallbackInfoReturnable<Float> cir) {
-        cir.setReturnValue(cir.getReturnValue() + Collars.instinctRate(player) + MoonlightInstinct.rate(player));
+        float rate = cir.getReturnValue() + Collars.instinctRate(player) + MoonlightInstinct.rate(player);
+        cir.setReturnValue(rate + (comp.instinctValue + rate >= 100 ? 0 : CreatureInstinct.cooldownRate(player, comp)));
     }
 
     @Redirect(method = "tick", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target =

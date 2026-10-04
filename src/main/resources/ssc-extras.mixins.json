@@ -5,6 +5,11 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "CursePotionMixin",
+    "WitchInstinctPotionMixin",
+    "WitchInstinctTeamMixin",
+    "AddonAxolotlInstinctMixin",
+    "AddonFamiliarInstinctMixin",
+    "CodexInstinctMixin",
     "TransformativeMobMixin",
     "TransformativeStatusMixin",
     "InstinctComponentMixin",
