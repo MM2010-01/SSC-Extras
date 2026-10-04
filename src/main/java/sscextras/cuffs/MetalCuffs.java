@@ -11,6 +11,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
+import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import net.onixary.shapeShifterCurseFabric.util.Accessory.AccessoryUtils;
 import sscextras.CreatureInstinct;
@@ -40,17 +41,34 @@ public final class MetalCuffs {
         return ItemStack.EMPTY;
     }
 
-    /** Called before any gain is capped, so overflow is charged in full. */
+    public static boolean isSuppressing(PlayerEntity player) {
+        return canSuppress(player) && (!equipped(player, false, false).isEmpty() || !equipped(player, true, false).isEmpty());
+    }
+
+    private static boolean canSuppress(PlayerEntity player) {
+        if (!player.isAlive() || player.isSpectator() || TransformManager.getPlayerTransformData(player).isTransforming) return false;
+        var form = FormAbilityManager.getForm(player);
+        return form.equals(RegPlayerForms.ORIGINAL_SHIFTER) || form.getIndex() >= 0 && form.getIndex() <= 2
+                && (form.getIndex() < 2 || CreatureInstinct.permanentTarget(form) != null);
+    }
+
+    /** Negative means no cuffs are equipped; both pairs contribute their actual capacity. */
+    public static float durabilityFraction(PlayerEntity player) {
+        ItemStack wrists = equipped(player, false, false), ankles = equipped(player, true, false);
+        int capacity = (wrists.isEmpty() ? 0 : wrists.getMaxDamage()) + (ankles.isEmpty() ? 0 : ankles.getMaxDamage());
+        if (capacity == 0) return -1;
+        double remaining = wrists.isEmpty() ? 0 : wrists.getMaxDamage() - wrists.getDamage() - wear(wrists);
+        if (!ankles.isEmpty()) remaining += ankles.getMaxDamage() - ankles.getDamage() - wear(ankles);
+        return (float) (remaining / capacity);
+    }
+
+    /** Called before any gain is capped, so every blocked point is charged in full. */
     public static float apply(PlayerEntity player, float current, float gain) {
         float value = current + gain;
-        if (gain <= 0 || value <= 99 || !(player instanceof ServerPlayerEntity serverPlayer)
-                || !player.isAlive() || player.isSpectator()
-                || TransformManager.getPlayerTransformData(player).isTransforming) return MathHelper.clamp(value, 0, 100);
-        var form = FormAbilityManager.getForm(player);
-        if (form.getIndex() < 0 || form.getIndex() > 2
-                || form.getIndex() == 2 && CreatureInstinct.permanentTarget(form) == null) return MathHelper.clamp(value, 0, 100);
+        if (gain <= 0 || !(player instanceof ServerPlayerEntity serverPlayer) || !canSuppress(player))
+            return MathHelper.clamp(value, 0, 100);
         ItemStack wrists = equipped(player, false, false), ankles = equipped(player, true, false);
-        double remaining = (double) current + gain - 99;
+        double remaining = gain;
         while (remaining > 0.0000001 && (!wrists.isEmpty() || !ankles.isEmpty())) {
             double share = !wrists.isEmpty() && !ankles.isEmpty() ? 0.5 : 1;
             double step = remaining;
@@ -60,7 +78,7 @@ public final class MetalCuffs {
             if (!ankles.isEmpty()) damage(serverPlayer, ankles, step * share, true);
             remaining -= step;
         }
-        return MathHelper.clamp(99 + (float) remaining, 0, 100);
+        return MathHelper.clamp(current + (float) remaining, 0, 100);
     }
 
     private static double wear(ItemStack stack) {

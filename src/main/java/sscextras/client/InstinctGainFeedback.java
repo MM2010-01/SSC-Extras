@@ -5,6 +5,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctComponent;
 import sscextras.CreatureInstinct;
+import sscextras.cuffs.MetalCuffs;
 
 public final class InstinctGainFeedback {
     private PlayerInstinctComponent previous;
@@ -12,13 +13,15 @@ public final class InstinctGainFeedback {
     private float previousValue;
     private int previousTick, until;
     private float rate, cooldown;
+    private boolean suppressed;
 
     public void update(PlayerEntity player, PlayerInstinctComponent instinct) {
         var form = FormAbilityManager.getForm(player);
+        suppressed = MetalCuffs.isSuppressing(player);
         cooldown = CreatureInstinct.cooldownRate(player, instinct);
         int tick = player.age;
         float change = instinct.instinctValue - previousValue;
-        if (previous != instinct || previousForm != form || tick < previousTick || change < -0.001f) {
+        if (suppressed || previous != instinct || previousForm != form || tick < previousTick || change < -0.001f) {
             rate = 0;
             until = tick;
         } else {
@@ -35,7 +38,7 @@ public final class InstinctGainFeedback {
         previousTick = tick;
     }
 
-    public boolean increasing(PlayerInstinctComponent instinct) { return rate > 0 || instinct.isInstinctIncreasing; }
+    public boolean increasing(PlayerInstinctComponent instinct) { return !suppressed && (rate > 0 || instinct.isInstinctIncreasing); }
     public boolean decreasing(PlayerInstinctComponent instinct) {
         return rate <= 0 && instinct.isInstinctDecreasing && instinct.currentInstinctRate - cooldown < -0.000001f;
     }

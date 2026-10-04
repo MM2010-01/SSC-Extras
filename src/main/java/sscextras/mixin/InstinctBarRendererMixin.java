@@ -2,6 +2,7 @@ package sscextras.mixin;
 
 import sscextras.CreatureInstinct;
 import sscextras.client.InstinctGainFeedback;
+import sscextras.client.CuffDurabilityOutline;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
@@ -52,6 +53,12 @@ public abstract class InstinctBarRendererMixin {
             PlayerEntity player, CallbackInfo ci) {
         PlayerFormBase form = FormAbilityManager.getForm(player);
         if (form.getIndex() < 2 || CreatureInstinct.permanentTarget(form) != null) isInstinctLock = false;
+    }
+
+    @Inject(method = "renderInstinctBar", at = @At("TAIL"))
+    private void sscExtras$cuffDurability(DrawContext context, float tickDelta, int x, int y,
+            PlayerEntity player, CallbackInfo ci) {
+        CuffDurabilityOutline.render(context, x, y, player);
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE", target =

@@ -85,7 +85,10 @@ public abstract class InstinctTickerMixin {
     @Inject(method = "checkThreshold", at = @At("HEAD"), cancellable = true)
     private static void sscExtras$transformToPermanent(ServerPlayerEntity player, PlayerInstinctComponent comp,
                                                        CallbackInfo ci) {
-        if (comp.instinctValue >= 100) comp.instinctValue = MetalCuffs.apply(player, 99, comp.instinctValue - 99);
+        if (comp.instinctValue >= 100 && MetalCuffs.isSuppressing(player)) {
+            ci.cancel();
+            return;
+        }
         PlayerFormBase target = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player));
         if (target != null) {
             if (comp.instinctValue >= 100.0f && !InstinctTicker.isPausing

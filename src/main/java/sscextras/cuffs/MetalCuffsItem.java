@@ -62,5 +62,6 @@ public final class MetalCuffsItem extends AccessoryItem {
         lines.add(Text.translatable("tooltip.ssc-extras.metal_cuffs.suppress").formatted(Formatting.GRAY));
         lines.add(Text.translatable("tooltip.ssc-extras.metal_cuffs.first").formatted(Formatting.GRAY));
         lines.add(Text.translatable("tooltip.ssc-extras.metal_cuffs.pair").formatted(Formatting.GRAY));
+        lines.add(Text.translatable("tooltip.ssc-extras.metal_cuffs.durability").formatted(Formatting.GRAY));
     }
 }
