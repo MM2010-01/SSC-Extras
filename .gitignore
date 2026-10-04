@@ -5,7 +5,7 @@ run/
 .idea/
 *.iml
 *.log
-README.md
+README-LOCAL.md
 output/
 scripts/
 src/gametest/
