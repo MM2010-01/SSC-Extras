@@ -361,11 +361,27 @@ public final class DrakeSoulbinding {
         }).stream().min(Comparator.comparingDouble(guard -> guard.squaredDistanceTo(stall))).orElse(null);
         if (keeper == null) return false;
         claim.lastAttendanceNight = night;
-        boolean present = claim.world.equals(player.getWorld().getRegistryKey()) && claim.stall().contains(player.getPos())
-                && keeper.getVisibilityCache().canSee(player);
+        boolean present = attendanceExcused(player, claim);
         if (!present) disobey(player);
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
         return !present;
+    }
+
+    private static boolean attendanceExcused(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        if (!claim.world.equals(player.getWorld().getRegistryKey())) return false;
+        if (Box.from(claim.stable).contains(player.getPos())) return true;
+        if (player.getFirstPassenger() instanceof PillagerEntity rider && homeKeeper(rider, claim)) return true;
+        if (DrakeLeashing.holder(player) instanceof PillagerEntity guide && homeKeeper(guide, claim)) {
+            var capture = ((DrakeCaptureGoal.Captor)guide).sscExtras$captureGoal();
+            return capture != null && capture.quarry() == player && capture.shouldContinue() || attendee(guide) == player;
+        }
+        return false;
+    }
+
+    private static boolean homeKeeper(PillagerEntity guard, DrakeOutpostOwnership.Claim claim) {
+        if (guard instanceof DrakeVisitorEntity || !guard.isAlive() || guard.isRemoved() || guard.isAiDisabled()) return false;
+        var home = ((DrakeStableNavigation)guard.getNavigation()).stable();
+        return home != null && claim.matches(guard.getWorld(), home);
     }
 
     private static boolean atHay(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
