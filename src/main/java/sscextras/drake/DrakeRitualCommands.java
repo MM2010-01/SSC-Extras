@@ -3,6 +3,7 @@ package sscextras.drake;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.text.Text;
+import java.util.Locale;
 
 public final class DrakeRitualCommands {
     private DrakeRitualCommands() { }
@@ -23,7 +24,22 @@ public final class DrakeRitualCommands {
                     return 1;
                 }));
             }
-            dispatcher.register(CommandManager.literal("ssc-extras").requires(source -> source.hasPermissionLevel(2)).then(rituals));
+            var clear = CommandManager.literal("clear");
+            for (var effect : new String[]{"PermanentMount", "Feralization"}) {
+                for (var command : new String[]{effect, effect.toLowerCase(Locale.ROOT)}) {
+                    clear.then(CommandManager.literal(command).executes(context -> {
+                        var source = context.getSource();
+                        var player = source.getPlayerOrThrow();
+                        if (effect.equals("PermanentMount")) DrakeSoulbinding.clearPermanentMount(player);
+                        else DrakeSoulbinding.clearFeralization(player);
+                        source.sendFeedback(() -> Text.translatable("message.ssc-extras.clear_command.cleared",
+                                Text.translatable("special_effect.ssc-extras." + effect.toLowerCase(Locale.ROOT))), false);
+                        return 1;
+                    }));
+                }
+            }
+            dispatcher.register(CommandManager.literal("ssc-extras").requires(source -> source.hasPermissionLevel(2))
+                    .then(rituals).then(clear));
         });
     }
 }

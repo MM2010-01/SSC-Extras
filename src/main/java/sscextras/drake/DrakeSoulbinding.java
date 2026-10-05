@@ -522,6 +522,36 @@ public final class DrakeSoulbinding {
         }
     }
 
+    static void clearPermanentMount(ServerPlayerEntity player) {
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim != null) {
+            if (!claim.attendants.isEmpty() && !claim.shoeingRitual && !punishment(claim)) finishAttendance(player, claim);
+            claim.goodTicks = claim.ritualHint = 0;
+            claim.lastServiceTime = player.getWorld().getTimeOfDay();
+            clearSoulbond(player, claim);
+            if (claim.returning) DrakeFeralization.stop(player, claim);
+            DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        }
+        SoulboundEquipment.clear(player);
+        syncSoul(player);
+    }
+
+    static void clearFeralization(ServerPlayerEntity player) {
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim != null) {
+            if (!claim.attendants.isEmpty() && !claim.shoeingRitual && punishment(claim)) finishAttendance(player, claim);
+            claim.feral = false;
+            claim.escapes = 0;
+            claim.tryingToEscape = false;
+            if (!claim.soulbound) claim.awaitingRespawn = false;
+            DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        }
+        player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
+        if (claim == null || !claim.returning || !DrakeRoaming.mustReturn(player, claim)) DrakeFeralization.stop(player, claim);
+        DrakeFeralization.sync(player, claim);
+        syncSoul(player);
+    }
+
     static void clearCurse(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         cancel(player, claim);
         claim.shoeingDue = false;
@@ -529,6 +559,10 @@ public final class DrakeSoulbinding {
         claim.feral = false;
         DrakeFeralization.stop(player, claim);
         DrakeFeralization.sync(player, claim);
+        clearSoulbond(player, claim);
+    }
+
+    private static void clearSoulbond(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (!claim.soulbound) return;
         claim.soulbound = false;
         syncSoul(player);

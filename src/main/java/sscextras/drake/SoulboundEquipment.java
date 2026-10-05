@@ -37,11 +37,24 @@ public final class SoulboundEquipment {
     }
 
     public static void enchant(PlayerEntity player) {
-        for (int i = 0; i < player.getInventory().size(); i++) enchant(player.getInventory().getStack(i));
-        for (var slot : CollarSlots.includingLegacy(player)) enchant(slot.get(player));
+        update(player, SoulboundEquipment::enchant);
+    }
+
+    public static void clear(PlayerEntity player) {
+        update(player, stack -> {
+            if (!bound(stack)) return;
+            var enchantments = EnchantmentHelper.get(stack);
+            enchantments.remove(SOULBOUND);
+            EnchantmentHelper.set(enchantments, stack);
+        });
+    }
+
+    private static void update(PlayerEntity player, java.util.function.Consumer<ItemStack> action) {
+        for (int i = 0; i < player.getInventory().size(); i++) action.accept(player.getInventory().getStack(i));
+        for (var slot : CollarSlots.includingLegacy(player)) action.accept(slot.get(player));
         for (var item : new DrakeAccessoryItem[]{DrakeEquipment.REINS, DrakeEquipment.SADDLE,
                 DrakeEquipment.RIDERS_CHEST, DrakeEquipment.CLAW_TIPS, DrakeEquipment.SHOES})
-            for (var stack : DrakeEquipment.stacks(player, item)) enchant(stack);
+            for (var stack : DrakeEquipment.stacks(player, item)) action.accept(stack);
         player.currentScreenHandler.sendContentUpdates();
     }
 
