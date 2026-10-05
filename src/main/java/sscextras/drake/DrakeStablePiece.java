@@ -123,6 +123,13 @@ public final class DrakeStablePiece extends StructurePiece {
         return false;
     }
     public BlockPos reservedTie() { return offsetPos((stallCount() - 1) * 7 + 3, 1, 12); }
+    public BlockPos tie(int stall) { return offsetPos(stall * 7 + 3, 1, 12); }
+    public BlockPos bed(int stall) { return offsetPos(stall * 7 + 3, 1, 8); }
+    public net.minecraft.util.math.Box stall(int stall) {
+        var center = bed(stall);
+        return new net.minecraft.util.math.Box(center.getX() - 2, center.getY(), center.getZ() - 4,
+                center.getX() + 4, center.getY() + 4, center.getZ() + 4);
+    }
     public BlockPos sign(int stall) { return offsetPos(stall * 7 + 2, 1, 2); }
     public String firstName() { return name(0); }
     public String secondName() { return name(1); }

@@ -81,6 +81,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
 
     @Inject(method = "initGoals", at = @At("TAIL"))
     private void sscExtras$completeDrakeHarness(CallbackInfo ci) {
+        goalSelector.add(-1, new sscextras.drake.DrakeRitualGoal((PillagerEntity)(Object)this));
         sscExtras$battleGoal = new sscextras.drake.DrakeBattleGoal((PillagerEntity)(Object)this);
         goalSelector.add(0, sscExtras$battleGoal);
         sscExtras$equipGoal = new DrakeFaction.EquipGoal((PillagerEntity)(Object)this);

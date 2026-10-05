@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class FormAbilityManagerMixin {
     @Inject(method = "applyForm", at = @At("HEAD"))
     private static void sscExtras$onFormChange(PlayerEntity player, PlayerFormBase newForm, CallbackInfo ci) {
+        sscextras.drake.DrakeSoulbinding.formChanged(player, newForm);
         if (!player.getWorld().isClient && !newForm.equals(FormAbilityManager.getForm(player))) {
             CreatureInstinct.clearTarget(player);
             RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);

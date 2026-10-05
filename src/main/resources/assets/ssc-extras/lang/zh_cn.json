@@ -1,5 +1,5 @@
 {
-  "entity.ssc-extras.drake_visitor": "来访村民",
+  "entity.ssc-extras.drake_visitor": "来访掠夺者",
   "message.ssc-extras.drake.hay_patch": "地龙需要至少2×2的平坦干草块才能睡觉。",
   "codex.ssc-extras.instincts_2": "你隐约感觉到继续放纵本能可能会让这副形态永久定型。克制本能则能让它逐渐平息。",
   "itemGroup.ssc-extras": "SSC Extras",
@@ -147,5 +147,17 @@
   "message.ssc-extras.drake.pillager.stable_arrived": "掠夺者：%s，回到你该待的地方了。乖乖拴在这里，安分些。",
   "message.ssc-extras.drake.pillager.feed": "掠夺者：饿了，%s？给，把肉吃了。",
   "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。",
-  "message.ssc-extras.drake.pillager.stable_rules": "掠夺者：听好了，%s。白天只能在兽栏周围64格内活动。不许逃跑，抓到了就带回来。天黑前回自己的栏位。这就是规矩。"
+  "message.ssc-extras.drake.pillager.stable_rules": "掠夺者：听好了，%s。白天只能在兽栏周围64格内活动。不许逃跑，抓到了就带回来。天黑前回自己的栏位。这就是规矩。",
+  "enchantment.ssc-extras.soulbound": "灵魂绑定",
+  "message.ssc-extras.drake.service_promise": "看守承诺在你乖乖服役十天后给予奖励：举行仪式，让你成为永久坐骑。留在家园附近，服从骑手，不要逃跑或攻击同阵营成员。",
+  "message.ssc-extras.drake.service_reset": "你的不听话破坏了看守的信任。十天的乖巧服役需要重新开始。",
+  "message.ssc-extras.drake.ritual_soon": "你已乖乖服役八天。看守正在准备奖励：你的灵魂将成为地龙，与这间畜栏绑定，即使死亡也无法解脱。",
+  "message.ssc-extras.drake.ritual_ready": "你已乖乖服役十天！回到分配给你的畜栏干草上，三名掠夺者将聚集，为你举行永久坐骑仪式。",
+  "message.ssc-extras.drake.ritual_gathering": "三名看守正在干草周围聚集。留在畜栏中，等待灵魂绑定仪式。",
+  "message.ssc-extras.drake.ritual_begin": "三名掠夺者开始吟唱。永久坐骑仪式已经开始；你的地龙形态、诅咒装备和畜栏归属将跨越死亡。",
+  "message.ssc-extras.drake.ritual_soul": "吟唱深入灵魂。你的灵魂正化为地龙本身。只有彻底解除地龙变身才能获得自由。",
+  "message.ssc-extras.drake.ritual_interrupted": "仪式被打断了。你的服役进度仍然保留；回到干草上，等待三名看守到齐后重新开始。",
+  "message.ssc-extras.drake.ritual_complete": "你的灵魂如今就是地龙。你已成为兽栏的永久坐骑。诅咒装备获得灵魂绑定；死亡后，你将保留形态、名字和归属，回到自己的畜栏。",
+  "message.ssc-extras.drake.soul_respawn": "你的地龙灵魂回到了分配给你的畜栏。死亡无法打破这份羁绊。",
+  "message.ssc-extras.drake.soul_freed": "地龙变身已被彻底解除。你的灵魂重获自由，原来的重生点已恢复。"
 }

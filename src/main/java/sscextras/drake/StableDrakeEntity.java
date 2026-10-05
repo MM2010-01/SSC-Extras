@@ -220,6 +220,16 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     @Override protected SoundEvent getHurtSound(DamageSource source) { return SoundEvents.ENTITY_RAVAGER_HURT; }
     @Override protected SoundEvent getDeathSound() { return SoundEvents.ENTITY_RAVAGER_DEATH; }
 
+    @Override public void onDeath(DamageSource source) {
+        if (!getWorld().isClient && homeStable == null) {
+            var stable = DrakeCaptureGoal.findStable((net.minecraft.server.world.ServerWorld)getWorld(), getBlockPos());
+            if (stable != null) belongsTo(stable);
+        }
+        super.onDeath(source);
+        if (!getWorld().isClient && homeStable != null && !homeWorld.isEmpty())
+            DrakeOutpostOwnership.vacateResident(getServer(), homeWorld, homeStable, homeStall);
+    }
+
     @Override public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
         nbt.put("DrakeSaddle", saddle.writeNbt(new NbtCompound()));

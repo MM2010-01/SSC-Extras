@@ -54,7 +54,8 @@ public final class DrakeStableGuards {
         if (!world.isChunkLoaded(stable.gate(0)) || world.getDifficulty() == Difficulty.PEACEFUL
                 || !world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) return;
         int count = 0, nearby = 0, outer = 0;
-        var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE), entity -> entity.isAlive());
+        var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE),
+                entity -> entity.isAlive() && !(entity instanceof DrakeVisitorEntity));
         guards.sort(java.util.Comparator.comparing(guard -> !((DrakeStableNavigation)guard.getNavigation()).managedGuard()));
         for (var guard : guards) {
             if (!DrakeCaptureGoal.near(stable, guard.getPos())) continue;

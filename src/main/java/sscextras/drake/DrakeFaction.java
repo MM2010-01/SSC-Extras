@@ -72,6 +72,7 @@ public final class DrakeFaction {
 
     public static void damaged(Entity target, DamageSource source) {
         if (target.getWorld().isClient) return;
+        if (source.getAttacker() instanceof PlayerEntity player && member(target)) DrakeSoulbinding.disobey(player);
         if (source.getAttacker() instanceof PlayerEntity player
                 && EarthenDrake.stage(player) == 3 && member(target))
             AttackEntityDataTracker.onPlayerAttack(player, target, player.getWorld());
@@ -222,7 +223,7 @@ public final class DrakeFaction {
 
         private boolean isNearest(PlayerEntity player) {
             var candidates = pillager.getWorld().getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(DrakeCaptureGoal.RANGE * 2 + 24),
-                    candidate -> candidate.isAlive() && !candidate.isAiDisabled() && !candidate.hasVehicle()
+                    candidate -> candidate.isAlive() && !(candidate instanceof DrakeVisitorEntity) && !candidate.isAiDisabled() && !candidate.hasVehicle()
                             && inRange(candidate, player));
             for (var candidate : candidates)
                 if (((EquipmentDisplay)candidate).sscExtras$recruiting() == player) return candidate == pillager;

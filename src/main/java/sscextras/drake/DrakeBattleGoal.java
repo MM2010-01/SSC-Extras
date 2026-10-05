@@ -28,6 +28,7 @@ public final class DrakeBattleGoal extends Goal {
     private LivingEntity attacker;
     private long attackedAt;
     private BlockPos homeGate, homeTie, exitGate;
+    private int homeStall;
     private Phase phase;
     private Purpose purpose;
     private int nextSearch, nextPatrolSearch, started, nextPath, nextEnemySearch, lastSeen, hungerBefore, patrolUntil;
@@ -41,6 +42,10 @@ public final class DrakeBattleGoal extends Goal {
 
     public static DrakeBattleGoal of(PillagerEntity pillager) { return ((Rider)pillager).sscExtras$battleGoal(); }
     public LivingEntity mount() { return phase == null && !pendingRecall ? null : mount; }
+    public boolean reserves(DrakeStablePiece home, int stall, PlayerEntity candidate) {
+        return mount() instanceof PlayerEntity player && player != candidate && stable != null
+                && homeStall == stall && stable.getBoundingBox().equals(home.getBoundingBox());
+    }
     public boolean returning() { return phase == Phase.RETURN || phase == Phase.ALIGN || phase == Phase.ENTER || phase == Phase.LEAVE; }
     public boolean pathing() { return returning() || phase == Phase.PATROL; }
     public boolean patrolling() { return purpose == Purpose.PATROL && phase != null; }
@@ -107,7 +112,7 @@ public final class DrakeBattleGoal extends Goal {
     private boolean available(LivingEntity candidate) {
         if (!candidate.isAlive() || candidate.hasPassengers() || candidate.hasVehicle()
                 || !(DrakeEquipment.canRide(candidate) || candidate instanceof PlayerEntity player && DrakeRiding.canCarryPillager(player))
-                || !DrakeEquipment.hasReins(candidate) || !DrakeCaptureGoal.near(stable, candidate.getPos()) || assigned(candidate)) return false;
+                || !DrakeEquipment.hasReins(candidate) || !DrakeCaptureGoal.near(stable, candidate.getPos()) || assigned(candidate) || candidate instanceof PlayerEntity player && DrakeSoulbinding.ritualActive(player)) return false;
         if (candidate instanceof PlayerEntity player) {
             var claim = DrakeOutpostOwnership.claim(player);
             var holder = DrakeLeashing.holder(player);
@@ -167,13 +172,16 @@ public final class DrakeBattleGoal extends Goal {
 
     private void setMount(LivingEntity candidate) {
         mount = candidate;
-        homeGate = candidate instanceof StableDrakeEntity drake ? stable.gate(drake.homeStall()) : stable.reservedGate();
+        homeStall = candidate instanceof StableDrakeEntity drake ? drake.homeStall()
+                : DrakeOutpostOwnership.availableStall((ServerWorld)pillager.getWorld(), stable, (PlayerEntity)candidate);
+        homeGate = stable.gate(homeStall);
         homeTie = new BlockPos(homeGate.getX(), homeGate.getY(), stable.getBoundingBox().getMaxZ());
     }
 
     public boolean recall(PlayerEntity player, DrakeStablePiece home) {
         if (phase != null || pendingRecall || player.hasPassengers() || player.hasVehicle()
                 || !DrakeRiding.canCarryPillager(player) || assigned(player)) return false;
+        if (DrakeOutpostOwnership.availableStall((ServerWorld)pillager.getWorld(), home, player) < 0) return false;
         stable = home; purpose = Purpose.RECALL; enemy = null;
         setMount(player); pendingRecall = true;
         ((DrakeRiding.State)player).sscExtras$battleRider(pillager);
@@ -194,7 +202,7 @@ public final class DrakeBattleGoal extends Goal {
         if (complete || mount == null || !mount.isAlive() || mount.getWorld() != pillager.getWorld() || pillager.age - started > 3600) return false;
         if (mount instanceof PlayerEntity player && (purpose != Purpose.RECALL && !owned(player)
                 || player.isCreative() || player.isSpectator() || player.isSleeping()
-                || purpose == Purpose.RECALL && (!DrakeCaptureGoal.eligible(player) || DrakeOutpostOwnership.reservedForAnother((ServerWorld)pillager.getWorld(), stable, player)))) return false;
+                || purpose == Purpose.RECALL && (!DrakeCaptureGoal.eligible(player) || !DrakeOutpostOwnership.available((ServerWorld)pillager.getWorld(), stable, homeStall, player)))) return false;
         return phase == Phase.APPROACH || phase == Phase.LEAVE || pillager.getVehicle() == mount;
     }
 
@@ -287,7 +295,7 @@ public final class DrakeBattleGoal extends Goal {
             pillager.stopRiding();
             ((DrakeRiding.State)mount).sscExtras$setRiderInput(null);
             if (mount instanceof PlayerEntity player) {
-                if (purpose == Purpose.RECALL) DrakeOutpostOwnership.capture(player, stable);
+                if (purpose == Purpose.RECALL) DrakeOutpostOwnership.capture(player, stable, homeStall);
                 BlindingRein.setClosed(player, false);
                 DrakeLeashing.attachPillager(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), homeTie));
                 DrakeDialogue.say(player, "stable_arrived");

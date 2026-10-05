@@ -57,6 +57,7 @@ public final class DrakeRoaming {
         if (claim.seenSince < 0) claim.seenSince = time;
         if (!claim.tryingToEscape && time - claim.seenSince >= 100) {
             claim.tryingToEscape = true;
+            DrakeSoulbinding.disobey(player);
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
             hint(player, "escape_marked");
             DrakeDialogue.say(player, "escape_seen");
@@ -79,6 +80,7 @@ public final class DrakeRoaming {
     }
 
     private static boolean belongs(PillagerEntity pillager, DrakeOutpostOwnership.Claim claim) {
+        if (pillager instanceof DrakeVisitorEntity) return false;
         var stable = ((DrakeStableNavigation)pillager.getNavigation()).stable();
         return stable != null && claim.matches(pillager.getWorld(), stable);
     }

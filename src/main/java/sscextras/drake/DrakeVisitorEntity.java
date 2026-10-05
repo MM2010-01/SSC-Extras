@@ -3,7 +3,7 @@ package sscextras.drake;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.ActionResult;
@@ -12,12 +12,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public final class DrakeVisitorEntity extends VillagerEntity {
+public final class DrakeVisitorEntity extends PillagerEntity {
     private DrakeStablePiece stable;
     private BlockPos departure;
     private int elapsed, pets;
 
-    public DrakeVisitorEntity(EntityType<? extends VillagerEntity> type, World world) { super(type, world); }
+    public DrakeVisitorEntity(EntityType<? extends PillagerEntity> type, World world) { super(type, world); }
 
     public void visit(DrakeStablePiece stable, BlockPos departure) {
         this.stable = stable; this.departure = departure;
@@ -31,6 +31,9 @@ public final class DrakeVisitorEntity extends VillagerEntity {
     @Override protected EntityNavigation createNavigation(World world) { return new DrakeStableNavigation(this, world); }
 
     @Override protected void initGoals() {
+        super.initGoals();
+        goalSelector.clear(goal -> true);
+        targetSelector.clear(goal -> true);
         goalSelector.add(0, new SwimGoal(this));
         goalSelector.add(1, new DrakePetGoal(this));
     }
@@ -47,6 +50,9 @@ public final class DrakeVisitorEntity extends VillagerEntity {
 
     @Override public ActionResult interactMob(PlayerEntity player, Hand hand) { return ActionResult.PASS; }
     @Override public boolean canImmediatelyDespawn(double distance) { return false; }
+    @Override public boolean canJoinRaid() { return false; }
+    @Override public boolean canLead() { return false; }
+    @Override public boolean canTarget(net.minecraft.entity.LivingEntity target) { return false; }
 
     @Override public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);

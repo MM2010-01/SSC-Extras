@@ -71,6 +71,9 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
                 default -> "SSC Extras Curios collar";
             };
         }
+        if (method.getName().equals("getDropRule") && args != null && args.length > 0
+                && args[args.length - 1] instanceof ItemStack stack && sscextras.drake.SoulboundEquipment.bound(stack))
+            return method.getReturnType().getField("ALWAYS_KEEP").get(null);
         if (args != null && args.length > 0 && contextClass.isInstance(args[0])) {
             LivingEntity wearer = (LivingEntity) call(entity, args[0]);
             var slot = new AccessoryItem.SlotData(new Identifier("curios", (String) call(identifier, args[0])), (int) call(index, args[0]));

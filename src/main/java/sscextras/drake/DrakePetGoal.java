@@ -39,14 +39,14 @@ public final class DrakePetGoal extends Goal {
                     || claim == null || !claim.matches(actor.getWorld(), stable) || claim.tryingToEscape
                     || BondOfTheBeastCompat.hasOwner(player)) return false;
         } else if (!(candidate instanceof StableDrakeEntity resident) || !resident.belongsTo(stable) || resident.getTarget() != null) return false;
-        return !(actor instanceof PillagerEntity) || !stable.getBoundingBox().contains(candidate.getBlockPos());
+        return actor instanceof DrakeVisitorEntity || !stable.getBoundingBox().contains(candidate.getBlockPos());
     }
 
     @Override public boolean canStart() {
         if (actor.age < nextSearch || !idle()) return false;
         nextSearch = actor.age + 200;
         stable = actor instanceof DrakeVisitorEntity visitor ? visitor.stable() : ((DrakeStableNavigation)actor.getNavigation()).stable();
-        if (stable == null || actor instanceof PillagerEntity && actor.getRandom().nextInt(6) != 0) return false;
+        if (stable == null || !(actor instanceof DrakeVisitorEntity) && actor.getRandom().nextInt(6) != 0) return false;
         var candidates = new ArrayList<LivingEntity>();
         candidates.addAll(actor.getWorld().getEntitiesByClass(StableDrakeEntity.class, actor.getBoundingBox().expand(24), this::eligible));
         for (var player : actor.getWorld().getPlayers()) if (actor.squaredDistanceTo(player) <= 24 * 24 && eligible(player)) candidates.add(player);

@@ -35,7 +35,7 @@ public final class DrakeAttention {
     public static void call(PlayerEntity player) {
         if (!player.getWorld().isClient && EarthenDrake.stage(player) >= 0 && player.isAlive()
                 && !player.isSpectator() && !player.isCreative())
-            ((State)player).sscExtras$calledUntil(player.getWorld().getTime() + 600);
+            ((State)player).sscExtras$calledUntil(player.getWorld().getTime() + 40);
     }
 
     public static boolean called(LivingEntity drake) {

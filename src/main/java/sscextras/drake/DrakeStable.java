@@ -18,14 +18,14 @@ public final class DrakeStable {
     public static final StructurePieceType PIECE = Registry.register(Registries.STRUCTURE_PIECE, EarthenDrake.id("drake_stable"),
             (context, nbt) -> new DrakeStablePiece(nbt));
     public static final EntityType<DrakeVisitorEntity> VISITOR = Registry.register(Registries.ENTITY_TYPE, EarthenDrake.id("drake_visitor"),
-            FabricEntityTypeBuilder.create(SpawnGroup.CREATURE, DrakeVisitorEntity::new)
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, DrakeVisitorEntity::new)
                     .dimensions(EntityDimensions.fixed(.6f, 1.95f)).trackRangeBlocks(64).build());
     public static final Item SPAWN_EGG = Registry.register(Registries.ITEM, EarthenDrake.id("stable_drake_spawn_egg"),
             new SpawnEggItem(DRAKE, 0x655537, 0xaca174, new Item.Settings()));
 
     public static void register() {
         FabricDefaultAttributeRegistry.register(DRAKE, StableDrakeEntity.attributes());
-        FabricDefaultAttributeRegistry.register(VISITOR, net.minecraft.entity.passive.VillagerEntity.createVillagerAttributes());
+        FabricDefaultAttributeRegistry.register(VISITOR, net.minecraft.entity.mob.PillagerEntity.createPillagerAttributes());
         DrakeStableGuards.register();
     }
     private DrakeStable() { }

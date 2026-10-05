@@ -31,6 +31,7 @@ public final class DrakeVisits {
             var pos = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, column);
             if (!world.getFluidState(pos.down()).isEmpty() || !world.getBlockState(pos.down()).isSolidBlock(world, pos.down())) continue;
             visitor.setPosition(Vec3d.ofBottomCenter(pos));
+            visitor.setOnGround(true);
             if (!world.isSpaceEmpty(visitor) || !world.getOtherEntities(visitor, visitor.getBoundingBox()).isEmpty()) continue;
             visitor.visit(stable, pos);
             var path = visitor.getNavigation().findPathTo(stable.gate(0).north(2), 1);

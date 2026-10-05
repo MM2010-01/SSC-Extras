@@ -4,6 +4,9 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "SoulboundInventoryMixin",
+    "DrakeSoulboundRespawnMixin",
+    "DrakeSoulboundSpawnMixin",
     "DrakeAttentionMixin",
     "TamingCollarPlacementMixin",
     "DrakeMountNameMixin",
@@ -51,7 +54,6 @@
   ],
   "client": [
     "DrakePettingIllagerModelMixin",
-    "DrakePettingVillagerModelMixin",
     "BlindingReinOverlayMixin",
     "BlindingReinFogMixin",
     "DrakeAutomaticEatingMixin",

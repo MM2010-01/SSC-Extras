@@ -1,5 +1,5 @@
 {
-  "entity.ssc-extras.drake_visitor": "Visiting Villager",
+  "entity.ssc-extras.drake_visitor": "Visiting Pillager",
   "message.ssc-extras.drake.hay_patch": "Drakes need a flat patch of at least 2 by 2 hay bales to sleep.",
   "codex.ssc-extras.instincts_2": "You sense that indulging your instincts further could make this transformation permanent. Refraining from them lets your instincts gradually subside.",
   "itemGroup.ssc-extras": "SSC Extras",
@@ -147,5 +147,17 @@
   "message.ssc-extras.drake.pillager.stable_arrived": "Pillager: %s, back where you belong. Stay tied here and settle down.",
   "message.ssc-extras.drake.pillager.feed": "Pillager: Hungry, %s? Here. Eat your meat.",
   "message.ssc-extras.drake.pillager.reward": "Pillager: Good work, %s. You've earned this meat.",
-  "message.ssc-extras.drake.pillager.stable_rules": "Pillager: Listen carefully, %s. Stay within 64 blocks of the stable. No escaping; we'll bring you back if you're caught. Return to your stall before nightfall. Those are the rules."
+  "message.ssc-extras.drake.pillager.stable_rules": "Pillager: Listen carefully, %s. Stay within 64 blocks of the stable. No escaping; we'll bring you back if you're caught. Return to your stall before nightfall. Those are the rules.",
+  "enchantment.ssc-extras.soulbound": "Soulbound",
+  "message.ssc-extras.drake.service_promise": "The keepers promise a reward after ten days of good service: a ritual to make you their permanent mount. Stay near home, serve your riders, and do not escape or attack the faction.",
+  "message.ssc-extras.drake.service_reset": "Your disobedience has broken the keepers' trust. The ten days of good service must begin again.",
+  "message.ssc-extras.drake.ritual_soon": "Eight days of good service. The keepers are preparing your reward: soon your soul will be a drake, bound to this stall even beyond death.",
+  "message.ssc-extras.drake.ritual_ready": "Ten days of good service! Return to the hay in your assigned stall. Three pillagers will gather to make you their permanent mount.",
+  "message.ssc-extras.drake.ritual_gathering": "Three keepers are gathering around your hay. Remain in your stall for the soulbinding ritual.",
+  "message.ssc-extras.drake.ritual_begin": "The three pillagers begin their chant. Your permanent mount ritual has begun; your drake body, cursed equipment, and stall will follow you beyond death.",
+  "message.ssc-extras.drake.ritual_soul": "The chant sinks deeper. Your soul is becoming the drake itself. Only completely undoing the drake transformation can free it.",
+  "message.ssc-extras.drake.ritual_interrupted": "The ritual has been interrupted. Your service is remembered; return to your hay with all three keepers to begin the ritual again.",
+  "message.ssc-extras.drake.ritual_complete": "Your soul is a drake now. You are the stable's permanent mount. Your cursed equipment is Soulbound, and death will return you to your stall with your form, name, and assignment intact.",
+  "message.ssc-extras.drake.soul_respawn": "Your drake soul returns to its assigned stall. Death cannot break this bond.",
+  "message.ssc-extras.drake.soul_freed": "The drake transformation is completely undone. Your soul is free and your former respawn point is restored."
 }

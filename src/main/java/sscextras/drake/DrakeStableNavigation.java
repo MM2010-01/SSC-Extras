@@ -27,7 +27,7 @@ public final class DrakeStableNavigation extends MobNavigation {
     public DrakeStableNavigation(MobEntity entity, World world) { super(entity, world); }
 
     private boolean canOpenGates() {
-        return entity instanceof net.minecraft.entity.mob.PillagerEntity || entity instanceof DrakeVisitorEntity
+        return entity instanceof net.minecraft.entity.mob.PillagerEntity
                 || entity.getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity;
     }
 
