@@ -15,6 +15,7 @@ public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         DrakeEquipmentClient.register();
         DrakeCameraControl.register();
+        FeralPerception.register();
         DrakeLeashRenderer.register();
         DrakeSoulRenderer.register();
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(

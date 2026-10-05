@@ -15,6 +15,11 @@ public final class FeralText {
     }
 
     public static OrderedText scramble(OrderedText original, String mountName) {
+        return scramble(original, mountName, 1);
+    }
+
+    public static OrderedText scramble(OrderedText original, String mountName, float strength) {
+        if (strength <= 0) return original;
         var text = new StringBuilder();
         var points = new ArrayList<Integer>();
         var styles = new ArrayList<Style>();
@@ -31,7 +36,9 @@ public final class FeralText {
             int offset = 0;
             for (int i = 0; i < points.size(); i++) {
                 int point = points.get(i);
-                var style = styles.get(i).withObfuscated(!readable[offset]).withHoverEvent(null).withClickEvent(null).withInsertion(null);
+                int order = Math.floorMod(Integer.rotateLeft(point * 0x9e3779b9, i & 31) ^ i * 0x85ebca6b, 100);
+                var style = styles.get(i).withObfuscated(!readable[offset] && (styles.get(i).isObfuscated() || order < strength * 100))
+                        .withHoverEvent(null).withClickEvent(null).withInsertion(null);
                 if (!visitor.accept(offset, style, point)) return false;
                 offset += Character.charCount(point);
             }
