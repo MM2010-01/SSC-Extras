@@ -56,7 +56,7 @@ public final class DrakeStableMaintenance {
         var stable = DrakeCaptureGoal.findStable(world, pos);
         if (stable == null) return;
         var expected = expected(stable.getBoundingBox(), pos);
-        if (expected != null && !expected.isAir() && !world.getBlockState(pos).isAir()) caught(player, stable);
+        if (expected != null && !expected.isAir()) caught(player, stable);
     }
 
     public static void caughtPlacing(PlayerEntity player, BlockPos pos) {

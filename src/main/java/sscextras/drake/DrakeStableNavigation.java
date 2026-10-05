@@ -21,10 +21,13 @@ public final class DrakeStableNavigation extends MobNavigation {
     private DrakeStablePiece stable;
     private BlockPos guardHome;
     private boolean managedGuard, legacyGuard;
+    private boolean autoOpenGates = true;
     private int nextStableSearch;
     private final Map<BlockPos, Integer> openedGates = new HashMap<>();
 
     public DrakeStableNavigation(MobEntity entity, World world) { super(entity, world); }
+
+    public void autoOpenGates(boolean enabled) { autoOpenGates = enabled; }
 
     private boolean canOpenGates() {
         return entity instanceof net.minecraft.entity.mob.PillagerEntity
@@ -173,7 +176,7 @@ public final class DrakeStableNavigation extends MobNavigation {
 
     @Override public void tick() {
         var path = currentPath;
-        if (canOpenGates() && path != null && !path.isFinished() && stable != null) {
+        if (autoOpenGates && canOpenGates() && path != null && !path.isFinished() && stable != null) {
             // Opening a gate can synchronously replace or clear the active path.
             for (int i = path.getCurrentNodeIndex(); currentPath == path && i < Math.min(path.getLength(), path.getCurrentNodeIndex() + 3); i++) {
                 var pos = path.getNodePos(i);

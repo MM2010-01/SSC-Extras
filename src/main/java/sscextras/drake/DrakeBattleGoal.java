@@ -144,7 +144,7 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     @Override public boolean canStart() {
-        if (phase != null || DrakeSoulbinding.attendee(pillager) != null) return false;
+        if (phase != null) return false;
         if (pendingRecall) {
             if (mount instanceof PlayerEntity player && DrakeCaptureGoal.eligible(player) && DrakeRiding.canCarryPillager(player)
                     && !mount.hasPassengers() && !mount.hasVehicle() && !pillager.hasVehicle()) return true;
@@ -152,7 +152,8 @@ public final class DrakeBattleGoal extends Goal {
         }
         if (pillager.hasVehicle() || pillager.age < nextSearch
                 || !pillager.getEquippedStack(EquipmentSlot.MAINHAND).isOf(net.minecraft.item.Items.CROSSBOW)
-                    && !pillager.getEquippedStack(EquipmentSlot.OFFHAND).isOf(net.minecraft.item.Items.CROSSBOW)) return false;
+                    && !pillager.getEquippedStack(EquipmentSlot.OFFHAND).isOf(net.minecraft.item.Items.CROSSBOW)
+                || DrakeSoulbinding.attendee(pillager) != null) return false;
         nextSearch = pillager.age + 40;
         stable = navigation().stable();
         if (stable == null) return false;

@@ -71,13 +71,13 @@ public final class DrakeRitualGoal extends Goal {
         boolean leashed = DrakeLeashing.holder(player) == guide;
         if (!leashed && DrakeBattleGoal.of(pillager).pursue(player)) return;
         if (index != 0) {
-            if (leashed) DrakeBattleGoal.of(pillager).stopPursuit();
+            if (leashed || body.squaredDistanceTo(player) <= 4) DrakeBattleGoal.of(pillager).stopPursuit();
             move(leashed ? DrakeSoulbinding.attendancePosition(claim, index) : player.getPos().add(index == 1 ? 1.5 : -1.5, 0, 0));
             return;
         }
         if (!leashed) {
-            move(player.getPos());
-            if (body.squaredDistanceTo(player) > 4 || !pillager.getVisibilityCache().canSee(player)) return;
+            if (body.squaredDistanceTo(player) > 4 || !pillager.getVisibilityCache().canSee(player)) { move(player.getPos()); return; }
+            DrakeBattleGoal.of(pillager).movePursuit(player, null, 0, false); navigation.stop();
             for (var id : claim.attendants) {
                 var other = player.getServerWorld().getEntity(id);
                 if (other == null || other.getRootVehicle().squaredDistanceTo(player) > 36) return;

@@ -240,7 +240,8 @@ public final class DrakeSoulbinding {
         for (int i = 0; i < 3; i++) {
             var entity = world.getEntity(claim.attendants.get(i));
             if (entity instanceof PillagerEntity guard && available(guard)
-                    && (restrained(player) || reachesRitual(guard, player, claim))) continue;
+                    && (restrained(player) || DrakeLeashing.holder(player) == world.getEntity(claim.attendants.get(0))
+                        || guard.getRootVehicle().squaredDistanceTo(player) <= 36 || reachesRitual(guard, player, claim))) continue;
             if (restrained(player)) { cancel(player, claim); return; }
             var replacements = world.getEntitiesByClass(PillagerEntity.class,
                     Box.from(claim.stable).expand(DrakeStableLayout.roamRange(claim.stable)), guard -> {
@@ -349,14 +350,7 @@ public final class DrakeSoulbinding {
         if (!(world.getEntity(claim.attendants.get(feeder)) instanceof PillagerEntity leader)
                 || !available(leader) || role(leader) != FEEDING) { claim.feedingTicks = 0; return; }
         var catalyst = catalyst(claim);
-        if (claim.feedingTicks <= FEED_TICKS - 7 && claim.feedingTicks % 4 == 0) {
-            var mouth = DrakeView.atHead(player, 1, player.getEyePos());
-            world.spawnParticles(new net.minecraft.particle.ItemStackParticleEffect(net.minecraft.particle.ParticleTypes.ITEM, catalyst),
-                    mouth.x, mouth.y - .15, mouth.z, 5, .12, .08, .12, .01);
-            var random = player.getRandom();
-            world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.PLAYERS,
-                    .5f + .5f * random.nextInt(2), 1 + (random.nextFloat() - random.nextFloat()) * .2f);
-        }
+        DrakeFeedGoal.chew(player, catalyst, FEED_TICKS - claim.feedingTicks);
         if (--claim.feedingTicks != 0) return;
         catalyst.finishUsing(world, player);
         leader.swingHand(net.minecraft.util.Hand.MAIN_HAND);
@@ -448,7 +442,9 @@ public final class DrakeSoulbinding {
     }
 
     private static boolean reachesRitual(PillagerEntity guard, ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        var body = guard.getRootVehicle();
         var navigation = (DrakeStableNavigation)guard.getNavigation();
+        if (attendee(guard) == player && (!navigation.isIdle() || !body.isOnGround() && !body.isTouchingWater() && !body.isInLava())) return true;
         return navigation.reaches(player.getBlockPos()) && navigation.reaches(claim.bed());
     }
 

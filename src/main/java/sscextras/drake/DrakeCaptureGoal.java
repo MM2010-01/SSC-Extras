@@ -53,7 +53,7 @@ public final class DrakeCaptureGoal extends Goal {
         if (!eligible(player) || DrakeBattleGoal.assigned(player) || DrakeSoulbinding.ritualActive(player)) return false;
         if (!DrakeOutpostOwnership.owns(player, stable)) return cursedHarness(player);
         var claim = DrakeOutpostOwnership.claim(player);
-        return recallTime(pillager.getWorld()) || EarthenDrake.stage(player) < 0
+        return recallTime(pillager.getWorld()) || EarthenDrake.stage(player) < 2
                 || claim.tryingToEscape && (DrakeLeashing.holder(player) == pillager
                     || pillager.getWorld().getTime() < claim.recallUntil || DrakeRoaming.canSee(pillager, player));
     }
@@ -114,9 +114,11 @@ public final class DrakeCaptureGoal extends Goal {
                 || pillager.age < nextSearch || DrakeFaction.fighting(pillager) || DrakeSoulbinding.attendee(pillager) != null) return false;
         nextSearch = pillager.age + 40;
         if (pillager.getWorld().getPlayers().stream().noneMatch(candidate -> eligible(candidate)
-                && pillager.squaredDistanceTo(candidate) <= (RANGE * 2 + 24) * (RANGE * 2 + 24))) return false;
+                && pillager.squaredDistanceTo(candidate) <= (RANGE * 2 + 24) * (RANGE * 2 + 24))) {
+            DrakeBattleGoal.of(pillager).stopPursuit(); return false;
+        }
         stable = navigation().stable();
-        if (stable == null) return false;
+        if (stable == null) { DrakeBattleGoal.of(pillager).stopPursuit(); return false; }
         var candidates = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, Box.from(stable.getBoundingBox()).expand(RANGE), candidate ->
                 wants(candidate) && near(stable, candidate.getPos())
                 && (!DrakeLeashing.attached(candidate) || DrakeLeashing.holder(candidate) == pillager));
@@ -211,10 +213,17 @@ public final class DrakeCaptureGoal extends Goal {
                 boolean dismounted = player.hasVehicle();
                 if (dismounted) player.stopRiding();
                 if (player.hasVehicle()) return;
-                if (!dismounted && !pillager.hasVehicle() && DrakeRiding.canCarryPillager(player) && pillager.getRandom().nextBoolean() && DrakeBattleGoal.of(pillager).recall(player, stable)) {
+                if (!dismounted && !pillager.hasVehicle() && EarthenDrake.stage(player) >= 2
+                        && DrakeRiding.canCarryPillager(player) && pillager.getRandom().nextBoolean() && DrakeBattleGoal.of(pillager).recall(player, stable)) {
                     complete = true; return;
                 }
                 if (!DrakeLeashing.attachPillager(player, pillager)) return;
+                var claim = DrakeOutpostOwnership.claim(player);
+                if (claim != null && claim.matches(player.getWorld(), stable) && EarthenDrake.stage(player) < 2
+                        && !claim.stall().contains(player.getPos()) && !claim.tryingToEscape) {
+                    claim.tryingToEscape = true;
+                    DrakeOutpostOwnership.get(player.getServer()).markDirty();
+                }
                 BlindingRein.upgrade(player);
                 DrakeDialogue.say(player, DrakeDialogue.escaping(player) ? "escape_caught" : "recall_leashed");
                 sourceGate = stable.gateAt(player.getPos());

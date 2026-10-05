@@ -106,12 +106,11 @@ public final class DrakeShoes {
     }
 
     public static void register() {
-        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            if (!world.isClient && hand == Hand.MAIN_HAND) DrakeStableMaintenance.caughtBreaking(player, pos);
-            return restricted(player) || DrakeSoulbinding.restrained(player) ? ActionResult.FAIL : ActionResult.PASS;
-        });
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) ->
+                restricted(player) || DrakeSoulbinding.restrained(player) ? ActionResult.FAIL : ActionResult.PASS);
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, entity) ->
                 !restricted(player) && !DrakeSoulbinding.restrained(player));
+        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, entity) -> DrakeStableMaintenance.caughtBreaking(player, pos));
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (DrakeSoulbinding.restrained(player)) return ActionResult.FAIL;
             return useBlock(player, hit.getBlockPos());

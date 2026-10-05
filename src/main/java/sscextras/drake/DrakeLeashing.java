@@ -31,13 +31,12 @@ public final class DrakeLeashing {
     private DrakeLeashing() { }
     public static boolean eligible(PlayerEntity player) {
         return player.isAlive() && !player.isSpectator()
-                && (EarthenDrake.stage(player) >= 0 || originalWithCursedHarness(player));
+                && (EarthenDrake.stage(player) >= 0 || originalWithReins(player));
     }
-    public static boolean originalWithCursedHarness(PlayerEntity player) {
+    public static boolean originalWithReins(PlayerEntity player) {
         var form = FormAbilityManager.getForm(player);
         return (form == RegPlayerForms.ORIGINAL_SHIFTER || form == RegPlayerForms.ORIGINAL_BEFORE_ENABLE)
-                && !DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()
-                && !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty();
+                && !DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty();
     }
     public static Entity holder(PlayerEntity player) {
         var state = (State)player;
@@ -57,6 +56,7 @@ public final class DrakeLeashing {
         if (previous != holder) removeEmptyKnot(previous);
         if (player.isSleeping()) player.wakeUp();
         refreshPosture(player);
+        DrakeOutpostOwnership.registerLeashed(player);
         return true;
     }
     public static boolean attachPillager(PlayerEntity player, Entity holder) {
@@ -92,7 +92,7 @@ public final class DrakeLeashing {
     public static void register() {
         UseEntityCallback.EVENT.register((actor, world, hand, entity, hit) -> {
             if (actor.isSpectator()) return ActionResult.PASS;
-            if (entity instanceof PlayerEntity drake && EarthenDrake.stage(drake) >= 0 && eligible(drake)) {
+            if (entity instanceof PlayerEntity drake && eligible(drake)) {
                 if (holder(drake) == actor) {
                     if (!world.isClient) detach(drake, !actor.isCreative());
                     return ActionResult.SUCCESS;

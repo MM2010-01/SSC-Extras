@@ -43,6 +43,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public final BlockBox stable;
         public final String name;
         public long nextMeal, nextCatalyst;
+        public boolean escapeCatalystDue;
         long recruitOutsideSince = -1;
         public int escapes;
         public boolean tryingToEscape;
@@ -150,6 +151,10 @@ public final class DrakeOutpostOwnership extends PersistentState {
             if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {
                 claim.escapes++;
                 claim.tryingToEscape = false;
+                if (EarthenDrake.stage(player) < 2) {
+                    claim.escapeCatalystDue = true;
+                    claim.nextMeal = 0;
+                }
                 if (claim.escapes == 3) player.sendMessage(Text.translatable("message.ssc-extras.drake.last_escape_warning")
                         .formatted(net.minecraft.util.Formatting.DARK_PURPLE), false);
                 if (claim.escapes == DrakeFeralization.ESCAPES) player.sendMessage(
@@ -173,6 +178,21 @@ public final class DrakeOutpostOwnership extends PersistentState {
         data.markDirty();
         display(player, claim.name);
         issueCollar(player, claim);
+    }
+
+    static void registerLeashed(PlayerEntity player) {
+        if (!(player.getWorld() instanceof ServerWorld world) || claim(player) != null || player.isCreative()
+                || !DrakeLeashing.eligible(player) || !DrakeLeashing.attached(player)
+                || DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()) return;
+        var holder = DrakeLeashing.holder(player);
+        var stable = holder instanceof PillagerEntity keeper ? ((DrakeStableNavigation)keeper.getNavigation()).stable()
+                : DrakeCaptureGoal.findStable(world, player.getBlockPos());
+        if (stable == null) return;
+        for (int stall = 0; stall < stable.stallCount(); stall++) {
+            if (!stable.stall(stall).contains(player.getPos()) || !available(world, stable, stall, player)) continue;
+            capture(player, stable, stall);
+            return;
+        }
     }
 
     private static void issueCollar(PlayerEntity player, Claim claim) {
@@ -208,7 +228,12 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static void tick(PlayerEntity player) {
         var claim = claim(player);
+        if (claim == null) { registerLeashed(player); claim = claim(player); }
         if (claim == null) { display(player, ""); DrakeFeralization.sync(player, null); return; }
+        if (claim.escapeCatalystDue && EarthenDrake.stage(player) >= 2) {
+            claim.escapeCatalystDue = false;
+            get(player.getServer()).markDirty();
+        }
         DrakeFeralization.sync(player, claim);
         if (!claim.soulbound && (recruitEscaped(player, claim) || BondOfTheBeastCompat.hasOwner(player))) {
             release(player); return;
@@ -353,6 +378,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
                     new BlockBox(box[0], box[1], box[2], box[3], box[4], box[5]), tag.getString("Name"));
             claim.nextMeal = tag.getLong("NextMeal");
             claim.nextCatalyst = tag.getLong("NextCatalyst");
+            claim.escapeCatalystDue = tag.getBoolean("EscapeCatalystDue");
             claim.recruitOutsideSince = tag.contains("RecruitOutsideSince") ? tag.getLong("RecruitOutsideSince") : -1;
             claim.escapes = Math.max(0, tag.getInt("Escapes"));
             claim.tryingToEscape = tag.getBoolean("TryingToEscape");
@@ -388,6 +414,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putIntArray("Stable", new int[]{box.getMinX(), box.getMinY(), box.getMinZ(), box.getMaxX(), box.getMaxY(), box.getMaxZ()});
             tag.putString("Name", claim.name); tag.putLong("NextMeal", claim.nextMeal);
             tag.putLong("NextCatalyst", claim.nextCatalyst); tag.putLong("RecruitOutsideSince", claim.recruitOutsideSince);
+            tag.putBoolean("EscapeCatalystDue", claim.escapeCatalystDue);
             tag.putInt("Escapes", claim.escapes); tag.putBoolean("TryingToEscape", claim.tryingToEscape);
             tag.putBoolean("CollarIssued", claim.collarIssued);
             tag.putInt("Stall", claim.stallIndex); tag.putInt("GoodTicks", claim.goodTicks); tag.putInt("RitualHint", claim.ritualHint);

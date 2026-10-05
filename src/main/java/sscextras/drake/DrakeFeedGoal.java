@@ -22,7 +22,7 @@ public final class DrakeFeedGoal extends Goal {
     private PlayerEntity player;
     private DrakeOutpostOwnership.Claim feedingClaim;
     private ItemStack meal = ItemStack.EMPTY;
-    private int nextSearch, started, nextBite;
+    private int nextSearch, started, nextBite, feedingTicks;
     private boolean thrown, handFeeding, announced, catalyst;
 
     public DrakeFeedGoal(PillagerEntity pillager) {
@@ -67,7 +67,7 @@ public final class DrakeFeedGoal extends Goal {
     }
 
     private static boolean canFeedCatalyst(PlayerEntity player) {
-        return (earlyStage(player) || DrakeLeashing.originalWithCursedHarness(player))
+        return (earlyStage(player) || DrakeLeashing.originalWithReins(player))
                 && !player.isCreative() && !player.isSleeping() && !player.hasVehicle() && !player.hasPassengers()
                 && !DrakeSoulbinding.ritualActive(player);
     }
@@ -80,7 +80,8 @@ public final class DrakeFeedGoal extends Goal {
         player = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12), candidate ->
                 inStall(candidate) && !candidate.isUsingItem()
                 && (candidate.getHungerManager().getFoodLevel() < 10 || canFeedCatalyst(candidate)
-                    && DrakeOutpostOwnership.claim(candidate).nextCatalyst <= pillager.getWorld().getTime())
+                    && (DrakeOutpostOwnership.claim(candidate).escapeCatalystDue
+                        || DrakeOutpostOwnership.claim(candidate).nextCatalyst <= pillager.getWorld().getTime()))
                 && DrakeOutpostOwnership.claim(candidate).nextMeal <= pillager.getWorld().getTime()).stream()
                 .min(Comparator.comparingDouble(pillager::squaredDistanceTo)).orElse(null);
         return player != null;
@@ -88,10 +89,11 @@ public final class DrakeFeedGoal extends Goal {
 
     @Override public void start() {
         started = pillager.age; nextBite = started + 40; thrown = announced = false;
+        feedingTicks = 0;
         var claim = DrakeOutpostOwnership.claim(player);
         feedingClaim = claim;
-        catalyst = player.getHungerManager().getFoodLevel() >= 10 && canFeedCatalyst(player)
-                && claim.nextCatalyst <= pillager.getWorld().getTime();
+        catalyst = canFeedCatalyst(player) && (claim.escapeCatalystDue
+                || player.getHungerManager().getFoodLevel() >= 10 && claim.nextCatalyst <= pillager.getWorld().getTime());
         if (catalyst) claim.nextCatalyst = pillager.getWorld().getTime() + catalystDelay(player);
         claim.nextMeal = pillager.getWorld().getTime() + 200;
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
@@ -125,19 +127,42 @@ public final class DrakeFeedGoal extends Goal {
         thrown = true;
     }
 
+    @Override public boolean shouldRunEveryTick() { return catalyst; }
+
+    static void chew(PlayerEntity player, ItemStack food, int ticks) {
+        if (ticks < 8 || ticks % 4 != 0) return;
+        var mouth = DrakeView.atHead(player, 1, player.getEyePos());
+        ((ServerWorld)player.getWorld()).spawnParticles(new ItemStackParticleEffect(ParticleTypes.ITEM, food),
+                mouth.x, mouth.y - .15, mouth.z, 5, .12, .08, .12, .01);
+        var random = player.getRandom();
+        player.getWorld().playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EAT,
+                net.minecraft.sound.SoundCategory.PLAYERS, .5f + .5f * random.nextInt(2),
+                1 + (random.nextFloat() - random.nextFloat()) * .2f);
+    }
+
+    private void pauseFeeding() {
+        nextBite = pillager.age + 40;
+        feedingTicks = 0;
+        if (catalyst) DrakeSoulbinding.role(pillager, 0);
+    }
+
     private void feedByHand() {
         feedingClaim.nextMeal = pillager.getWorld().getTime() + 200;
         if (!feedingClaim.stall().contains(pillager.getPos()) || pillager.squaredDistanceTo(player) > 4
                 || !pillager.getVisibilityCache().canSee(player)) {
-            nextBite = pillager.age + 40;
+            pauseFeeding();
             if (pillager.getNavigation().isIdle() || (pillager.age - started) % 10 == 0)
                 pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(player.getBlockPos(), 0), .8);
             return;
         }
         pillager.getNavigation().stop();
-        if (player.isUsingItem()) { nextBite = pillager.age + 40; return; }
+        if (player.isUsingItem()) { pauseFeeding(); return; }
         if (!announced) { DrakeDialogue.say(player, catalyst ? "catalyst_feed" : "hand_feed"); announced = true; }
-        if (pillager.age < nextBite) return;
+        if (catalyst) {
+            DrakeSoulbinding.role(pillager, DrakeSoulbinding.FEEDING);
+            chew(player, meal, ++feedingTicks);
+            if (feedingTicks < DrakeSoulbinding.FEED_TICKS) return;
+        } else if (pillager.age < nextBite) return;
         nextBite = pillager.age + 40;
         int slot = catalyst ? -1 : rawMeatSlot(player);
         var food = slot < 0 ? meal.copyWithCount(1) : player.getInventory().getStack(slot);
@@ -148,7 +173,12 @@ public final class DrakeFeedGoal extends Goal {
             player.getInventory().setStack(slot, remaining);
             player.getInventory().markDirty();
         }
-        if (catalyst) thrown = true;
+        if (catalyst) {
+            thrown = true;
+            feedingClaim.escapeCatalystDue = false;
+            feedingClaim.nextCatalyst = pillager.getWorld().getTime() + catalystDelay(player);
+            DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        }
         else DrakeInstinct.handFed(player);
         pillager.swingHand(Hand.MAIN_HAND);
         ((ServerWorld)player.getWorld()).spawnParticles(new ItemStackParticleEffect(ParticleTypes.ITEM, meal),
@@ -157,6 +187,7 @@ public final class DrakeFeedGoal extends Goal {
 
     @Override public void stop() {
         if (handFeeding && player != null) DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        if (catalyst && DrakeSoulbinding.role(pillager) == DrakeSoulbinding.FEEDING) DrakeSoulbinding.role(pillager, 0);
         player = null; feedingClaim = null; meal = ItemStack.EMPTY; handFeeding = catalyst = false;
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
         pillager.getNavigation().stop();

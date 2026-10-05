@@ -65,6 +65,7 @@ public final class DrakeGuardGoal extends Goal {
         pillager.clearActiveItem(); pillager.setCharging(false);
         nextPath = 0;
         correcting = following != null && DrakeLeashing.holder(following) == pillager;
+        navigation().autoOpenGates(following == null || correcting);
         if (following != null) ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(new ItemStack(Items.LEAD));
         if (following == null) navigation().startMovingAlong(patrol, .65);
     }
@@ -87,9 +88,11 @@ public final class DrakeGuardGoal extends Goal {
             correcting = true; claim.escort = pillager.getId(); nextPath = 0;
             DrakeDialogue.say(following, "range_return");
         }
+        navigation().autoOpenGates(DrakeLeashing.holder(following) == pillager);
         if (correcting && DrakeLeashing.holder(following) == pillager) {
             if (inside) {
                 DrakeLeashing.detach(following, false); correcting = false; nextPath = 0;
+                navigation().autoOpenGates(false);
             } else {
                 if (pillager.squaredDistanceTo(following) > 49) navigation().stop();
                 else if (pillager.age >= nextPath) {
@@ -121,5 +124,6 @@ public final class DrakeGuardGoal extends Goal {
             DrakeLeashing.detach(following, false);
         if (following != null) ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
         correcting = false; following = null; patrol = null; pillager.setSprinting(false); navigation().stop();
+        navigation().autoOpenGates(true);
     }
 }
