@@ -12,6 +12,15 @@ public final class DrakeRoaming {
     public static final int RANGE = 64;
     private DrakeRoaming() { }
 
+    static boolean mustReturn(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        return claim.soulbound && player.isAlive() && !player.isCreative() && !player.isSpectator()
+                && !player.isSleeping() && !player.hasVehicle() && !player.hasPassengers()
+                && !claim.awaitingRespawn && EarthenDrake.stage(player) >= 0
+                && claim.world.equals(player.getWorld().getRegistryKey()) && !DrakeSoulbinding.ritualActive(player)
+                && !DrakeCaptureGoal.near(claim.stable, player.getPos(),
+                        DrakeStableLayout.roamRange(claim.stable) - (claim.returning ? 2 : 0));
+    }
+
     public static boolean canSee(PillagerEntity pillager, PlayerEntity player) {
         double range = pillager.getAttributeValue(EntityAttributes.GENERIC_FOLLOW_RANGE);
         return pillager.isAlive() && !pillager.isAiDisabled() && !pillager.hasVehicle()
@@ -20,8 +29,9 @@ public final class DrakeRoaming {
 
     static void tick(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (!player.isAlive() || player.isCreative() || player.isSpectator() || EarthenDrake.stage(player) < 0
-                || !claim.world.equals(player.getWorld().getRegistryKey()) || DrakeBattleGoal.riding(player)) {
+                || !claim.world.equals(player.getWorld().getRegistryKey()) || player.hasPassengers()) {
             claim.seenSince = -1; claim.witness = claim.escort = 0;
+            claim.outside = claim.spotted = claim.warnedEdge = false;
             return;
         }
         escort(player, claim);
@@ -29,6 +39,11 @@ public final class DrakeRoaming {
         boolean edge = inside && !DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeStableLayout.roamRange(claim.stable) - 8);
         if (edge && !claim.warnedEdge && !claim.outside && player.getWorld().isDay()) hint(player, "roam_edge");
         claim.warnedEdge = edge;
+        if (claim.soulbound) {
+            claim.outside = !inside; claim.spotted = false;
+            claim.seenSince = -1; claim.witness = 0;
+            return;
+        }
         long time = player.getWorld().getTime();
         if (inside && !edge) {
             claim.outside = claim.spotted = false;
@@ -80,7 +95,7 @@ public final class DrakeRoaming {
         return player.isAlive() && !player.isCreative() && !player.isSpectator() && !player.isSleeping()
                 && EarthenDrake.stage(player) >= 0 && claim.world.equals(player.getWorld().getRegistryKey())
                 && player.getWorld().isDay() && !player.hasVehicle() && !player.hasPassengers()
-                && !DrakeBattleGoal.assigned(player) && !DrakeSoulbinding.ritualActive(player)
+                && !claim.returning && !DrakeBattleGoal.assigned(player) && !DrakeSoulbinding.ritualActive(player)
                 && !BondOfTheBeastCompat.hasOwner(player)
                 && (!DrakeLeashing.attached(player) || !claim.tryingToEscape
                     && DrakeLeashing.holder(player) instanceof PillagerEntity holder && belongs(holder, claim));

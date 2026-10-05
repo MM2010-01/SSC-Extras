@@ -4,7 +4,10 @@
     {
       "rolls": 1,
       "conditions": [
-        { "condition": "ssc-extras:configured_chance", "config": "stableReinsLootChance" }
+        {
+          "condition": "ssc-extras:configured_chance",
+          "config": "stableReinsLootChance"
+        }
       ],
       "entries": [
         {
@@ -16,12 +19,30 @@
     {
       "rolls": 1,
       "conditions": [
-        { "condition": "ssc-extras:configured_chance", "config": "stableSaddleLootChance" }
+        {
+          "condition": "ssc-extras:configured_chance",
+          "config": "stableSaddleLootChance"
+        }
       ],
       "entries": [
         {
           "type": "minecraft:item",
           "name": "ssc-extras:cursed_saddle"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "ssc-extras:configured_chance",
+          "config": "stableBeastizationCatalystLootChance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "ssc-extras:full_beastization_catalyst"
         }
       ]
     },

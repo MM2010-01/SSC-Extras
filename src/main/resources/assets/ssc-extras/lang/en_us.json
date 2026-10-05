@@ -166,11 +166,12 @@
   "message.ssc-extras.drake.soul_freed": "The drake transformation is completely undone. Your soul is free.",
   "message.ssc-extras.drake.punishment_due": "Caught escaping this stable six times. The keepers will now perform the full feralization punishment ritual.",
   "message.ssc-extras.drake.punishment_gathering": "Three pillagers are coming to leash you to your stall. This time they intend to take away your human mind.",
-  "message.ssc-extras.drake.punishment_feed": "Two keepers hold you on the hay. Their leader presses a full beastization catalyst into your mouth and makes you swallow.",
-  "message.ssc-extras.drake.punishment_begin": "The leader begins chanting. The catalyst burns through you as the keepers hold you still. Your body and mind are becoming permanently feral.",
-  "message.ssc-extras.drake.punishment_mind": "Words and memories dissolve beneath the chant. Only your mount name and meat still mean anything.",
+  "message.ssc-extras.drake.punishment_feed": "The leader feeds you a full beastization catalyst before each change of your soul, holding it to your mouth for three seconds.",
+  "message.ssc-extras.drake.punishment_begin": "The leader begins chanting while the other keepers hold you still. Your soul rises above your body, ready to be transformed.",
+  "message.ssc-extras.drake.punishment_mind": "Words and memories dissolve beneath the chant. Only your mount name and meat still mean anything. The leader feeds you five more catalysts, then keeps feeding until your body is a Feral Drake.",
   "message.ssc-extras.drake.punishment_complete": "The ritual is complete. Your drake mind knows only food, sleep, and its mount name.",
-  "message.ssc-extras.drake.feral_takeover": "Your drake instincts take over. Your body moves on its own.",
+  "message.ssc-extras.drake.feral_takeover": "*Your drake instincts took over your body.*",
+  "item.ssc-extras.feral_raw_food": "yummy!",
   "item.ssc-extras.cursed_iron_drake_shoes": "Cursed Iron Drake Shoes",
   "curios.identifier.feet": "Feet",
   "tooltip.ssc-extras.iron_drake_shoes_hands": "The iron shoes locks thumbs, can't carry items in the hands, and adds +5 empty-hand damage.",
@@ -192,5 +193,10 @@
   "message.ssc-extras.ritual_command.busy": "A ritual or ride is already in progress.",
   "message.ssc-extras.ritual_command.unavailable": "Your assigned stall is currently unavailable. Its hay and keepers are needed for the ritual.",
   "message.ssc-extras.ritual_command.started": "Started %s at your assigned stall.",
-  "message.ssc-extras.drake.ritual_soul_returned": "Your transformed drake soul returns to your body. The keepers begin sealing the bond."
+  "message.ssc-extras.drake.ritual_soul_returned": "Your transformed drake soul returns to your body. The keepers begin sealing the bond.",
+  "message.ssc-extras.drake.bound_return": "Your mount bond turns you back toward the stable's range.",
+  "message.ssc-extras.drake.ritual_feed": "The keeper keeps feeding you full beastization catalysts as your instincts surge toward stage 2.",
+  "item.ssc-extras.full_beastization_catalyst": "Full Beastization Catalyst",
+  "item.ssc-extras.full_beastization_catalyst.tooltip": "+200 instinct. Totally Feralized! for 1 minute.",
+  "effect.ssc-extras.total_feralized": "Totally Feralized!"
 }

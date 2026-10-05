@@ -10,7 +10,7 @@ public final class FeralText {
     private FeralText() { }
 
     public static Text itemName(net.minecraft.item.ItemStack stack, Text original) {
-        return DrakeFeralization.rawFood(stack) ? Text.literal("yummy!")
+        return DrakeFeralization.rawFood(stack) ? Text.translatable("item.ssc-extras.feral_raw_food")
                 : Text.literal(original.getString()).setStyle(Style.EMPTY.withObfuscated(true));
     }
 
@@ -20,11 +20,13 @@ public final class FeralText {
         var styles = new ArrayList<Style>();
         original.accept((index, style, point) -> { text.appendCodePoint(point); points.add(point); styles.add(style); return true; });
         String value = text.toString();
+        if (value.codePoints().noneMatch(Character::isLetter)
+                || value.equals(Text.translatable("message.ssc-extras.drake.feral_takeover").getString())
+                || value.equals(Text.translatable("item.ssc-extras.feral_raw_food").getString())) return original;
         var readable = new boolean[value.length()];
         String words = "meat" + (mountName.isBlank() ? "" : "|" + Pattern.quote(mountName));
         var matches = Pattern.compile("(?iu)肉|(?<![\\p{L}\\p{N}_])(?:" + words + ")(?![\\p{L}\\p{N}_])").matcher(value);
         while (matches.find()) java.util.Arrays.fill(readable, matches.start(), matches.end(), true);
-        if (value.equals("yummy!")) java.util.Arrays.fill(readable, true);
         return visitor -> {
             int offset = 0;
             for (int i = 0; i < points.size(); i++) {

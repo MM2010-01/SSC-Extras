@@ -56,5 +56,10 @@ public abstract class DrakeRitualStateMixin implements DrakeSoulbinding.State {
     private void sscExtras$heldRitual(CallbackInfo ci) {
         if ((Object)this instanceof ServerPlayerEntity player && DrakeSoulbinding.restrained(player))
             DrakeSoulbinding.hold(player);
+        else if ((Object)this instanceof net.minecraft.entity.player.PlayerEntity player
+                && player.getWorld().isClient && DrakeSoulbinding.restrained(player)) {
+            player.bodyYaw = player.prevBodyYaw = player.getYaw();
+            player.headYaw = player.prevHeadYaw = player.getYaw();
+        }
     }
 }

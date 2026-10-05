@@ -14,10 +14,16 @@ import java.util.EnumSet;
 /** Unspawned navigator: native mob goals drive the existing player body. */
 final class FeralDrakeBrain extends PathAwareEntity {
     private final ServerPlayerEntity player;
+    private final boolean returning;
 
     FeralDrakeBrain(ServerPlayerEntity player) {
+        this(player, false);
+    }
+
+    FeralDrakeBrain(ServerPlayerEntity player, boolean returning) {
         super(DrakeStable.DRAKE, player.getServerWorld());
         this.player = player;
+        this.returning = returning;
         setPosition(player.getPos()); setYaw(player.getYaw());
         calculateDimensions(); setStepHeight(player.getStepHeight());
         var claim = DrakeOutpostOwnership.claim(player);
@@ -34,6 +40,7 @@ final class FeralDrakeBrain extends PathAwareEntity {
 
     @Override protected void initGoals() {
         goalSelector.add(0, new SwimGoal(this));
+        goalSelector.add(1, new ReturnGoal());
         goalSelector.add(2, new ForageGoal());
         goalSelector.add(3, new SleepGoal());
         goalSelector.add(5, new WanderAroundFarGoal(this, .65) {
@@ -62,6 +69,29 @@ final class FeralDrakeBrain extends PathAwareEntity {
     }
 
     Vec3d movement() { return new Vec3d(0, 0, forwardSpeed == 0 ? 0 : Math.min(1, getMoveControl().getSpeed())); }
+
+    private final class ReturnGoal extends Goal {
+        private int nextPath;
+        ReturnGoal() { setControls(EnumSet.of(Control.MOVE, Control.LOOK)); }
+        @Override public boolean canStart() { return returning; }
+        @Override public boolean shouldContinue() { return returning; }
+        @Override public boolean shouldRunEveryTick() { return true; }
+        @Override public void tick() {
+            if (age < nextPath) return;
+            nextPath = age + 10;
+            var claim = DrakeOutpostOwnership.claim(player);
+            if (claim == null) return;
+            var box = claim.stable;
+            double x = net.minecraft.util.math.MathHelper.clamp(player.getX(), box.getMinX(), box.getMaxX() + 1);
+            double z = net.minecraft.util.math.MathHelper.clamp(player.getZ(), box.getMinZ(), box.getMaxZ() + 1);
+            var inward = new Vec3d(x - player.getX(), 0, z - player.getZ());
+            double distance = inward.length() - DrakeStableLayout.roamRange(box) + 3;
+            var target = player.getPos().add(inward.normalize().multiply(Math.min(12, Math.max(1, distance))));
+            getLookControl().lookAt(target.x, player.getEyeY(), target.z);
+            getNavigation().startMovingTo(target.x, target.y, target.z, .8);
+        }
+        @Override public void stop() { getNavigation().stop(); }
+    }
 
     private final class ForageGoal extends Goal {
         private ItemEntity food;

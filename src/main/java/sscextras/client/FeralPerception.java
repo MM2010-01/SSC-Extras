@@ -13,6 +13,12 @@ public final class FeralPerception {
         return player != null && DrakeFeralization.restricted(player);
     }
     public static OrderedText scramble(OrderedText text) {
-        return active() ? FeralText.scramble(text, ((DrakeOutpostOwnership.Display)MinecraftClient.getInstance().player).sscExtras$mountName()) : text;
+        if (!active()) return text;
+        var client = MinecraftClient.getInstance();
+        var screen = client.currentScreen;
+        if (screen != null && !(screen instanceof net.minecraft.client.gui.screen.ChatScreen)
+                && !(screen instanceof net.minecraft.client.gui.screen.ingame.BookScreen)
+                && !(screen instanceof net.minecraft.client.gui.screen.ingame.BookEditScreen)) return text;
+        return FeralText.scramble(text, ((DrakeOutpostOwnership.Display)client.player).sscExtras$mountName());
     }
 }

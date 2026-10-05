@@ -59,6 +59,10 @@ public final class DrakeShoeModel {
             float toeLength = stage == 3 ? 1.55f : hand && stage == 2 ? 2.3f : 1.65f;
             for (int toe = 0; toe < 3; toe++) iron.cuboid(x - width / 2 + .07f + toe * width / 3,
                     y + .06f, z + depth - .4f, toeWidth, toeHeight, toeLength);
+            iron.uv(0, 32).cuboid(x - width * .27f, y - .12f, z + depth * .2f,
+                    width * .54f, .2f, depth * .5f);
+            for (int toe = 0; toe < 3; toe++) iron.cuboid(x - width / 2 + .16f + toe * width / 3,
+                    y - .12f, z + depth - .3f, toeWidth - .18f, .2f, toeLength * .75f);
             float bandHeight = MathHelper.clamp(height * .2f, .35f, .65f);
             float bandY = y + height - bandHeight - .15f;
             iron.uv(0, 32)
@@ -78,6 +82,8 @@ public final class DrakeShoeModel {
     public void captureGrip(PlayerEntity player, String bone, MatrixStack matrices) {
         if (!DrakeSoulbinding.shoeing(player)) { GRIPS.remove(player); return; }
         if (!net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderUtils.isRenderingInWorld) return;
+        if (bone.equals("right_front_paw")) bone = "@left@_front_paw";
+        if (bone.equals("right_hind_paw")) bone = "@left@_hind_paw";
         var local = grips.get(bone);
         if (local == null) return;
         var point = matrices.peek().getPositionMatrix().transformPosition(new Vector3f(local));

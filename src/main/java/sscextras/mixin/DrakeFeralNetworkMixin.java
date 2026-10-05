@@ -13,10 +13,18 @@ import sscextras.drake.DrakeFeralization;
 @Mixin(ServerPlayNetworkHandler.class)
 public abstract class DrakeFeralNetworkMixin {
     @Shadow public ServerPlayerEntity player;
+    @Inject(method = "tick", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/network/ServerPlayerEntity;playerTick()V", shift = At.Shift.AFTER))
+    private void sscExtras$keepServerMovement(CallbackInfo ci) {
+        if (DrakeFeralization.controlled(player)) ((ServerPlayNetworkHandler)(Object)this).syncWithPlayerPosition();
+    }
+
     @Inject(method = {"onPlayerMove", "onPlayerInput", "onClientCommand"}, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
             shift = At.Shift.AFTER), cancellable = true)
-    private void sscExtras$aiOwnsBody(CallbackInfo ci) { if (DrakeFeralization.controlled(player)) ci.cancel(); }
+    private void sscExtras$aiOwnsBody(CallbackInfo ci) {
+        if (DrakeFeralization.controlled(player) || sscextras.drake.DrakeSoulbinding.restrained(player)) ci.cancel();
+    }
 
     @Inject(method = "onClickSlot", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",

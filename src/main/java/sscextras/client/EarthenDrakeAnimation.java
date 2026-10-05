@@ -27,25 +27,29 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             PlayerEntity player, float limbAngle, float limbDistance, float tickDelta, float age, float headYaw, float headPitch) {
         super.processAnimation(formRenderer, model, renderer, player, limbAngle, limbDistance, tickDelta, age, headYaw, headPitch);
         if (sscextras.drake.DrakeSoulbinding.shoeing(player)) {
-            for (var name : new String[]{"bipedHead", "bipedBody", "bipedLeftArm", "bipedRightArm", "bipedLeftLeg", "bipedRightLeg"})
-                model.resetBone(name);
+            // Clear the full articulated pose, including shin/paw offsets from locomotion.
+            for (var bone : model.getAnimationProcessor().getRegisteredBones()) {
+                bone.setPosX(0); bone.setPosY(0); bone.setPosZ(0);
+                bone.setRotX(0); bone.setRotY(0); bone.setRotZ(0);
+                bone.setScaleX(1); bone.setScaleY(1); bone.setScaleZ(1);
+            }
             if (stage < 3) {
                 var body = renderer.getModel();
                 copyShoeingPose(model.getCachedGeoBone("bipedLeftArm"), body.leftArm);
                 copyShoeingPose(model.getCachedGeoBone("bipedRightArm"), body.rightArm);
                 copyShoeingPose(model.getCachedGeoBone("bipedLeftLeg"), body.leftLeg);
                 copyShoeingPose(model.getCachedGeoBone("bipedRightLeg"), body.rightLeg);
+                var tail = model.getCachedGeoBone("tail_0");
+                if (tail != null) tail.setRotX(-MathHelper.HALF_PI);
             } else {
-                for (String name : new String[]{"bipedLeftArm", "bipedLeftLeg"}) model.getCachedGeoBone(name).setRotZ(-1.15f);
-                for (String name : new String[]{"bipedRightArm", "bipedRightLeg"}) model.getCachedGeoBone(name).setRotZ(1.15f);
-                model.getCachedGeoBone("bipedHead").setRotX(.45f);
+                for (String name : new String[]{"bipedLeftArm", "bipedLeftLeg"}) model.getCachedGeoBone(name).setRotZ(-.28f);
+                for (String name : new String[]{"bipedRightArm", "bipedRightLeg"}) model.getCachedGeoBone(name).setRotZ(.28f);
             }
             int paw = sscextras.drake.DrakeSoulbinding.shoeingPaw(player);
             if (stage == 3 && paw >= 0) {
                 String limb = "biped" + (paw % 2 == 0 ? "Left" : "Right") + (paw < 2 ? "Arm" : "Leg");
                 var bone = model.getCachedGeoBone(limb);
-                bone.setRotZ(paw % 2 == 0 ? -.35f : .35f);
-                bone.setRotX(.18f);
+                bone.setRotZ(paw % 2 == 0 ? -.08f : .08f);
             }
             return;
         }
@@ -59,7 +63,7 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             rotate(model.getCachedGeoBone("bipedLeftArm"), .035f * effort + .025f * pull, 0);
             rotate(model.getCachedGeoBone("bipedRightArm"), .035f * effort - .025f * pull, 0);
         }
-        boolean earlySoul = stage < 2 && sscextras.drake.DrakeSoulbinding.bound(player);
+        boolean earlySoul = stage < 2 && sscextras.drake.DrakeSoulbinding.drakeSoul(player);
         if (stage == 2) {
             var body = model.getCachedGeoBone("bipedBody");
             anchorHip(model.getCachedGeoBone("bipedLeftLeg"), body);
@@ -118,7 +122,7 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     public static void poseSoulBody(PlayerEntityModel<?> model, PlayerEntity player, float limbAngle, float limbDistance,
             float age, float yaw, float pitch) {
         int stage = EarthenDrake.stage(player);
-        if (stage < 0 || stage >= 2 || !sscextras.drake.DrakeSoulbinding.bound(player)
+        if (stage < 0 || stage >= 2 || !sscextras.drake.DrakeSoulbinding.drakeSoul(player)
                 || sscextras.drake.DrakeSoulbinding.shoeing(player) || player.isSleeping()) return;
         poseAllFours(model, limbAngle, limbDistance, age, yaw, pitch);
     }

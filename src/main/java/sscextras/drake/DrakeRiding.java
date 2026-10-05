@@ -44,7 +44,7 @@ public final class DrakeRiding {
 
     public static boolean mountForm(PlayerEntity player) {
         int stage = EarthenDrake.stage(player);
-        return stage >= 2 || stage >= 0 && DrakeSoulbinding.bound(player);
+        return stage >= 2 || stage >= 0 && DrakeSoulbinding.drakeSoul(player);
     }
 
     public static boolean canCarryPillager(PlayerEntity player) {

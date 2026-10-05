@@ -170,7 +170,7 @@ public final class DrakeEquipment {
 
     public static boolean canRide(Entity entity) {
         return entity instanceof PlayerEntity player && player.isAlive() && (EarthenDrake.stage(player) == 3
-                || EarthenDrake.stage(player) >= 0 && DrakeSoulbinding.bound(player))
+                || EarthenDrake.stage(player) >= 0 && DrakeSoulbinding.drakeSoul(player))
                 && !saddle(player).isEmpty() || entity instanceof StableDrakeEntity drake && drake.isSaddled();
     }
 

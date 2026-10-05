@@ -166,11 +166,12 @@
   "message.ssc-extras.drake.soul_freed": "地龙变身已被彻底解除。你的灵魂重获自由。",
   "message.ssc-extras.drake.punishment_due": "你已在同一兽栏逃跑并被抓回六次。看守将举行彻底野化的惩罚仪式。",
   "message.ssc-extras.drake.punishment_gathering": "三名掠夺者正来把你牵回畜栏。这一次，他们要夺走你的人类心智。",
-  "message.ssc-extras.drake.punishment_feed": "两名看守将你按在干草上。领头者把大量的完全兽化催化剂塞进你的嘴里，迫使你吞下。",
-  "message.ssc-extras.drake.punishment_begin": "领头者开始吟唱。看守将你牢牢按住，催化剂在体内灼烧。你的身体和心智正永久野化。",
-  "message.ssc-extras.drake.punishment_mind": "言语与记忆在吟唱中消散。只有你的坐骑名字和肉仍有意义。",
+  "message.ssc-extras.drake.punishment_feed": "每次灵魂变化前，领头的掠夺者都会将一枚完整兽化触媒喂到你嘴边，持续三秒。",
+  "message.ssc-extras.drake.punishment_begin": "领头的掠夺者开始吟唱，其他看守将你牢牢按住。你的灵魂升离身体，等待变化。",
+  "message.ssc-extras.drake.punishment_mind": "话语和记忆在吟唱中消散。只有坐骑名字和肉还对你有意义。领头的掠夺者再喂你五枚触媒，并继续喂食，直到你的身体化为野兽地龙。",
   "message.ssc-extras.drake.punishment_complete": "仪式完成了。你的地龙心智只懂吃食、睡觉和自己的坐骑名字。",
-  "message.ssc-extras.drake.feral_takeover": "地龙本能夺走了控制权。你的身体自行行动。",
+  "message.ssc-extras.drake.feral_takeover": "*地龙本能夺走了你的身体控制权。*",
+  "item.ssc-extras.feral_raw_food": "好吃！",
   "item.ssc-extras.cursed_iron_drake_shoes": "诅咒铁制龙爪靴",
   "curios.identifier.feet": "脚部",
   "tooltip.ssc-extras.iron_drake_shoes_hands": "铁制龙爪靴锁住了拇指，无法手持物品，空手伤害增加5点。",
@@ -192,5 +193,10 @@
   "message.ssc-extras.ritual_command.busy": "你正在参加仪式或被骑乘。",
   "message.ssc-extras.ritual_command.unavailable": "你的畜栏目前无法使用。仪式需要畜栏里的干草和看守。",
   "message.ssc-extras.ritual_command.started": "已在分配给你的畜栏开始%s。",
-  "message.ssc-extras.drake.ritual_soul_returned": "完全化为地龙的灵魂回到你的体内。看守开始封缚这份契约。"
+  "message.ssc-extras.drake.ritual_soul_returned": "完全化为地龙的灵魂回到你的体内。看守开始封缚这份契约。",
+  "message.ssc-extras.drake.bound_return": "坐骑契约驱使你转身，走回马厩的活动范围。",
+  "message.ssc-extras.drake.ritual_feed": "看守不断喂你完整兽化触媒，推动你的本能向第二阶段猛涨。",
+  "item.ssc-extras.full_beastization_catalyst": "完整兽化触媒",
+  "item.ssc-extras.full_beastization_catalyst.tooltip": "增加200点本能，并获得1分钟的「完全兽化！」效果。",
+  "effect.ssc-extras.total_feralized": "完全兽化！"
 }

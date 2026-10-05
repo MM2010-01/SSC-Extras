@@ -6,8 +6,11 @@ import net.minecraft.entity.ai.goal.CrossbowAttackGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.mob.PillagerEntity;
+import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -92,7 +95,10 @@ public final class DrakeBattleGoal extends Goal {
                 && (target == attacker && pillager.getWorld().getTime() - attackedAt < 1200
                 || pillager.getWorld().getTime() - AttackEntityDataTracker.lastAttackPillagerTimeMap
                         .getOrDefault(player.getUuid(), -1200L) < 1200);
-        return target instanceof HostileEntity || target instanceof MobEntity mob
+        boolean neutral = target instanceof Angerable || target instanceof PiglinEntity || target instanceof SpiderEntity;
+        boolean aggressive = target instanceof MobEntity mob && mob.getTarget() != null
+                || target instanceof Angerable angerable && angerable.hasAngerTime();
+        return target instanceof HostileEntity && (!neutral || aggressive) || target instanceof MobEntity mob
                 && mob.getTarget() != null && owned(mob.getTarget())
                 || target == attacker && pillager.getWorld().getTime() - attackedAt < 1200;
     }

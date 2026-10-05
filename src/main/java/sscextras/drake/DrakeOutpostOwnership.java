@@ -54,9 +54,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public NbtCompound previousSpawn = new NbtCompound();
         long lastServiceTime = Long.MIN_VALUE;
         long lastAttendanceNight = Long.MIN_VALUE;
-        int ritualTicks, feedingTicks;
-        int feralTicks, nextFeral;
-        FeralDrakeBrain feralBrain;
+        int ritualTicks, feedingTicks, catalystsFed;
+        boolean returning;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
         long nextOutsideHint, seenSince = -1, recallUntil, nextEscortSearch;
@@ -247,7 +246,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             if (!(entity instanceof PlayerEntity player)) return;
             var claim = claim(player);
             if (claim == null) return;
-            if (!claim.soulbound) release(player);
+            if (!claim.soulbound && !claim.feral) release(player);
             else {
                 claim.awaitingRespawn = true;
                 get(player.getServer()).markDirty();
@@ -333,7 +332,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.ritualHint = tag.getInt("RitualHint");
             claim.soulbound = tag.getBoolean("Soulbound");
             claim.soulboundStage = tag.contains("SoulboundStage") && tag.getInt("SoulboundStage") == 2 ? 2 : 3;
-            claim.feral = claim.soulbound && tag.getBoolean("Feral");
+            claim.feral = tag.getBoolean("Feral");
             claim.shoeingDue = tag.getBoolean("ShoeingDue");
             claim.awaitingRespawn = tag.getBoolean("AwaitingRespawn");
             claim.previousSpawn = tag.getCompound("PreviousSpawn").copy();

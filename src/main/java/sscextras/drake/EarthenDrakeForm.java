@@ -62,6 +62,7 @@ public final class EarthenDrakeForm extends Form_FeralBase {
 
     @Override public AbstractAnimStateController getAnimStateController(PlayerEntity player,
             AnimSystem.AnimSystemData data, Identifier stateId) {
+        if (DrakeSoulbinding.shoeing(player)) return quadruped.controller(AnimStateEnum.ANIM_STATE_IDLE);
         if (stage < 2) return null;
         var state = AnimStateEnum.getStateEnum(stateId);
         if (stage == 3) return quadruped.controller(state);

@@ -93,7 +93,7 @@ public final class EarthenDrake {
     }
 
     public static int eatingDuration(PlayerEntity player, ItemStack stack, int original) {
-        if (!stack.isFood()) return original;
+        if (!stack.isFood() || stack.isOf(BeastizationCatalyst.ITEM)) return original;
         int stage = stage(player);
         return stage < 1 ? original : Math.max(1, (int)Math.ceil(original / (stage == 1 ? 1.5 : 2.0)));
     }

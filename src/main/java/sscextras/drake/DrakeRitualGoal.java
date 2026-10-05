@@ -50,9 +50,8 @@ public final class DrakeRitualGoal extends Goal {
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(shoeing && index == 2 && DrakeSoulbinding.restrained(player)
                 ? DrakeEquipment.SHOES.getDefaultStack()
                 : shoeing && DrakeSoulbinding.restrained(player) ? ItemStack.EMPTY
-                : punishment && index == 0
-                && DrakeSoulbinding.restrained(player) && claim.feedingTicks < 60
-                ? new ItemStack(net.onixary.shapeShifterCurseFabric.items.RegCustomItem.POWERFUL_CATALYST)
+                : DrakeSoulbinding.role(pillager) == DrakeSoulbinding.FEEDING
+                ? new ItemStack(BeastizationCatalyst.ITEM)
                 : (punishment ? index != 0 : index < 2) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         if (DrakeSoulbinding.restrained(player)) {
             if (shoeing && index == 2) {
@@ -120,7 +119,7 @@ public final class DrakeRitualGoal extends Goal {
     private void move(Vec3d target) {
         var navigation = pillager.getNavigation();
         double distance = pillager.squaredDistanceTo(target);
-        if (distance <= .16) navigation.stop();
+        if (distance <= (DrakeSoulbinding.shoeing(player) ? .01 : .16)) navigation.stop();
         else if (distance < 4) {
             navigation.stop();
             pillager.getMoveControl().moveTo(target.x, target.y, target.z, .65);

@@ -13,6 +13,8 @@ import sscextras.drake.DrakeFeralization;
 
 @Mixin(PlayerEntity.class)
 public abstract class DrakeFeralStateMixin implements DrakeFeralization.State {
+    @Unique private final DrakeFeralization.Control sscExtras$feralRuntime = new DrakeFeralization.Control();
+    public DrakeFeralization.Control sscExtras$feralRuntime() { return sscExtras$feralRuntime; }
     @Unique private static final TrackedData<Boolean> SSC_EXTRAS_FERAL = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     @Unique private static final TrackedData<Boolean> SSC_EXTRAS_FERAL_CONTROL = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     @Inject(method = "initDataTracker", at = @At("TAIL"))

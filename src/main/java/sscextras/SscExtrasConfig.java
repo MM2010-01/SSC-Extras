@@ -25,6 +25,7 @@ public final class SscExtrasConfig {
         LOOT_DEFAULTS.put("drakeCursePotionLootChance", 0.25f);
         LOOT_DEFAULTS.put("stableReinsLootChance", 1.0f);
         LOOT_DEFAULTS.put("stableSaddleLootChance", 1.0f);
+        LOOT_DEFAULTS.put("stableBeastizationCatalystLootChance", 0.25f);
         LOOT_DEFAULTS.put("stableDrakeReinsDropChance", 0.085f);
         LOOT_DEFAULTS.put("stableDrakeSaddleDropChance", 0.085f);
         lootChances.putAll(LOOT_DEFAULTS);

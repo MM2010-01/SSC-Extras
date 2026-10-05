@@ -64,9 +64,9 @@ public final class DrakeSoulRenderer {
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 - MathHelper.lerpAngleDegrees(context.tickDelta(), player.prevBodyYaw, player.bodyYaw)));
                 float shrink = 1 - .65f * returning;
                 matrices.scale(shrink, shrink, shrink);
-                float changing = MathHelper.clamp((time - 60) / 50, 0, 4);
+                float changing = MathHelper.clamp((time - 60) / 60, 0, 4);
                 int step = Math.min(4, (int)changing);
-                float blend = smooth((changing - step) * (50f / 30));
+                float blend = smooth((changing - step) * 2);
                 render(soul, step - 1, alpha * (1 - blend), context.tickDelta(), matrices, context.consumers());
                 if (step < 4 && blend > 0) render(soul, step, alpha * blend, context.tickDelta(), matrices, context.consumers());
                 matrices.pop();
