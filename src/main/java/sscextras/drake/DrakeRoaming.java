@@ -96,7 +96,7 @@ public final class DrakeRoaming {
     private static boolean roaming(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         return player.isAlive() && !player.isCreative() && !player.isSpectator() && !player.isSleeping()
                 && EarthenDrake.stage(player) >= 0 && claim.world.equals(player.getWorld().getRegistryKey())
-                && player.getWorld().isDay() && !player.hasVehicle() && !player.hasPassengers()
+                && !DrakeCaptureGoal.recallTime(player.getWorld()) && !player.hasVehicle() && !player.hasPassengers()
                 && !claim.returning && !DrakeBattleGoal.assigned(player) && !DrakeSoulbinding.ritualActive(player)
                 && !BondOfTheBeastCompat.hasOwner(player)
                 && (!DrakeLeashing.attached(player) || !claim.tryingToEscape

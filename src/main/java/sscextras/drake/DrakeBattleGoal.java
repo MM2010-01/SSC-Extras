@@ -156,7 +156,7 @@ public final class DrakeBattleGoal extends Goal {
         enemy = findEnemy();
         purpose = enemy != null ? Purpose.BATTLE : Purpose.RECALL;
         if (chooseMount()) return true;
-        if (enemy != null || !pillager.getWorld().isDay() || pillager.age < nextPatrolSearch) return false;
+        if (enemy != null || DrakeCaptureGoal.recallTime(pillager.getWorld()) || pillager.age < nextPatrolSearch) return false;
         nextPatrolSearch = pillager.age + 200;
         boolean called = pillager.getWorld().getPlayers().stream().anyMatch(player -> DrakeAttention.called(player)
                 && available(player) && pillager.squaredDistanceTo(player) <= 32 * 32
@@ -180,11 +180,11 @@ public final class DrakeBattleGoal extends Goal {
             int choice = pillager.getRandom().nextInt(total), index = 0;
             while ((choice -= DrakeAttention.called(candidates.get(index)) ? 3 : 1) >= 0) index++;
             var candidate = candidates.remove(index);
-            if (purpose != Purpose.BATTLE && purpose != Purpose.PURSUIT && (!pillager.getVisibilityCache().canSee(candidate)
+            if ((purpose == Purpose.PATROL || purpose == Purpose.RECALL && !DrakeCaptureGoal.recallTime(pillager.getWorld())) && (!pillager.getVisibilityCache().canSee(candidate)
                     || pillager.squaredDistanceTo(candidate) > 32 * 32)) continue;
             if (purpose == Purpose.RECALL && (!(candidate instanceof StableDrakeEntity drake)
-                    || pillager.getWorld().isDay() && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), 8)
-                    || !pillager.getWorld().isDay() && drake.isLeashed())) continue;
+                    || !DrakeCaptureGoal.recallTime(pillager.getWorld()) && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), 8)
+                    || DrakeCaptureGoal.recallTime(pillager.getWorld()) && drake.isLeashed())) continue;
             if (purpose == Purpose.PATROL && (((DrakeRiding.State)candidate).sscExtras$nextPatrol() > pillager.getWorld().getTime()
                     || !DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))
                     || candidate instanceof PlayerEntity player && DrakeOutpostOwnership.claim(player).tryingToEscape)) continue;
@@ -205,7 +205,7 @@ public final class DrakeBattleGoal extends Goal {
         if (pursuing(target)) {
             if (!shouldContinue() || !target.isAlive() || target.getWorld() != pillager.getWorld()
                     || phase != Phase.APPROACH && !DrakeRiding.canControl(mount, pillager)
-                    || mount.squaredDistanceTo(target) <= 4 && pillager.getVisibilityCache().canSee(target)) {
+                    || mount.squaredDistanceTo(target.getRootVehicle()) <= 4 && pillager.getVisibilityCache().canSee(target)) {
                 stopPursuit(); return false;
             }
             tick();
@@ -330,7 +330,7 @@ public final class DrakeBattleGoal extends Goal {
         if (phase == Phase.PURSUIT) {
             pillager.setTarget(null);
             pillager.getLookControl().lookAt(enemy, 30, 30);
-            pathTo(enemy.getPos(), 1);
+            pathTo(enemy.getRootVehicle().getPos(), 1);
             return;
         }
         if (phase == Phase.PATROL) {
@@ -340,7 +340,7 @@ public final class DrakeBattleGoal extends Goal {
                 if (mount instanceof PlayerEntity player) BlindingRein.setClosed(player, true);
                 DrakeDialogue.say(mount, "battle_spotted"); return;
             }
-            if (!pillager.getWorld().isDay() || pillager.age >= patrolUntil
+            if (DrakeCaptureGoal.recallTime(pillager.getWorld()) || pillager.age >= patrolUntil
                     || !DrakeCaptureGoal.near(stable.getBoundingBox(), mount.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))) { beginReturn(); return; }
             if (navigation().isIdle() && pillager.age >= nextPath) {
                 nextPath = pillager.age + 40;
