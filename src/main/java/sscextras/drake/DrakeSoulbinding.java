@@ -162,7 +162,7 @@ public final class DrakeSoulbinding {
         role(player, claim.shoeingRitual ? SHOE_RESTRAINED : RESTRAINED);
         if (claim.shoeingRitual) shoeingPaw(player, 0);
         DrakeLeashing.attachPillager(player, guards.get(0));
-        hint(player, claim.shoeingRitual ? "shoeing_held" : "ritual_held");
+        hint(player, claim.shoeingRitual ? "shoeing_held" : ritual == Ritual.FERALIZATION ? "punishment_held" : "ritual_held");
         tick(player, claim);
         return null;
     }
@@ -270,7 +270,7 @@ public final class DrakeSoulbinding {
             role(player, shoeing ? SHOE_RESTRAINED : RESTRAINED);
             if (shoeing) shoeingPaw(player, Math.min(3, claim.shoeingTicks / DrakeShoes.PAW_TICKS));
             pin(player, claim);
-            hint(player, shoeing ? "shoeing_held" : "ritual_held");
+            hint(player, shoeing ? "shoeing_held" : punishment ? "punishment_held" : "ritual_held");
         }
         if (!atHay(player, claim)) { cancel(player, claim); return; }
         for (int i = 0; i < 3; i++) {
@@ -321,7 +321,7 @@ public final class DrakeSoulbinding {
             claim.ritualTicks += 20;
             soulTicks(player, claim.ritualTicks);
             if (claim.ritualTicks == SOUL_TRANSFORM_TICKS) hint(player, punishment ? "punishment_mind" : "ritual_soul");
-            if (claim.ritualTicks == SOUL_RETURN_TICKS) hint(player, "ritual_soul_returned");
+            if (claim.ritualTicks == SOUL_RETURN_TICKS) hint(player, punishment ? "punishment_mind_returned" : "ritual_soul_returned");
         }
         if (claim.ritualTicks >= RITUAL_TICKS && EarthenDrake.stage(player) >= (punishment ? 3 : 2)
                 && (commanded || !TransformManager.getPlayerTransformData(player).isTransforming)) complete(player, claim);
@@ -649,6 +649,10 @@ public final class DrakeSoulbinding {
         var claim = DrakeOutpostOwnership.claim(player);
         if (claim == null) return;
         if (!claim.soulbound) {
+            if (!alive && claim.feral && EarthenDrake.stage(player) >= 0) {
+                DrakeRitualTransform.finish(player);
+                FormAbilityManager.applyForm(player, net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_SHIFTER);
+            }
             claim.awaitingRespawn = false;
             var form = FormAbilityManager.getForm(player);
             if (claim.feral && (form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_SHIFTER

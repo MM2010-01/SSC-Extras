@@ -63,13 +63,16 @@ public final class DrakeFeralization {
 
     public static boolean allowInventoryClick(PlayerEntity player, int slot, int button, SlotActionType action) {
         if (!restricted(player)) return true;
-        if (controlled(player) || player.currentScreenHandler != player.playerScreenHandler || slot < 9 || slot > 45) return false;
+        if (controlled(player) || player.currentScreenHandler != player.playerScreenHandler) return false;
+        if (slot == -999) return action == SlotActionType.PICKUP;
+        if (slot < 9 || slot > 45) return false;
         var handler = player.playerScreenHandler;
         var stack = handler.getSlot(slot).getStack();
         if (action == SlotActionType.SWAP) {
             return button == 40 || button >= 0 && button <= 8;
         }
-        return action == SlotActionType.PICKUP || action == SlotActionType.QUICK_MOVE && edible(stack);
+        return action == SlotActionType.PICKUP || action == SlotActionType.THROW
+                || action == SlotActionType.QUICK_MOVE && edible(stack);
     }
 
     private static boolean canTakeOver(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
