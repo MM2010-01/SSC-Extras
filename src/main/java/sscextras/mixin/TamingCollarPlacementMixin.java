@@ -13,6 +13,14 @@ import sscextras.collar.TamingCollar;
 public abstract class TamingCollarPlacementMixin {
     @Inject(method = "place(Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/util/ActionResult;", at = @At("HEAD"), cancellable = true)
     private void sscExtras$preventPlacement(ItemPlacementContext context, CallbackInfoReturnable<ActionResult> cir) {
-        if (context.getPlayer() != null && TamingCollar.restricted(context.getPlayer())) cir.setReturnValue(ActionResult.FAIL);
+        if (context.getPlayer() != null && (TamingCollar.restricted(context.getPlayer())
+                || sscextras.drake.DrakeShoes.restricted(context.getPlayer())
+                || sscextras.drake.DrakeSoulbinding.restrained(context.getPlayer()))) cir.setReturnValue(ActionResult.FAIL);
+    }
+
+    @Inject(method = "place(Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/util/ActionResult;", at = @At("RETURN"))
+    private void sscExtras$witnessForeignBlock(ItemPlacementContext context, CallbackInfoReturnable<ActionResult> cir) {
+        if (context.getPlayer() != null && cir.getReturnValue().isAccepted())
+            sscextras.drake.DrakeStableMaintenance.caughtPlacing(context.getPlayer(), context.getBlockPos());
     }
 }

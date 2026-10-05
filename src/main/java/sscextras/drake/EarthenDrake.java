@@ -55,6 +55,7 @@ public final class EarthenDrake {
     public static Identifier id(String path) { return new Identifier("ssc-extras", path); }
 
     public static void register() {
+        DrakeShoes.register();
         DrakeFeralization.register();
         DrakeInstinct.register();
         DrakeAttention.register();
@@ -112,7 +113,7 @@ public final class EarthenDrake {
     /** A temporary native tool lets normal mining speed, harvest levels and loot rules apply. */
     public static ItemStack clawTool(PlayerEntity player, BlockState block) {
         int stage = stage(player);
-        if (stage < 0 || player.isSpectator()
+        if (stage < 0 || player.isSpectator() || DrakeShoes.restricted(player)
                 || !player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()) return ItemStack.EMPTY;
         Item tool;
         if (block.isIn(BlockTags.PICKAXE_MINEABLE)) {

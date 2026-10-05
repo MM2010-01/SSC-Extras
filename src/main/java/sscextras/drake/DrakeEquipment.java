@@ -25,6 +25,7 @@ public final class DrakeEquipment {
     public static final DrakeAccessoryItem SADDLE = new DrakeAccessoryItem("chest", "back", "cursed_saddle", false, false);
     public static final DrakeAccessoryItem RIDERS_CHEST = new DrakeAccessoryItem("chest", "cape", "riders_chest", true, false);
     public static final DrakeAccessoryItem CLAW_TIPS = new DrakeAccessoryItem("hand", "glove", "netherite_claw_tips", true, true);
+    public static final DrakeShoesItem SHOES = new DrakeShoesItem();
 
     private DrakeEquipment() { }
 
@@ -34,7 +35,8 @@ public final class DrakeEquipment {
         Registry.register(Registries.ITEM, EarthenDrake.id("cursed_saddle"), SADDLE);
         Registry.register(Registries.ITEM, EarthenDrake.id("riders_chest"), RIDERS_CHEST);
         Registry.register(Registries.ITEM, EarthenDrake.id("netherite_claw_tips"), CLAW_TIPS);
-        CuriosCompat.register(REINS, BLINDING_REIN, SADDLE, RIDERS_CHEST, CLAW_TIPS);
+        Registry.register(Registries.ITEM, EarthenDrake.id("cursed_iron_drake_shoes"), SHOES);
+        CuriosCompat.register(REINS, BLINDING_REIN, SADDLE, RIDERS_CHEST, CLAW_TIPS, SHOES);
         CuriosCompat.register(Items.SADDLE, SADDLE);
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")) VanillaSaddleTrinket.register();
         DrakeRiding.register();
@@ -51,7 +53,7 @@ public final class DrakeEquipment {
                 }
                 return ActionResult.SUCCESS;
             }
-            if (!(entity instanceof PlayerEntity drake) || EarthenDrake.stage(drake) < 2) return ActionResult.PASS;
+            if (!(entity instanceof PlayerEntity drake) || !DrakeRiding.mountForm(drake)) return ActionResult.PASS;
             ItemStack held = player.getStackInHand(hand);
             if (isReins(held) || isSaddle(held) || held.isOf(RIDERS_CHEST)) {
                 return tryEquip(drake, held, !player.isCreative()) ? ActionResult.SUCCESS : ActionResult.FAIL;
@@ -75,6 +77,8 @@ public final class DrakeEquipment {
     }
 
     public static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume) {
+        if (source.isOf(SHOES)) return DrakeShoes.tryEquip(player, source, false, consume)
+                || DrakeShoes.tryEquip(player, source, true, consume);
         DrakeAccessoryItem item = source.isOf(Items.SADDLE) ? SADDLE
                 : source.getItem() instanceof DrakeAccessoryItem accessory ? accessory : null;
         if (!player.isAlive() || player.isSpectator() || source.isEmpty() || item == null) return false;
@@ -105,6 +109,11 @@ public final class DrakeEquipment {
     }
 
     public static List<ItemStack> stacks(PlayerEntity player, DrakeAccessoryItem item) {
+        if (item == SHOES) {
+            var result = new java.util.ArrayList<>(DrakeShoes.stacks(player, false));
+            result.addAll(DrakeShoes.stacks(player, true));
+            return result;
+        }
         var io = slots();
         if (io == null) return List.of();
         var stacks = io.getEntitySlot(player, CuriosCompat.instance != null ? "" : item.group,
@@ -119,6 +128,7 @@ public final class DrakeEquipment {
     }
 
     public static boolean visible(PlayerEntity player, DrakeAccessoryItem item) {
+        if (item == SHOES) return DrakeShoes.visible(player, false) || DrakeShoes.visible(player, true);
         var stacks = stacks(player, item);
         for (int i = 0; i < stacks.size(); i++) if ((matches(stacks.get(i), item) || item == SADDLE && stacks.get(i).isOf(Items.SADDLE))
                 && (CuriosCompat.instance == null || CuriosCompat.instance.visible(player, item.curiosSlot(), i))) return true;
@@ -126,13 +136,14 @@ public final class DrakeEquipment {
     }
 
     public static void tickEquipped(PlayerEntity player, ItemStack stack) {
-        if (isReins(stack) || isSaddle(stack)) {
+        if (isReins(stack) || isSaddle(stack) || stack.getItem() instanceof DrakeShoesItem) {
             if (!stack.isOf(Items.SADDLE)) {
                 stack.getOrCreateNbt().putString(Collars.INFUSION, Registries.STATUS_EFFECT.getId(EarthenDrake.CURSE).toString());
                 Collars.applyCurse(player, stack);
             }
             if (stack.isOf(Items.SADDLE)) setBinding(stack, false);
             refreshBinding(player);
+            if (stack.getItem() instanceof DrakeShoesItem) DrakeShoes.tick(player, stack);
         }
     }
 
@@ -158,7 +169,8 @@ public final class DrakeEquipment {
     }
 
     public static boolean canRide(Entity entity) {
-        return entity instanceof PlayerEntity player && player.isAlive() && EarthenDrake.stage(player) == 3
+        return entity instanceof PlayerEntity player && player.isAlive() && (EarthenDrake.stage(player) == 3
+                || EarthenDrake.stage(player) >= 0 && DrakeSoulbinding.bound(player))
                 && !saddle(player).isEmpty() || entity instanceof StableDrakeEntity drake && drake.isSaddled();
     }
 
@@ -181,7 +193,7 @@ public final class DrakeEquipment {
     }
 
     public static ItemStack claws(PlayerEntity player, Item tool) {
-        if (!player.getInventory().getMainHandStack().isEmpty()) return ItemStack.EMPTY;
+        if (!player.getInventory().getMainHandStack().isEmpty() || DrakeShoes.restricted(player)) return ItemStack.EMPTY;
         ItemStack tips = equipped(player, CLAW_TIPS);
         if (tips.isEmpty()) return ItemStack.EMPTY;
         ItemStack result = new ItemStack(tool);

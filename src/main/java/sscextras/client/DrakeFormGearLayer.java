@@ -11,8 +11,10 @@ import sscextras.drake.*;
 
 public final class DrakeFormGearLayer extends GeoRenderLayer<FormAnimatable> {
     private final DrakeGearModel[] gear = {new DrakeGearModel(0), new DrakeGearModel(1), new DrakeGearModel(2), new DrakeGearModel(3)};
+    private final DrakeShoeModel[] shoes = {new DrakeShoeModel(0), new DrakeShoeModel(1), new DrakeShoeModel(2), new DrakeShoeModel(3)};
     private int stage = -1;
     private boolean reins, saddle, chest, claws, vanillaSaddle, blinkers, blinkersClosed;
+    private boolean handShoes, footShoes;
     public DrakeFormGearLayer(FormRenderer renderer) { super(renderer); }
 
     @Override public void preRender(MatrixStack matrices, FormAnimatable animatable, BakedGeoModel model, RenderLayer renderType,
@@ -29,12 +31,16 @@ public final class DrakeFormGearLayer extends GeoRenderLayer<FormAnimatable> {
         vanillaSaddle = DrakeEquipment.saddle(player).isOf(net.minecraft.item.Items.SADDLE);
         chest = stage == 3 && DrakeEquipment.visible(player, DrakeEquipment.RIDERS_CHEST);
         claws = stage == 3 && DrakeEquipment.visible(player, DrakeEquipment.CLAW_TIPS);
+        handShoes = DrakeShoes.visible(player, false);
+        footShoes = DrakeShoes.visible(player, true);
     }
 
     @Override public void renderForBone(MatrixStack matrices, FormAnimatable animatable, GeoBone bone, RenderLayer renderType,
             VertexConsumerProvider buffers, VertexConsumer buffer, float tickDelta, int light, int overlay) {
         if (stage >= 0) {
+            shoes[stage].captureGrip(animatable.e, bone.getName(), matrices);
             gear[stage].render(bone.getName(), matrices, buffers, light, reins, saddle, chest, claws, vanillaSaddle, blinkers, blinkersClosed);
+            shoes[stage].render(bone.getName(), matrices, buffers, light, handShoes, footShoes);
             // AzureLib may retain the shared fallback buffer for the next body bone.
             buffers.getBuffer(renderType);
         }

@@ -72,7 +72,6 @@ public final class DrakeFaction {
 
     public static void damaged(Entity target, DamageSource source) {
         if (target.getWorld().isClient) return;
-        if (source.getAttacker() instanceof PlayerEntity player && member(target)) DrakeSoulbinding.disobey(player);
         if (source.getAttacker() instanceof PlayerEntity player
                 && EarthenDrake.stage(player) == 3 && member(target))
             AttackEntityDataTracker.onPlayerAttack(player, target, player.getWorld());

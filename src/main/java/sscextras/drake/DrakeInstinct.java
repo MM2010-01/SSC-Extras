@@ -28,6 +28,7 @@ public final class DrakeInstinct {
         if (amount <= 0 || !(player.getWorld() instanceof ServerWorld world)) return amount;
         int stage = EarthenDrake.stage(player);
         if (stage == 3) return amount;
+        if (stage >= 0 && DrakeSoulbinding.bound(player)) amount *= 2;
         if (stage < 0) {
             var form = FormAbilityManager.getForm(player);
             var target = CreatureInstinct.getTarget(player);

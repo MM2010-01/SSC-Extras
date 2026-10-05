@@ -14,6 +14,7 @@ import sscextras.drake.EarthenDrake;
 public abstract class DrakeRitualTransformAnimationMixin {
     @Inject(method = "isEnabled", at = @At("HEAD"), cancellable = true)
     private void sscExtras$keepBeastPosture(PlayerEntity player, AnimSystem.AnimSystemData data, CallbackInfoReturnable<Boolean> cir) {
-        if (DrakeSoulbinding.restrained(player) && EarthenDrake.stage(player) >= 2) cir.setReturnValue(false);
+        if (DrakeSoulbinding.shoeing(player) || DrakeSoulbinding.restrained(player) && EarthenDrake.stage(player) >= 2
+                || EarthenDrake.stage(player) >= 0 && DrakeSoulbinding.bound(player)) cir.setReturnValue(false);
     }
 }

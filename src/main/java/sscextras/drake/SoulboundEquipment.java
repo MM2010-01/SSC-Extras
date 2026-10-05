@@ -28,6 +28,7 @@ public final class SoulboundEquipment {
 
     private static boolean cursed(ItemStack stack) {
         return stack.isOf(Collars.CURSED) || stack.isOf(Collars.TAMING) || DrakeEquipment.isReins(stack)
+                || stack.getItem() instanceof DrakeShoesItem
                 || stack.isOf(DrakeEquipment.SADDLE) || EnchantmentHelper.get(stack).keySet().stream().anyMatch(Enchantment::isCursed);
     }
 
@@ -39,7 +40,7 @@ public final class SoulboundEquipment {
         for (int i = 0; i < player.getInventory().size(); i++) enchant(player.getInventory().getStack(i));
         for (var slot : CollarSlots.includingLegacy(player)) enchant(slot.get(player));
         for (var item : new DrakeAccessoryItem[]{DrakeEquipment.REINS, DrakeEquipment.SADDLE,
-                DrakeEquipment.RIDERS_CHEST, DrakeEquipment.CLAW_TIPS})
+                DrakeEquipment.RIDERS_CHEST, DrakeEquipment.CLAW_TIPS, DrakeEquipment.SHOES})
             for (var stack : DrakeEquipment.stacks(player, item)) enchant(stack);
         player.currentScreenHandler.sendContentUpdates();
     }

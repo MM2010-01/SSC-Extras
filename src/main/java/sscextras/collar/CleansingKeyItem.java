@@ -37,6 +37,13 @@ public final class CleansingKeyItem extends Item {
                 removed |= release((ServerPlayerEntity) player, key, hand, io, group, name, i);
             }
         }
+        if (io != null) for (boolean feet : new boolean[]{false, true}) {
+            String group = CuriosCompat.instance == null ? feet ? "feet" : "hand" : "";
+            String name = CuriosCompat.instance == null ? feet ? "shoes" : "glove" : feet ? "feet" : "hands";
+            var stacks = sscextras.drake.DrakeShoes.stacks(player, feet);
+            for (int i = 0; i < stacks.size(); i++) if (stacks.get(i).isOf(DrakeEquipment.SHOES))
+                removed |= release((ServerPlayerEntity)player, key, hand, io, group, name, i);
+        }
         if (!removed) return TypedActionResult.pass(key);
         player.addStatusEffect(new StatusEffectInstance(Collars.CURSE_CLEANSED, 600, 0, false, false, true));
         player.getInventory().markDirty();
@@ -51,7 +58,7 @@ public final class CleansingKeyItem extends Item {
         if (key.isEmpty() || key.getDamage() >= key.getMaxDamage()) return false;
         ItemStack stack = io.getEntitySlot(player, group, name, index);
         if (stack == null || !(stack.isOf(Collars.CURSED) || stack.isOf(Collars.TAMING) || DrakeEquipment.isReins(stack)
-                || stack.isOf(DrakeEquipment.SADDLE))) return false;
+                || stack.isOf(DrakeEquipment.SADDLE) || stack.isOf(DrakeEquipment.SHOES))) return false;
         ItemStack dropped = stack.copy();
         io.setEntitySlot(player, group, name, index, ItemStack.EMPTY);
         if (!io.getEntitySlot(player, group, name, index).isEmpty()) return false;

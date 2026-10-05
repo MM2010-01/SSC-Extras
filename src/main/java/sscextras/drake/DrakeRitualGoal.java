@@ -45,13 +45,23 @@ public final class DrakeRitualGoal extends Goal {
         var navigation = (DrakeStableNavigation)pillager.getNavigation();
         navigation.open(claim.gate());
         pillager.getLookControl().lookAt(player, 30, 30);
-        boolean punishment = DrakeFeralization.due(claim);
-        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(punishment && index == 0
+        boolean shoeing = claim.shoeingRitual;
+        boolean punishment = !shoeing && DrakeFeralization.due(claim);
+        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(shoeing && index == 2 && DrakeSoulbinding.restrained(player)
+                ? DrakeEquipment.SHOES.getDefaultStack()
+                : shoeing && DrakeSoulbinding.restrained(player) ? ItemStack.EMPTY
+                : punishment && index == 0
                 && DrakeSoulbinding.restrained(player) && claim.feedingTicks < 60
                 ? new ItemStack(net.onixary.shapeShifterCurseFabric.items.RegCustomItem.POWERFUL_CATALYST)
                 : (punishment ? index != 0 : index < 2) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         if (DrakeSoulbinding.restrained(player)) {
-            if (punishment ? index != 0 : index < 2) DrakeSoulbinding.role(pillager, DrakeSoulbinding.HOLDING);
+            if (shoeing && index == 2) {
+                DrakeSoulbinding.role(pillager, pillager.squaredDistanceTo(DrakeSoulbinding.attendancePosition(claim, index)) <= 1.44
+                        ? DrakeSoulbinding.SHOEING : 0);
+                if (DrakeSoulbinding.role(pillager) == DrakeSoulbinding.SHOEING)
+                    DrakeSoulbinding.shoeingPaw(pillager, Math.min(3, claim.shoeingTicks / DrakeShoes.PAW_TICKS));
+            }
+            else if (punishment ? index != 0 : index < 2) DrakeSoulbinding.role(pillager, DrakeSoulbinding.HOLDING);
             takePosition(claim, index);
             return;
         }

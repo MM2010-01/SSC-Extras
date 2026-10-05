@@ -14,7 +14,7 @@ public final class DrakeView {
     public static Vec3d atHead(Entity entity, float tickDelta, Vec3d eyes) {
         if (!(entity instanceof PlayerEntity player) || player.isSleeping()) return eyes;
         int stage = EarthenDrake.stage(player);
-        if (stage < 2) return eyes;
+        if (stage < 0 || stage < 2 && !DrakeSoulbinding.bound(player)) return eyes;
         double scale = stage == 3 ? 1.5 : 1;
         double width = ScaleUtils.getModelWidthScale(player, tickDelta) / scale;
         double height = ScaleUtils.getModelHeightScale(player, tickDelta) / scale;

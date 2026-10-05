@@ -1,0 +1,8 @@
+{
+  "amount": 1,
+  "order": 0,
+  "icon": "ssc-extras:slot/drake_shoes",
+  "validator_predicates": [
+    "trinkets:tag"
+  ]
+}

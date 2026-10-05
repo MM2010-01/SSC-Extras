@@ -13,7 +13,8 @@ import sscextras.drake.DrakeFeralization;
 public abstract class DrakeFeralUseMixin {
     @Inject(method = "setCurrentHand", at = @At("HEAD"), cancellable = true)
     private void sscExtras$onlyEatRawFood(Hand hand, CallbackInfo ci) {
-        if ((Object)this instanceof PlayerEntity player && DrakeFeralization.restricted(player)
-                && !DrakeFeralization.rawFood(player.getStackInHand(hand))) ci.cancel();
+        if ((Object)this instanceof PlayerEntity player && (sscextras.drake.DrakeSoulbinding.restrained(player)
+                || !sscextras.drake.DrakeShoes.canUse(player, hand)
+                || DrakeFeralization.restricted(player) && !DrakeFeralization.rawFood(player.getStackInHand(hand)))) ci.cancel();
     }
 }

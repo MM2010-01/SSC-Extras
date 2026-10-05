@@ -42,12 +42,17 @@ public final class DrakeRiding {
 
     private DrakeRiding() { }
 
+    public static boolean mountForm(PlayerEntity player) {
+        int stage = EarthenDrake.stage(player);
+        return stage >= 2 || stage >= 0 && DrakeSoulbinding.bound(player);
+    }
+
     public static boolean canCarryPillager(PlayerEntity player) {
-        return player.isAlive() && EarthenDrake.stage(player) >= 2 && DrakeFaction.harnessed(player);
+        return player.isAlive() && mountForm(player) && DrakeFaction.harnessed(player);
     }
 
     public static boolean canCarryMob(PlayerEntity player) {
-        return player.isAlive() && EarthenDrake.stage(player) >= 2 && !DrakeEquipment.saddle(player).isEmpty();
+        return player.isAlive() && mountForm(player) && !DrakeEquipment.saddle(player).isEmpty();
     }
 
     public static boolean accepts(PlayerEntity mount, Entity passenger) {
@@ -85,7 +90,7 @@ public final class DrakeRiding {
                 && mount instanceof PlayerEntity player && canCarryPillager(player)) || !DrakeEquipment.hasReins(mount)) return false;
         return rider instanceof PlayerEntity player && !player.isSpectator()
                 || rider instanceof PillagerEntity pillager && !pillager.isAiDisabled()
-                && (mount instanceof PlayerEntity drake && EarthenDrake.stage(drake) >= 2 || mount instanceof StableDrakeEntity);
+                && (mount instanceof PlayerEntity drake && mountForm(drake) || mount instanceof StableDrakeEntity);
     }
 
     private static void publishInput(Entity mount, Input input) {

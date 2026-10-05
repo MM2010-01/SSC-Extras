@@ -39,7 +39,7 @@ public final class DrakeBodyPower extends Power {
 
     private void update(boolean force, boolean sync) {
         if (entity.getWorld().isClient || !(entity instanceof PlayerEntity player)) return;
-        boolean next = stage == 3 || stage == 2 && (player.isSprinting() || player.isSneaking()
+        boolean next = stage == 3 || DrakeSoulbinding.bound(player) || stage == 2 && (player.isSprinting() || player.isSneaking()
                 || player.hasPassengers() || DrakeLeashing.attached(player) || sscextras.collar.TamingCollar.worn(player)
                 || player.getHungerManager().getFoodLevel() <= 6);
         if (!force && next == allFours) return;
@@ -47,10 +47,10 @@ public final class DrakeBodyPower extends Power {
         allFours = next;
         if (changed && stage == 2 && next && player.getHungerManager().getFoodLevel() <= 6
                 && !player.isSprinting() && !player.isSneaking() && !player.hasPassengers() && !DrakeLeashing.attached(player)
-                && !sscextras.collar.TamingCollar.worn(player))
+                && !sscextras.collar.TamingCollar.worn(player) && !DrakeSoulbinding.bound(player))
             player.sendMessage(Text.translatable("message.ssc-extras.drake.hunger_collapse").formatted(Formatting.YELLOW), false);
         float scale = switch (stage) { case 1 -> 2.0f / 1.8f; case 2 -> 2.2f / 1.8f; case 3 -> 1.5f; default -> 1.0f; };
-        float height = stage == 3 ? 1.65f : stage == 2 && allFours ? 1.4f : 1.8f * scale;
+        float height = stage == 3 ? 1.65f : allFours ? (stage == 2 ? 1.4f : 1.1f * scale) : 1.8f * scale;
         float width = switch (stage) { case 1 -> 0.7f; case 2 -> 0.95f; case 3 -> 1.6f; default -> 0.6f; };
         set(ScaleTypes.WIDTH, scale);
         set(ScaleTypes.HEIGHT, scale);

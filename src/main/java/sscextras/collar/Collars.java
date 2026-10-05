@@ -75,6 +75,7 @@ public final class Collars {
             entries.add(sscextras.drake.DrakeEquipment.SADDLE);
             entries.add(sscextras.drake.DrakeEquipment.RIDERS_CHEST);
             entries.add(sscextras.drake.DrakeEquipment.CLAW_TIPS);
+            entries.add(DrakeEquipment.SHOES.getDefaultStack());
             entries.add(sscextras.drake.DrakeStable.SPAWN_EGG);
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.POTION));
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.SPLASH_POTION));
@@ -85,7 +86,8 @@ public final class Collars {
 
     public static int strength(PlayerEntity player) {
         if (!DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()
-                || !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty()) return CURSED.strength();
+                || !DrakeEquipment.equipped(player, DrakeEquipment.SADDLE).isEmpty()
+                || sscextras.drake.DrakeShoes.hands(player) || sscextras.drake.DrakeShoes.feet(player)) return CURSED.strength();
         int strength = 0;
         for (var slot : CollarSlots.get(player)) {
             if (slot.stack().getItem() instanceof CollarItem collar) strength = Math.max(strength, collar.strength());

@@ -50,7 +50,7 @@ public final class Infusions {
     }
 
     public static ItemStack active(PlayerEntity player, InfusionSlot slot) {
-        if (player.isSpectator()) return ItemStack.EMPTY;
+        if (player.isSpectator() || !slot.armor() && sscextras.drake.DrakeShoes.restricted(player)) return ItemStack.EMPTY;
         ItemStack stack = inventory(player).getStack(slot.ordinal());
         if (stack.isEmpty() || !restricted(player, slot, stack)) return ItemStack.EMPTY;
         ItemStack real = slot.armor() ? player.getInventory().armor.get(slot.equipment.getEntitySlotId())
@@ -66,6 +66,7 @@ public final class Infusions {
     }
 
     public static ItemStack tool(PlayerEntity player, BlockState state) {
+        if (sscextras.drake.DrakeShoes.restricted(player)) return ItemStack.EMPTY;
         ItemStack best = sscextras.drake.EarthenDrake.clawTool(player, state);
         for (InfusionSlot slot : InfusionSlot.values()) {
             if (slot.armor()) continue;
@@ -111,6 +112,7 @@ public final class Infusions {
     }
 
     public static ActionResult useTool(PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (sscextras.drake.DrakeShoes.restricted(player)) return ActionResult.PASS;
         if (hand != Hand.MAIN_HAND || player.isSpectator() || !player.getInventory().getMainHandStack().isEmpty()) return ActionResult.PASS;
         BlockState block = player.getWorld().getBlockState(hit.getBlockPos());
         if (block.isOf(FeralEffigy.BLOCK) || block.createScreenHandlerFactory(player.getWorld(), hit.getBlockPos()) != null) return ActionResult.PASS;

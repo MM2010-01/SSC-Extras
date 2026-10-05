@@ -119,7 +119,9 @@ public final class DrakeBattleGoal extends Goal {
             return !player.isCreative() && !player.isSpectator() && !player.isSleeping() && owned(player)
                     && (holder == null || holder instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(claim.tie()));
         }
-        return candidate instanceof StableDrakeEntity drake && drake.belongsTo(stable) && !drake.isLeashed();
+        return candidate instanceof StableDrakeEntity drake && drake.belongsTo(stable)
+                && (!drake.isLeashed() || drake.getHoldingEntity() instanceof LeashKnotEntity knot
+                    && knot.getDecorationBlockPos().equals(stable.tie(drake.homeStall())));
     }
 
     @Override public boolean canStart() {
@@ -159,7 +161,7 @@ public final class DrakeBattleGoal extends Goal {
                     || pillager.squaredDistanceTo(candidate) > 32 * 32)) continue;
             if (purpose == Purpose.RECALL && (!(candidate instanceof StableDrakeEntity drake)
                     || pillager.getWorld().isDay() && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), 8)
-                    || !pillager.getWorld().isDay() && stable.gate(drake.homeStall()).equals(stable.gateAt(candidate.getPos())))) continue;
+                    || !pillager.getWorld().isDay() && drake.isLeashed())) continue;
             if (purpose == Purpose.PATROL && (((DrakeRiding.State)candidate).sscExtras$nextPatrol() > pillager.getWorld().getTime()
                     || !DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))
                     || candidate instanceof PlayerEntity player && DrakeOutpostOwnership.claim(player).tryingToEscape)) continue;
@@ -230,6 +232,11 @@ public final class DrakeBattleGoal extends Goal {
             }
             pathTo(mount.getPos(), 1);
             if (pillager.squaredDistanceTo(mount) > 4 || !pillager.getVisibilityCache().canSee(mount)) return;
+            if (purpose == Purpose.RECALL && mount instanceof StableDrakeEntity drake && stable.stall(homeStall).contains(drake.getPos())) {
+                tetherResident(drake);
+                phase = Phase.LEAVE; nextPath = 0;
+                return;
+            }
             if (mount instanceof PlayerEntity player) {
                 hungerBefore = player.getHungerManager().getFoodLevel();
             }
@@ -238,7 +245,7 @@ public final class DrakeBattleGoal extends Goal {
                 BlindingRein.upgrade(player);
                 if (purpose == Purpose.BATTLE) BlindingRein.setClosed(player, true);
                 DrakeLeashing.detach(player, false);
-            }
+            } else if (mount instanceof StableDrakeEntity drake) drake.detachLeash(true, false);
             exitGate = stable.gateAt(mount.getPos());
             phase = exitGate == null ? afterExit() : Phase.EXIT;
             nextPath = 0; lastSeen = pillager.age;
@@ -301,7 +308,7 @@ public final class DrakeBattleGoal extends Goal {
                 DrakeLeashing.attachPillager(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), homeTie));
                 DrakeDialogue.say(player, "stable_arrived");
             } else if (mount instanceof StableDrakeEntity drake) {
-                drake.getNavigation().stop(); drake.setTarget(null);
+                tetherResident(drake);
             }
             if (purpose == Purpose.BATTLE && won && pillager.getRandom().nextFloat() < .3f) {
                 if (mount instanceof PlayerEntity player)
@@ -322,6 +329,11 @@ public final class DrakeBattleGoal extends Goal {
                 navigation().close(homeGate); complete = true;
             } else pathTo(DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, -2.5), .8);
         }
+    }
+
+    private void tetherResident(StableDrakeEntity drake) {
+        drake.getNavigation().stop(); drake.setTarget(null);
+        drake.attachLeash(LeashKnotEntity.getOrCreate(pillager.getWorld(), homeTie), true);
     }
 
     private Phase afterExit() {

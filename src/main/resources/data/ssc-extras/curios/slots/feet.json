@@ -1,0 +1,9 @@
+{
+  "size": 1,
+  "operation": "SET",
+  "order": 90,
+  "icon": "ssc-extras:slot/drake_shoes",
+  "validators": [
+    "curios:tag"
+  ]
+}

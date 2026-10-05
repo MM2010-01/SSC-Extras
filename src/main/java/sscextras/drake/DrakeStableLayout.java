@@ -13,7 +13,7 @@ public final class DrakeStableLayout {
     // Saved bounds distinguish the original single row from the mansion's facing rows.
     public static boolean facingRows(BlockBox box) { return box.getBlockCountZ() == 27; }
     public static int stallCount(BlockBox box) { return (box.getBlockCountX() - 1) / 7 * (facingRows(box) ? 2 : 1); }
-    public static int roamRange(BlockBox box) { return stallCount(box) == 6 ? 100 : 64; }
+    public static int roamRange(BlockBox box) { return DrakeRoaming.RANGE; }
     public static int captureRange(BlockBox box) { return stallCount(box) == 6 ? 125 : 128; }
 
     public static int column(BlockBox box, int stall) { return facingRows(box) ? stall % 3 : stall; }

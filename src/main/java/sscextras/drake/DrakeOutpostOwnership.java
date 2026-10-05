@@ -46,16 +46,20 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public boolean collarIssued;
         public int stallIndex, goodTicks, ritualHint;
         public boolean soulbound, awaitingRespawn, feral;
+        public boolean shoeingDue;
+        boolean shoeingRitual;
+        int shoeingTicks, shoeingStage;
         public int soulboundStage = 3;
         public NbtCompound previousSpawn = new NbtCompound();
         long lastServiceTime = Long.MIN_VALUE;
+        long lastAttendanceNight = Long.MIN_VALUE;
         int ritualTicks, feedingTicks;
         int feralTicks, nextFeral;
         FeralDrakeBrain feralBrain;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
-        long nextOutsideHint, seenSince = -1, recallUntil;
-        int witness;
+        long nextOutsideHint, seenSince = -1, recallUntil, nextEscortSearch;
+        int witness, escort;
         Claim(RegistryKey<World> world, BlockBox stable, String name) {
             this.world = world; this.stable = stable; this.name = name;
             stallIndex = DrakeStableLayout.stallCount(stable) - 1;
@@ -141,7 +145,6 @@ public final class DrakeOutpostOwnership extends PersistentState {
             var claim = claim(player);
             if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {
                 claim.escapes++;
-                DrakeSoulbinding.disobey(player);
                 claim.tryingToEscape = false;
                 if (claim.escapes == 3) player.sendMessage(Text.translatable("message.ssc-extras.drake.last_escape_warning")
                         .formatted(net.minecraft.util.Formatting.DARK_PURPLE), false);
@@ -288,6 +291,19 @@ public final class DrakeOutpostOwnership extends PersistentState {
         }
     }
 
+    public static void restoreSign(ServerWorld world, DrakeStablePiece stable, BlockPos pos) {
+        var data = get(world.getServer());
+        for (var claim : data.mounts.values()) if (claim.matches(world, stable) && claim.sign().equals(pos)) {
+            writeSign(world, pos, claim.name, false);
+            return;
+        }
+        for (int stall = 0; stall < stable.stallCount(); stall++) if (stable.sign(stall).equals(pos)) {
+            boolean vacant = data.vacantResidents.contains(GlobalPos.create(world.getRegistryKey(), pos));
+            writeSign(world, pos, !vacant && stall < stable.residentCount() ? stable.name(stall) : "", false);
+            return;
+        }
+    }
+
     public static DrakeOutpostOwnership read(NbtCompound nbt) {
         var data = new DrakeOutpostOwnership();
         for (var element : nbt.getList("VacantResidents", NbtElement.COMPOUND_TYPE)) {
@@ -312,10 +328,12 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.collarIssued = tag.getBoolean("CollarIssued");
             if (tag.contains("Stall")) claim.stallIndex = Math.max(0, Math.min(claim.stallIndex, tag.getInt("Stall")));
             claim.goodTicks = Math.max(0, Math.min(DrakeSoulbinding.SERVICE_TICKS, tag.getInt("GoodTicks")));
+            claim.lastAttendanceNight = tag.contains("AttendanceNight") ? tag.getLong("AttendanceNight") : Long.MIN_VALUE;
             claim.ritualHint = tag.getInt("RitualHint");
             claim.soulbound = tag.getBoolean("Soulbound");
             claim.soulboundStage = tag.contains("SoulboundStage") && tag.getInt("SoulboundStage") == 2 ? 2 : 3;
             claim.feral = claim.soulbound && tag.getBoolean("Feral");
+            claim.shoeingDue = tag.getBoolean("ShoeingDue");
             claim.awaitingRespawn = tag.getBoolean("AwaitingRespawn");
             claim.previousSpawn = tag.getCompound("PreviousSpawn").copy();
             data.mounts.put(tag.getUuid("Player"), claim);
@@ -338,9 +356,11 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putInt("Escapes", claim.escapes); tag.putBoolean("TryingToEscape", claim.tryingToEscape);
             tag.putBoolean("CollarIssued", claim.collarIssued);
             tag.putInt("Stall", claim.stallIndex); tag.putInt("GoodTicks", claim.goodTicks); tag.putInt("RitualHint", claim.ritualHint);
+            tag.putLong("AttendanceNight", claim.lastAttendanceNight);
             tag.putBoolean("Soulbound", claim.soulbound); tag.putBoolean("AwaitingRespawn", claim.awaitingRespawn);
             tag.putInt("SoulboundStage", claim.soulboundStage);
             tag.putBoolean("Feral", claim.feral);
+            tag.putBoolean("ShoeingDue", claim.shoeingDue);
             tag.put("PreviousSpawn", claim.previousSpawn.copy()); mounts.add(tag);
         });
         var signs = new NbtList();
