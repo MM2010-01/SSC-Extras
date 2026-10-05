@@ -50,6 +50,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public int stallIndex, goodTicks, ritualHint;
         public boolean soulbound, awaitingRespawn, feral;
         public boolean shoeingDue;
+        public int shoeingViolations;
         boolean shoeingRitual;
         DrakeSoulbinding.Ritual commandRitual;
         int shoeingTicks, shoeingStage;
@@ -363,7 +364,10 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.soulbound = tag.getBoolean("Soulbound");
             claim.soulboundStage = tag.contains("SoulboundStage") && tag.getInt("SoulboundStage") == 2 ? 2 : 3;
             claim.feral = tag.getBoolean("Feral");
-            claim.shoeingDue = tag.getBoolean("ShoeingDue");
+            claim.shoeingViolations = tag.contains("ShoeingViolations")
+                    ? Math.max(0, Math.min(DrakeStableMaintenance.SHOEING_VIOLATIONS, tag.getInt("ShoeingViolations")))
+                    : tag.getBoolean("ShoeingDue") ? 1 : 0;
+            claim.shoeingDue = tag.contains("ShoeingViolations") && tag.getBoolean("ShoeingDue");
             claim.awaitingRespawn = tag.getBoolean("AwaitingRespawn");
             claim.previousSpawn = tag.getCompound("PreviousSpawn").copy();
             data.mounts.put(tag.getUuid("Player"), claim);
@@ -392,6 +396,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putInt("SoulboundStage", claim.soulboundStage);
             tag.putBoolean("Feral", claim.feral);
             tag.putBoolean("ShoeingDue", claim.shoeingDue);
+            tag.putInt("ShoeingViolations", claim.shoeingViolations);
             tag.put("PreviousSpawn", claim.previousSpawn.copy()); mounts.add(tag);
         });
         var signs = new NbtList();

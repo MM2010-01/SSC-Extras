@@ -40,7 +40,10 @@ public abstract class DrakeFeralNetworkMixin {
             shift = At.Shift.AFTER), cancellable = true)
     private void sscExtras$noItemActions(PlayerActionC2SPacket packet, CallbackInfo ci) {
         if (DrakeFeralization.restricted(player) && (DrakeFeralization.controlled(player)
-                || packet.getAction() != PlayerActionC2SPacket.Action.RELEASE_USE_ITEM)) {
+                || switch (packet.getAction()) {
+                    case START_DESTROY_BLOCK, ABORT_DESTROY_BLOCK, STOP_DESTROY_BLOCK, RELEASE_USE_ITEM -> false;
+                    default -> true;
+                })) {
             player.currentScreenHandler.syncState(); ci.cancel();
         }
     }

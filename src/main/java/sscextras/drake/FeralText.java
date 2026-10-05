@@ -11,6 +11,7 @@ public final class FeralText {
 
     public static Text itemName(net.minecraft.item.ItemStack stack, Text original) {
         return DrakeFeralization.rawFood(stack) ? Text.translatable("item.ssc-extras.feral_raw_food")
+                : stack.isFood() ? Text.translatable("item.ssc-extras.feral_other_food")
                 : Text.literal(original.getString()).setStyle(Style.EMPTY.withObfuscated(true));
     }
 
@@ -27,7 +28,8 @@ public final class FeralText {
         String value = text.toString();
         if (value.codePoints().noneMatch(Character::isLetter)
                 || value.equals(Text.translatable("message.ssc-extras.drake.feral_takeover").getString())
-                || value.equals(Text.translatable("item.ssc-extras.feral_raw_food").getString())) return original;
+                || value.equals(Text.translatable("item.ssc-extras.feral_raw_food").getString())
+                || value.equals(Text.translatable("item.ssc-extras.feral_other_food").getString())) return original;
         var readable = new boolean[value.length()];
         String words = "meat" + (mountName.isBlank() ? "" : "|" + Pattern.quote(mountName));
         var matches = Pattern.compile("(?iu)肉|(?<![\\p{L}\\p{N}_])(?:" + words + ")(?![\\p{L}\\p{N}_])").matcher(value);

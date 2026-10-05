@@ -198,6 +198,7 @@ public final class DrakeSoulbinding {
         if (!player.isAlive() || player.isSpectator() || claim.awaitingRespawn) { cancel(player, claim); return; }
         if (claim.shoeingDue && !claim.shoeingRitual && DrakeShoes.fullyEquipped(player)) {
             claim.shoeingDue = false;
+            claim.shoeingViolations = 0;
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
         }
         boolean shoeing = claim.shoeingRitual || claim.shoeingDue;
@@ -495,6 +496,7 @@ public final class DrakeSoulbinding {
         if (next < DrakeShoes.RITUAL_TICKS) return;
         claim.shoeingDue = false;
         player.clearActiveItem();
+        claim.shoeingViolations = 0;
         finishAttendance(player, claim);
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
         hint(player, "shoeing_complete");
@@ -577,6 +579,7 @@ public final class DrakeSoulbinding {
     static void clearCurse(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         cancel(player, claim);
         claim.shoeingDue = false;
+        claim.shoeingViolations = 0;
         if (claim.feral || claim.soulbound) player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
         claim.feral = false;
         DrakeFeralization.stop(player, claim);

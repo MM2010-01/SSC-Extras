@@ -43,7 +43,7 @@ public final class DrakeFeralization {
     }
     public static boolean feral(PlayerEntity player) { return permanent(player) || temporary(player); }
     public static boolean temporary(PlayerEntity player) { return player.hasStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED); }
-    public static boolean edible(ItemStack stack) { return rawFood(stack) || stack.isOf(BeastizationCatalyst.ITEM); }
+    public static boolean edible(ItemStack stack) { return stack.isFood(); }
     public static boolean restricted(PlayerEntity player) { return feral(player) && !player.isCreative() && !player.isSpectator(); }
     public static boolean controlled(PlayerEntity player) { return ((State)player).sscExtras$feralControl(); }
 
@@ -148,7 +148,7 @@ public final class DrakeFeralization {
 
     public static void register() {
         BeastizationCatalyst.register();
-        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> restricted(player) ? ActionResult.FAIL : ActionResult.PASS);
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> restricted(player) && controlled(player) ? ActionResult.FAIL : ActionResult.PASS);
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> useBlock(player, hit.getBlockPos()));
         UseItemCallback.EVENT.register((player, world, hand) -> restricted(player) && (controlled(player) || !edible(player.getStackInHand(hand)))
                 ? TypedActionResult.fail(player.getStackInHand(hand)) : TypedActionResult.pass(player.getStackInHand(hand)));

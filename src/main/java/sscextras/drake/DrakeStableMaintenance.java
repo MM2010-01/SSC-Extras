@@ -11,6 +11,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 public final class DrakeStableMaintenance {
+    public static final int SHOEING_VIOLATIONS = 3;
     private DrakeStableMaintenance() { }
 
     public static BlockState expected(BlockBox box, BlockPos pos) {
@@ -82,9 +83,12 @@ public final class DrakeStableMaintenance {
             claim = DrakeOutpostOwnership.claim(player);
         }
         if (claim == null || !claim.matches(player.getWorld(), stable) || claim.shoeingDue) return;
-        claim.shoeingDue = true;
+        claim.shoeingViolations = Math.min(SHOEING_VIOLATIONS, claim.shoeingViolations + 1);
+        claim.shoeingDue = claim.shoeingViolations == SHOEING_VIOLATIONS;
         witness.getLookControl().lookAt(player, 30, 30);
-        player.sendMessage(Text.translatable("message.ssc-extras.drake.shoeing_caught").formatted(Formatting.DARK_PURPLE), false);
+        player.sendMessage((claim.shoeingDue ? Text.translatable("message.ssc-extras.drake.shoeing_caught")
+                : Text.translatable("message.ssc-extras.drake.shoeing_warning", claim.shoeingViolations))
+                .formatted(Formatting.DARK_PURPLE), false);
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
     }
 
