@@ -249,7 +249,7 @@ public final class DrakeFaction {
             pillager.getLookControl().lookAt(wearer, 30, 30);
             if (DrakeBattleGoal.of(pillager).pursue(wearer)) return;
             if (!DrakeBattleGoal.of(pillager).movePursuit(wearer, null, 0, false)) pillager.getNavigation().startMovingTo(wearer, 1.1);
-            if (pillager.age < nextEquip || pillager.getRootVehicle().squaredDistanceTo(wearer.getRootVehicle()) > 4 || !pillager.getVisibilityCache().canSee(wearer)) return;
+            if (pillager.age < nextEquip || !DrakeRiding.inInteractionReach(pillager, wearer) || !pillager.getVisibilityCache().canSee(wearer)) return;
             var missing = missingPiece(wearer);
             if (missing != null && (missing == DrakeEquipment.BLINDING_REIN ? BlindingRein.upgrade(wearer)
                     : DrakeEquipment.tryEquip(wearer, new ItemStack(missing), false))) {

@@ -55,6 +55,18 @@ public final class DrakeRiding {
         return player.isAlive() && mountForm(player) && !DrakeEquipment.saddle(player).isEmpty();
     }
 
+    public static boolean inInteractionReach(PillagerEntity rider, Entity target) {
+        var mount = rider.getRootVehicle();
+        var other = target.getRootVehicle();
+        if (mount == rider) return rider.squaredDistanceTo(other) <= 4;
+        var from = mount.getBoundingBox().union(rider.getBoundingBox());
+        var to = other.getBoundingBox();
+        double dx = Math.max(0, Math.max(from.minX - to.maxX, to.minX - from.maxX));
+        double dy = Math.max(0, Math.max(from.minY - to.maxY, to.minY - from.maxY));
+        double dz = Math.max(0, Math.max(from.minZ - to.maxZ, to.minZ - from.maxZ));
+        return dx * dx + dy * dy + dz * dz <= 4;
+    }
+
     public static boolean accepts(PlayerEntity mount, Entity passenger) {
         if (DrakeSoulbinding.role(mount) != 0) return false;
         if (passenger instanceof PlayerEntity) return DrakeEquipment.canRide(mount);

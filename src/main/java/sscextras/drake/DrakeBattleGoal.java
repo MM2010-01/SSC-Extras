@@ -211,7 +211,7 @@ public final class DrakeBattleGoal extends Goal {
                     || phase != Phase.APPROACH && !DrakeRiding.canControl(mount, pillager)) {
                 stopPursuit(); return false;
             }
-            if (phase == Phase.PURSUIT && mount.squaredDistanceTo(target.getRootVehicle()) <= 4 && pillager.getVisibilityCache().canSee(target)) {
+            if (phase == Phase.PURSUIT && DrakeRiding.inInteractionReach(pillager, target) && pillager.getVisibilityCache().canSee(target)) {
                 movePursuit(target, null, 0, false); return false;
             }
             pursuitDestination = null;

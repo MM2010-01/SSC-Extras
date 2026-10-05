@@ -130,7 +130,8 @@ public final class DrakeCaptureGoal extends Goal {
             if (targetStall < 0 || !pillager.getWorld().getBlockState(stable.tie(targetStall)).isIn(BlockTags.FENCES)) continue;
             if (DrakeLeashing.holder(player) != pillager && DrakeOutpostOwnership.owns(player, stable)
                     && stable.stall(targetStall).contains(player.getPos())) continue;
-            if (!occupied() && navigation().reaches(player.getRootVehicle().getBlockPos()) && navigation().reaches(stable.keeperPosition(targetStall))) return true;
+            if (!occupied() && (DrakeRiding.inInteractionReach(pillager, player) && pillager.getVisibilityCache().canSee(player)
+                    || navigation().reaches(player.getRootVehicle().getBlockPos()))) return true;
         }
         DrakeBattleGoal.of(pillager).stopPursuit();
         player = null; targetStall = -1;
@@ -208,8 +209,7 @@ public final class DrakeCaptureGoal extends Goal {
             if (DrakeBattleGoal.of(pillager).pursue(player)) return;
             var approach = player.getRootVehicle();
             if (!pillager.hasVehicle()) pillager.getNavigation().startMovingTo(approach, 1);
-            if (body.squaredDistanceTo(approach) <= 4 && pillager.getVisibilityCache().canSee(player)
-                    && navigation().reaches(stable.keeperPosition(targetStall))) {
+            if (DrakeRiding.inInteractionReach(pillager, player) && pillager.getVisibilityCache().canSee(player)) {
                 boolean dismounted = player.hasVehicle();
                 if (dismounted) player.stopRiding();
                 if (player.hasVehicle()) return;
