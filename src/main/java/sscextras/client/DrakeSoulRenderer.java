@@ -88,7 +88,7 @@ public final class DrakeSoulRenderer {
         RegPlayerFormComponent.PLAYER_FORM.get(ghost).setCurrentForm(form);
         var playerRenderer = stage < 0 && soul.owner.getModel().equals("slim") ? slimRenderer : renderer;
         var body = playerRenderer.getModel();
-        body.setVisible(true); body.sneaking = false; body.riding = false; body.handSwingProgress = 0;
+        body.setVisible(true); body.child = false; body.sneaking = false; body.riding = false; body.handSwingProgress = 0;
         body.setAngles(ghost, 0, 0, ghost.age + tickDelta, 0, 0);
         if (stage == 2) EarthenDrakeAnimation.poseAllFours(body, 0, 0, ghost.age + tickDelta, 0, 0);
         var formRenderer = stage < 0 ? null : FormRenderUtils.getFormRenderer(form.getFormOriginLayerID(), form.getFormOriginID());
@@ -98,23 +98,33 @@ public final class DrakeSoulRenderer {
         matrices.push();
         matrices.scale(-.9375f * scale, -.9375f * scale, .9375f * scale);
         matrices.translate(0, -1.501, 0);
-        body.render(matrices, buffers.getBuffer(RenderLayer.getEntityTranslucent(playerRenderer.getTexture(ghost))),
+        var skinRenderer = (net.minecraft.client.render.entity.EntityRenderer<AbstractClientPlayerEntity>)playerRenderer;
+        body.render(matrices, buffers.getBuffer(RenderLayer.getEntityTranslucent(skinRenderer.getTexture(ghost))),
                 LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, .62f, .84f, 1, alpha);
         if (model != null) {
-            formRenderer.setPlayer(ghost, false);
             var animatable = (FormAnimatable)formRenderer.getAnimatable();
-            model.getAnimationProcessor().setActiveModel(model.getBakedModel(model.getModelResource(animatable)));
-            matrices.push();
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(180));
-            matrices.translate(0, -1.51, 0);
-            matrices.translate(-.5, -.5, -.5);
-            model.AnimationSystem.beforeRender(formRenderer, model, renderer, ghost, 0, 0, tickDelta, ghost.age + tickDelta, 0, 0);
-            model.AnimationSystem.processAnimation(formRenderer, model, renderer, ghost, 0, 0, tickDelta, ghost.age + tickDelta, 0, 0);
-            VertexConsumerProvider tinted = layer -> new Tint(buffers.getBuffer(layer), alpha);
-            formRenderer.render(matrices, animatable, tinted, RenderLayer.getEntityTranslucent(model.getTextureResource(animatable)),
-                    null, LightmapTextureManager.MAX_LIGHT_COORDINATE);
-            model.AnimationSystem.afterRender(formRenderer, model, renderer, ghost, 0, 0, tickDelta, ghost.age + tickDelta, 0, 0);
-            matrices.pop();
+            var previousPlayer = animatable.e;
+            var previousModelPlayer = model.entity;
+            formRenderer.setPlayer(ghost, false);
+            try {
+                var baked = model.getBakedModel(model.getModelResource(animatable));
+                model.getAnimationProcessor().setActiveModel(baked);
+                matrices.push();
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(180));
+                matrices.translate(0, -1.51, 0);
+                matrices.translate(-.5, -.5, -.5);
+                model.AnimationSystem.beforeRender(formRenderer, model, renderer, ghost, 0, 0, tickDelta, ghost.age + tickDelta, 0, 0);
+                model.AnimationSystem.processAnimation(formRenderer, model, renderer, ghost, 0, 0, tickDelta, ghost.age + tickDelta, 0, 0);
+                var layer = RenderLayer.getEntityTranslucent(model.getTextureResource(animatable));
+                formRenderer.reRender(baked, matrices, buffers, animatable, layer, buffers.getBuffer(layer), tickDelta,
+                        LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, .62f, .84f, 1, alpha);
+                model.AnimationSystem.afterRender(formRenderer, model, renderer, ghost, 0, 0, tickDelta, ghost.age + tickDelta, 0, 0);
+                matrices.pop();
+            } finally {
+                animatable.e = previousPlayer;
+                model.entity = previousModelPlayer;
+                FormModel.SlimMap.remove(ghost);
+            }
         }
         matrices.pop();
     }
@@ -151,15 +161,4 @@ public final class DrakeSoulRenderer {
         }
     }
 
-    private record Tint(VertexConsumer delegate, float alpha) implements VertexConsumer {
-        @Override public VertexConsumer vertex(double x, double y, double z) { delegate.vertex(x, y, z); return this; }
-        @Override public VertexConsumer color(int r, int g, int b, int a) { delegate.color((int)(r * .62f), (int)(g * .84f), b, (int)(a * alpha)); return this; }
-        @Override public VertexConsumer texture(float u, float v) { delegate.texture(u, v); return this; }
-        @Override public VertexConsumer overlay(int u, int v) { delegate.overlay(u, v); return this; }
-        @Override public VertexConsumer light(int u, int v) { delegate.light(u, v); return this; }
-        @Override public VertexConsumer normal(float x, float y, float z) { delegate.normal(x, y, z); return this; }
-        @Override public void next() { delegate.next(); }
-        @Override public void fixedColor(int r, int g, int b, int a) { delegate.fixedColor((int)(r * .62f), (int)(g * .84f), b, (int)(a * alpha)); }
-        @Override public void unfixColor() { delegate.unfixColor(); }
-    }
 }
