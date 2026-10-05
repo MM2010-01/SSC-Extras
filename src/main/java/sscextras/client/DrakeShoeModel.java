@@ -28,21 +28,30 @@ public final class DrakeShoeModel {
     private static final Map<PlayerEntity, Grip[]> GRIPS = new WeakHashMap<>();
 
     public DrakeShoeModel(int stage) {
+        this(stage, false);
+    }
+
+    public DrakeShoeModel(int stage, boolean slim) {
         var data = new ModelData();
         var names = new java.util.ArrayList<String>();
         for (boolean hand : new boolean[]{true, false}) for (int side : new int[]{-1, 1}) {
             float x, y, z, width, depth, height;
-            if (stage == 3) {
+            if (stage < 0) {
+                x = side * (hand ? slim ? 5.5f : 6 : 1.9f);
+                y = hand ? slim ? 11.25f : 11.75f : -.3f;
+                z = -2.425f; width = hand && slim ? 3.85f : 4.85f; depth = 4.85f;
+                height = hand ? 3.5f : 2.6f;
+            } else if (stage == 3) {
                 x = side * (hand ? 4.565f : 4.18f); y = .0f;
                 z = hand ? 3.35f : -5.95f; width = hand ? 2.75f : 2.9f; depth = 2.85f; height = 1.4f;
             } else if (hand) {
                 x = side * 6; y = stage == 0 ? 10.05f : stage == 1 ? 9.9f : 11.0f;
-                z = -2.4f; width = stage == 0 ? 4.65f : 5.65f; depth = stage == 2 ? 4.8f : 4.75f;
-                height = stage == 0 ? 3.5f : stage == 1 ? 5.65f : 3.6f;
+                z = stage == 2 ? -2.45f : -2.4f; width = stage == 0 ? 4.65f : 5.65f; depth = stage == 2 ? 5.2f : 4.75f;
+                height = stage == 0 ? 3.5f : stage == 1 ? 5.65f : 4.85f;
             } else {
-                x = side * (stage == 2 ? 4.65f : 2); y = -.08f; z = stage == 2 ? -.12f : -2.25f;
-                width = stage == 2 ? 5.1f : 4.65f; depth = stage == 2 ? 4.45f : stage == 1 ? 5.8f : 4.65f;
-                height = stage == 0 ? 2.2f : stage == 1 ? 3.0f : 2.2f;
+                x = side * (stage == 2 ? 4.65f : 2); y = -.08f; z = stage == 2 ? -2.8f : -2.25f;
+                width = stage == 2 ? 5.4f : 4.65f; depth = stage == 2 ? 7.2f : stage == 1 ? 5.8f : 4.65f;
+                height = stage == 0 ? 2.2f : stage == 1 ? 3.0f : 3.1f;
             }
             String bone = stage < 3 ? "biped" + (side < 0 ? "Left" : "Right") + (hand ? "Arm" : "Leg")
                     : (side < 0 ? "left" : "@left@") + (hand ? "_front_paw" : "_hind_paw");
@@ -55,7 +64,7 @@ public final class DrakeShoeModel {
                     .cuboid(x - width / 2, y + height - .3f, z, width, .3f, depth)
                     .cuboid(x - width / 2, y, z + depth - .32f, width, height, .32f);
             float toeWidth = width / 3 - .14f;
-            float toeHeight = stage == 3 ? 1.15f : hand ? stage == 1 ? 2.6f : 2.1f : 1.2f;
+            float toeHeight = stage == 3 ? 1.15f : hand ? stage == 1 ? 2.6f : 2.1f : stage == 2 ? 1.85f : 1.2f;
             float toeLength = stage == 3 ? 1.55f : hand && stage == 2 ? 2.3f : 1.65f;
             for (int toe = 0; toe < 3; toe++) iron.cuboid(x - width / 2 + .07f + toe * width / 3,
                     y + .06f, z + depth - .4f, toeWidth, toeHeight, toeLength);
@@ -129,5 +138,16 @@ public final class DrakeShoeModel {
         var part = parts.get(bone);
         if (part != null && (hand ? hands : feet))
             part.render(matrices, buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE)), light, OverlayTexture.DEFAULT_UV);
+    }
+
+    public void renderOriginalLimb(ModelPart limb, boolean left, boolean hand, boolean slim,
+            MatrixStack matrices, VertexConsumerProvider buffers, int light) {
+        matrices.push();
+        limb.rotate(matrices);
+        matrices.scale(1, -1, -1);
+        matrices.translate((left ? -1 : 1) * (hand ? 5 : 1.9f) / 16,
+                -(hand ? slim ? 21.5f : 22 : 12) / 16, 0);
+        render("biped" + (left ? "Left" : "Right") + (hand ? "Arm" : "Leg"), matrices, buffers, light, hand, !hand);
+        matrices.pop();
     }
 }

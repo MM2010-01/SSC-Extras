@@ -148,6 +148,7 @@
   "message.ssc-extras.drake.pillager.stable_arrived": "掠夺者：%s，回到你该待的地方了。乖乖拴在这里，安分些。",
   "message.ssc-extras.drake.pillager.feed": "掠夺者：饿了，%s？给，把肉吃了。",
   "message.ssc-extras.drake.pillager.hand_feed": "掠夺者：%s，还不吃？张嘴，我来喂你。",
+  "message.ssc-extras.drake.pillager.catalyst_feed": "掠夺者：%s，张嘴。这份触媒会帮你变成真正的地龙。",
   "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。",
   "message.ssc-extras.drake.pillager.stable_rules": "掠夺者：听好了，%s。白天只能在兽栏周围%s格内活动。不许逃跑，抓到了就带回来。午夜后看守查栏时，要待在自己的栏位里。这就是规矩。",
   "enchantment.ssc-extras.soulbound": "灵魂绑定",
@@ -198,8 +199,8 @@
   "message.ssc-extras.clear_command.cleared": "已清除%s。",
   "message.ssc-extras.drake.ritual_soul_returned": "完全化为地龙的灵魂回到你的体内。看守开始封缚这份契约。",
   "message.ssc-extras.drake.bound_return": "坐骑契约驱使你转身，走回马厩的活动范围。",
-  "message.ssc-extras.drake.ritual_feed": "看守不断喂你完整兽化触媒，推动你的本能向第二阶段猛涨。",
-  "item.ssc-extras.full_beastization_catalyst": "完整兽化触媒",
+  "message.ssc-extras.drake.ritual_feed": "看守不断喂你完全兽化催化剂，推动你的本能不受控制地猛涨。",
+  "item.ssc-extras.full_beastization_catalyst": "完全兽化催化剂",
   "item.ssc-extras.full_beastization_catalyst.tooltip": "增加200点本能，并获得1分钟的「完全兽化！」效果。",
   "effect.ssc-extras.total_feralized": "完全兽化！"
 }

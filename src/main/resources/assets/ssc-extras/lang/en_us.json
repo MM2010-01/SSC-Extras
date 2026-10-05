@@ -148,6 +148,7 @@
   "message.ssc-extras.drake.pillager.stable_arrived": "Pillager: %s, back where you belong. Stay tied here and settle down.",
   "message.ssc-extras.drake.pillager.feed": "Pillager: Hungry, %s? Here. Eat your meat.",
   "message.ssc-extras.drake.pillager.hand_feed": "Pillager: Still not eating, %s? Open up. I'll feed you.",
+  "message.ssc-extras.drake.pillager.catalyst_feed": "Pillager: Open up, %s. This catalyst will help you become a proper drake.",
   "message.ssc-extras.drake.pillager.reward": "Pillager: Good work, %s. You've earned this meat.",
   "message.ssc-extras.drake.pillager.stable_rules": "Pillager: Listen carefully, %s. Stay within %s blocks of the stable. No escaping; we'll bring you back if you're caught. Be in your stall for the keeper's check after midnight. Those are the rules.",
   "enchantment.ssc-extras.soulbound": "Soulbound",
@@ -197,8 +198,8 @@
   "special_effect.ssc-extras.feralization": "Feralization",
   "message.ssc-extras.clear_command.cleared": "Cleared %s.",
   "message.ssc-extras.drake.ritual_soul_returned": "Your transformed drake soul returns to your body. The keepers begin sealing the bond.",
-  "message.ssc-extras.drake.bound_return": "Your mount bond turns you back toward the stable's range.",
-  "message.ssc-extras.drake.ritual_feed": "The keeper keeps feeding you full beastization catalysts as your instincts surge toward stage 2.",
+  "message.ssc-extras.drake.bound_return": "Your mount bond with this stable turns you back toward the stable's range.",
+  "message.ssc-extras.drake.ritual_feed": "The keeper keeps feeding you full beastization catalysts as your instincts surge uncontrollably.",
   "item.ssc-extras.full_beastization_catalyst": "Full Beastization Catalyst",
   "item.ssc-extras.full_beastization_catalyst.tooltip": "+200 instinct. Totally Feralized! for 1 minute.",
   "effect.ssc-extras.total_feralized": "Totally Feralized!"

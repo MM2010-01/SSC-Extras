@@ -66,6 +66,7 @@
     "DrakeShoeingPoseMixin",
     "DrakeShoesHeldItemMixin",
     "DrakeShoesFirstPersonMixin",
+    "DrakeShoesArmMixin",
     "DrakeRitualTransformAnimationMixin",
     "DrakeFeralTextMixin",
     "DrakeFeralItemTextMixin",

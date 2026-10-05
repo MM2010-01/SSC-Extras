@@ -37,6 +37,7 @@ public final class SscExtrasClient implements ClientModInitializer {
                 helper.register(new CollarFeatureRenderer(playerRenderer));
                 helper.register(new CuffsFeatureRenderer(playerRenderer));
                 helper.register(new DrakeGearFeatureRenderer(playerRenderer));
+                helper.register(new DrakeShoesFeatureRenderer(playerRenderer));
             }
         });
     }
