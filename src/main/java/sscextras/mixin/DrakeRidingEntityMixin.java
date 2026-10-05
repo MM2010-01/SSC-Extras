@@ -14,6 +14,15 @@ import sscextras.drake.*;
 
 @Mixin(Entity.class)
 public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
+    @Inject(method = "changeLookDirection", at = @At("HEAD"), cancellable = true)
+    private void sscExtras$feralLook(double x, double y, CallbackInfo ci) {
+        if ((Object)this instanceof PlayerEntity player && DrakeFeralization.controlled(player)) ci.cancel();
+    }
+    @Inject(method = "isLogicalSideForUpdatingMovement", at = @At("HEAD"), cancellable = true)
+    private void sscExtras$feralMovementOwner(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object)this instanceof PlayerEntity player && DrakeFeralization.controlled(player))
+            cir.setReturnValue(!player.getWorld().isClient);
+    }
     @Unique private DrakeRiding.Input sscExtras$riderInput;
     @Unique private RiderChestInventory sscExtras$chest;
     @Unique private boolean sscExtras$syncPassengers;

@@ -45,10 +45,12 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public boolean tryingToEscape;
         public boolean collarIssued;
         public int stallIndex, goodTicks, ritualHint;
-        public boolean soulbound, awaitingRespawn;
+        public boolean soulbound, awaitingRespawn, feral;
         public NbtCompound previousSpawn = new NbtCompound();
         long lastServiceTime = Long.MIN_VALUE;
-        int ritualTicks;
+        int ritualTicks, feedingTicks;
+        int feralTicks, nextFeral;
+        FeralDrakeBrain feralBrain;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
         long nextOutsideHint, seenSince = -1, recallUntil;
@@ -143,6 +145,9 @@ public final class DrakeOutpostOwnership extends PersistentState {
                 claim.tryingToEscape = false;
                 if (claim.escapes == 3) player.sendMessage(Text.translatable("message.ssc-extras.drake.last_escape_warning")
                         .formatted(net.minecraft.util.Formatting.DARK_PURPLE), false);
+                if (claim.escapes == DrakeFeralization.ESCAPES) player.sendMessage(
+                        Text.translatable("message.ssc-extras.drake.punishment_due")
+                                .formatted(net.minecraft.util.Formatting.DARK_PURPLE), false);
                 get(player.getServer()).markDirty();
             }
             if (claim.escapes > 3) sscextras.collar.TamingCollar.equip(player);
@@ -182,6 +187,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             data.markDirty();
         }
         display(player, "");
+        DrakeFeralization.sync(player, null);
     }
 
     private static void display(PlayerEntity player, String name) {
@@ -194,7 +200,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static void tick(PlayerEntity player) {
         var claim = claim(player);
-        if (claim == null) { display(player, ""); return; }
+        if (claim == null) { display(player, ""); DrakeFeralization.sync(player, null); return; }
+        DrakeFeralization.sync(player, claim);
         var form = FormAbilityManager.getForm(player);
         if (!claim.soulbound && ((form == RegPlayerForms.ORIGINAL_SHIFTER || form == RegPlayerForms.ORIGINAL_BEFORE_ENABLE)
                 && (!player.getWorld().getRegistryKey().equals(claim.world) || !DrakeCaptureGoal.near(claim.stable, player.getPos(), 16))
@@ -307,6 +314,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.goodTicks = Math.max(0, Math.min(DrakeSoulbinding.SERVICE_TICKS, tag.getInt("GoodTicks")));
             claim.ritualHint = tag.getInt("RitualHint");
             claim.soulbound = tag.getBoolean("Soulbound");
+            claim.feral = claim.soulbound && tag.getBoolean("Feral");
             claim.awaitingRespawn = tag.getBoolean("AwaitingRespawn");
             claim.previousSpawn = tag.getCompound("PreviousSpawn").copy();
             data.mounts.put(tag.getUuid("Player"), claim);
@@ -330,6 +338,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putBoolean("CollarIssued", claim.collarIssued);
             tag.putInt("Stall", claim.stallIndex); tag.putInt("GoodTicks", claim.goodTicks); tag.putInt("RitualHint", claim.ritualHint);
             tag.putBoolean("Soulbound", claim.soulbound); tag.putBoolean("AwaitingRespawn", claim.awaitingRespawn);
+            tag.putBoolean("Feral", claim.feral);
             tag.put("PreviousSpawn", claim.previousSpawn.copy()); mounts.add(tag);
         });
         var signs = new NbtList();

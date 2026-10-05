@@ -55,6 +55,7 @@ public final class EarthenDrake {
     public static Identifier id(String path) { return new Identifier("ssc-extras", path); }
 
     public static void register() {
+        DrakeFeralization.register();
         DrakeInstinct.register();
         DrakeAttention.register();
         var body = DrakeBodyPower.factory();
@@ -104,6 +105,7 @@ public final class EarthenDrake {
     public static boolean wantsMouthMeat(PlayerEntity player) {
         if (!player.isAlive() || player.isSpectator() || player.isCreative() || player.isSleeping() || !player.canConsume(false)) return false;
         var food = player.getMainHandStack().getItem().getFoodComponent();
+        if (DrakeFeralization.restricted(player)) return DrakeFeralization.rawFood(player.getMainHandStack());
         return food != null && food.isMeat() && stage(player) >= 2;
     }
 

@@ -21,5 +21,8 @@ public abstract class DrakeCameraMixin {
     private void sscextras$headCamera(BlockView world, Entity entity, boolean thirdPerson,
             boolean inverseView, float tickDelta, CallbackInfo ci) {
         setPos(DrakeView.atHead(entity, tickDelta, getPos()));
+        if (!thirdPerson && entity instanceof net.minecraft.entity.player.PlayerEntity player
+                && sscextras.drake.DrakeSoulbinding.restrained(player))
+            setPos(getPos().add(net.minecraft.util.math.MathHelper.sin((player.age + tickDelta) * 2.8f) * .012, 0, 0));
     }
 }

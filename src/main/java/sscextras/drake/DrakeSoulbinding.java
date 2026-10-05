@@ -2,9 +2,12 @@ package sscextras.drake;
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,12 +24,19 @@ import net.minecraft.world.World;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
+import net.onixary.shapeShifterCurseFabric.data.StaticParams;
 import java.util.Comparator;
 
 public final class DrakeSoulbinding {
     public static final int DAY_TICKS = 24000;
     public static final int SERVICE_TICKS = 10 * DAY_TICKS;
     public static final int RITUAL_TICKS = 600;
+    public static final int ESCORT = 1, RESTRAINED = 2, HOLDING = 3, CHANTING = 4, FEEDING = 5;
+
+    public interface State {
+        int sscExtras$ritualRole();
+        void sscExtras$ritualRole(int role);
+    }
 
     private DrakeSoulbinding() { }
 
@@ -36,7 +46,15 @@ public final class DrakeSoulbinding {
             var claim = DrakeOutpostOwnership.claim(handler.player);
             if (claim != null) claim.lastServiceTime = handler.player.getWorld().getTimeOfDay();
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            var claim = DrakeOutpostOwnership.claim(handler.player);
+            if (claim != null) cancel(handler.player, claim);
+        });
     }
+
+    public static int role(LivingEntity entity) { return ((State)entity).sscExtras$ritualRole(); }
+    static void role(LivingEntity entity, int role) { ((State)entity).sscExtras$ritualRole(role); }
+    public static boolean restrained(PlayerEntity player) { return role(player) == RESTRAINED; }
 
     public static boolean bound(PlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
@@ -63,27 +81,28 @@ public final class DrakeSoulbinding {
         long time = player.getWorld().getTimeOfDay();
         long elapsed = claim.lastServiceTime == Long.MIN_VALUE ? 20 : Math.max(20, time - claim.lastServiceTime);
         claim.lastServiceTime = time;
-        if (!player.isAlive() || player.isSpectator() || claim.awaitingRespawn) return;
-        if (claim.soulbound) { SoulboundEquipment.enchant(player); return; }
+        if (!player.isAlive() || player.isSpectator() || claim.awaitingRespawn) { cancel(player, claim); return; }
+        boolean punishment = DrakeFeralization.due(claim);
+        if (claim.soulbound) { SoulboundEquipment.enchant(player); if (!punishment) return; }
         if (player.isCreative() || EarthenDrake.stage(player) < 0) { cancel(player, claim); return; }
         boolean serving = claim.world.equals(player.getWorld().getRegistryKey()) &&
                 (DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeRoaming.RANGE) || DrakeBattleGoal.riding(player));
-        if (!serving || claim.tryingToEscape) { disobey(player); return; }
-        if (claim.goodTicks < SERVICE_TICKS) {
+        if (!serving || claim.tryingToEscape) { cancel(player, claim); disobey(player); return; }
+        if (!punishment && claim.goodTicks < SERVICE_TICKS) {
             claim.goodTicks += (int)Math.min(SERVICE_TICKS - claim.goodTicks, elapsed);
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
         }
         int hint = claim.goodTicks >= SERVICE_TICKS ? 3 : claim.goodTicks >= 8 * DAY_TICKS ? 2 : 1;
-        if (hint > claim.ritualHint) {
+        if (!punishment && hint > claim.ritualHint) {
             claim.ritualHint = hint;
             hint(player, hint == 1 ? "service_promise" : hint == 2 ? "ritual_soon" : "ritual_ready");
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
         }
-        if (claim.goodTicks < SERVICE_TICKS) return;
-        if (!atRitual(player, claim)) { cancel(player, claim); return; }
+        if (!punishment && claim.goodTicks < SERVICE_TICKS) return;
+        if (player.hasPassengers() || player.hasVehicle() || DrakeBattleGoal.assigned(player)) { cancel(player, claim); return; }
         var world = player.getServerWorld();
         if (claim.attendants.isEmpty()) {
-            var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(claim.stable).expand(32), guard -> {
+            var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(claim.stable).expand(DrakeRoaming.RANGE), guard -> {
                 if (!available(guard)) return false;
                 var stable = ((DrakeStableNavigation)guard.getNavigation()).stable();
                 return stable != null && claim.matches(world, stable) && attendee(guard) == null;
@@ -91,28 +110,101 @@ public final class DrakeSoulbinding {
             guards.sort(Comparator.comparingDouble(player::squaredDistanceTo));
             if (guards.size() < 3) return;
             for (int i = 0; i < 3; i++) claim.attendants.add(guards.get(i).getUuid());
-            hint(player, "ritual_gathering");
+            role(player, ESCORT);
+            hint(player, punishment ? "punishment_gathering" : "ritual_gathering");
         }
         for (int i = 0; i < 3; i++) {
             var entity = world.getEntity(claim.attendants.get(i));
             if (!(entity instanceof PillagerEntity guard) || !available(guard)) { cancel(player, claim); return; }
-            if (guard.squaredDistanceTo(attendancePosition(claim, i)) > 2.25 || !guard.getVisibilityCache().canSee(player)) {
+        }
+        if (!restrained(player)) {
+            var guide = world.getEntity(claim.attendants.get(0));
+            var helper = world.getEntity(claim.attendants.get(1));
+            if (DrakeLeashing.holder(player) != guide || !atHay(player, claim)
+                    || player.squaredDistanceTo(hayPosition(claim)) > 2.25
+                    || guide.squaredDistanceTo(player) > 9 || helper.squaredDistanceTo(player) > 9) return;
+            if (player.isSleeping()) player.wakeUp();
+            player.clearActiveItem();
+            role(player, RESTRAINED);
+            pin(player, claim);
+            hint(player, "ritual_held");
+        }
+        if (!atHay(player, claim)) { cancel(player, claim); return; }
+        for (int i = 0; i < 3; i++) {
+            var guard = (PillagerEntity)world.getEntity(claim.attendants.get(i));
+            if (guard.squaredDistanceTo(attendancePosition(claim, i)) > 1.44 || !guard.getVisibilityCache().canSee(player)) {
                 if (claim.ritualTicks > 0) hint(player, "ritual_interrupted");
-                claim.ritualTicks = 0; return;
+                for (var id : claim.attendants) role((LivingEntity)world.getEntity(id), 0);
+                claim.ritualTicks = claim.feedingTicks = 0; return;
             }
         }
-        if (claim.ritualTicks == 0) hint(player, "ritual_begin");
+        if (punishment && claim.feedingTicks < 60) {
+            for (int i = 0; i < 3; i++) role((LivingEntity)world.getEntity(claim.attendants.get(i)), i == 0 ? FEEDING : HOLDING);
+            if (claim.feedingTicks == 0) hint(player, "punishment_feed");
+            claim.feedingTicks += 20;
+            if (claim.feedingTicks == 60) {
+                var leader = (PillagerEntity)world.getEntity(claim.attendants.get(0));
+                leader.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                var catalyst = new ItemStack(net.onixary.shapeShifterCurseFabric.items.RegCustomItem.POWERFUL_CATALYST);
+                // The ritual owns the transformation; consuming the item normally would start a second SSC sequence.
+                player.getHungerManager().eat(catalyst.getItem(), catalyst);
+                world.spawnParticles(new net.minecraft.particle.ItemStackParticleEffect(net.minecraft.particle.ParticleTypes.ITEM, catalyst),
+                        player.getX(), player.getEyeY() - .15, player.getZ(), 12, .15, .1, .15, .02);
+                world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.PLAYERS, 1, .7f);
+            }
+            return;
+        }
+        if (claim.ritualTicks == 0) {
+            if (TransformManager.getPlayerTransformData(player).isTransforming) return;
+            for (int i = 0; i < 3; i++) role((LivingEntity)world.getEntity(claim.attendants.get(i)),
+                    i == (punishment ? 0 : 2) ? CHANTING : HOLDING);
+            hint(player, punishment ? "punishment_begin" : "ritual_begin");
+            if (EarthenDrake.stage(player) < 2) {
+                TransformManager.handleDirectTransform(player, EarthenDrake.FORMS[2], false);
+                hint(player, "ritual_change");
+            }
+        }
+        if (claim.ritualTicks % 80 == 0)
+            world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, SoundCategory.HOSTILE, .65f, .7f);
         claim.ritualTicks += 20;
-        world.spawnParticles(ParticleTypes.SOUL, player.getX(), player.getBodyY(.5), player.getZ(), 14, .7, .5, .7, .025);
-        if (claim.ritualTicks == RITUAL_TICKS / 2) hint(player, "ritual_soul");
+        if (claim.ritualTicks == RITUAL_TICKS / 2) hint(player, punishment ? "punishment_mind" : "ritual_soul");
         if (claim.ritualTicks >= RITUAL_TICKS) complete(player, claim);
     }
 
-    private static boolean atRitual(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+    private static boolean atHay(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         return claim.world.equals(player.getWorld().getRegistryKey()) && claim.stall().contains(player.getPos())
-                && !player.isSleeping() && !player.hasPassengers() && !player.hasVehicle() && !DrakeBattleGoal.assigned(player)
-                && !TransformManager.getPlayerTransformData(player).isTransforming
                 && player.getWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.HAY_BLOCK);
+    }
+
+    static Vec3d hayPosition(DrakeOutpostOwnership.Claim claim) { return Vec3d.ofBottomCenter(claim.bed()).add(.2, 0, 0); }
+
+    private static void pin(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        var pos = hayPosition(claim);
+        player.setVelocity(Vec3d.ZERO);
+        player.fallDistance = 0;
+        if (player.squaredDistanceTo(pos) > .01)
+            player.networkHandler.requestTeleport(pos.x, pos.y, pos.z, 180, player.getPitch());
+    }
+
+    public static void hold(ServerPlayerEntity player) {
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim == null) { role(player, 0); return; }
+        if (!player.isAlive() || player.isCreative() || player.isSpectator() || EarthenDrake.stage(player) < 0
+                || claim.attendants.size() != 3 || !atHay(player, claim) || player.squaredDistanceTo(hayPosition(claim)) > 16) {
+            cancel(player, claim); return;
+        }
+        for (int i = 0; i < 2; i++) {
+            var entity = player.getServerWorld().getEntity(claim.attendants.get(i));
+            if (!(entity instanceof PillagerEntity guard) || !available(guard) || guard.squaredDistanceTo(player) > 16) {
+                cancel(player, claim); return;
+            }
+        }
+        pin(player, claim);
+        if (claim.ritualTicks > 0 && player.age % 2 == 0) for (int i = 0; i < 2; i++)
+            player.getServerWorld().spawnParticles(StaticParams.PLAYER_TRANSFORM_PARTICLE,
+                    player.getX() + (player.getRandom().nextDouble() - .5) * 1.4,
+                    player.getY() + 1 + player.getRandom().nextDouble() * 1.5,
+                    player.getZ() + (player.getRandom().nextDouble() - .5) * 1.4, 0, 0, -1, 0, 1);
     }
 
     static boolean available(PillagerEntity guard) {
@@ -133,32 +225,61 @@ public final class DrakeSoulbinding {
     }
 
     static Vec3d attendancePosition(DrakeOutpostOwnership.Claim claim, int index) {
-        var bed = claim.bed();
+        var bed = hayPosition(claim);
         return switch (index) {
-            case 0 -> Vec3d.ofBottomCenter(bed).add(-1.8, 0, -2);
-            case 1 -> Vec3d.ofBottomCenter(bed).add(2.2, 0, -2);
-            default -> Vec3d.ofBottomCenter(bed).add(.2, 0, 2.5);
+            case 0 -> bed.add(-1.25, 0, .1);
+            case 1 -> bed.add(1.25, 0, .1);
+            default -> bed.add(0, 0, -2.25);
         };
     }
 
     private static void cancel(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
-        if (claim.ritualTicks > 0) hint(player, "ritual_interrupted");
-        claim.attendants.clear(); claim.ritualTicks = 0;
+        if (role(player) == RESTRAINED || claim.ritualTicks > 0) hint(player, "ritual_interrupted");
+        finishAttendance(player, claim);
+    }
+
+    private static void finishAttendance(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        role(player, 0);
+        var world = player.getServer().getWorld(claim.world);
+        if (world != null) for (var id : claim.attendants) {
+            if (world.getEntity(id) instanceof PillagerEntity guard) {
+                role(guard, 0);
+                ((DrakeFaction.EquipmentDisplay)guard).sscExtras$showEquipment(ItemStack.EMPTY);
+                guard.getNavigation().stop();
+            }
+        }
+        var holder = DrakeLeashing.holder(player);
+        if (holder != null && claim.attendants.contains(holder.getUuid())) {
+            if (player.getWorld() == world && player.squaredDistanceTo(Vec3d.ofCenter(claim.tie())) < 100
+                    && world.getBlockState(claim.tie()).isIn(BlockTags.FENCES))
+                DrakeLeashing.attach(player, LeashKnotEntity.getOrCreate(world, claim.tie()));
+            else DrakeLeashing.detach(player, false);
+        }
+        claim.attendants.clear(); claim.ritualTicks = claim.feedingTicks = 0;
     }
 
     private static void complete(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
-        claim.previousSpawn.putString("World", player.getSpawnPointDimension().getValue().toString());
-        if (player.getSpawnPointPosition() != null) claim.previousSpawn.putLong("Pos", player.getSpawnPointPosition().asLong());
-        claim.previousSpawn.putFloat("Angle", player.getSpawnAngle());
-        claim.previousSpawn.putBoolean("Forced", player.isSpawnForced());
+        boolean punishment = DrakeFeralization.due(claim);
+        if (!claim.soulbound) {
+            claim.previousSpawn.putString("World", player.getSpawnPointDimension().getValue().toString());
+            if (player.getSpawnPointPosition() != null) claim.previousSpawn.putLong("Pos", player.getSpawnPointPosition().asLong());
+            claim.previousSpawn.putFloat("Angle", player.getSpawnAngle());
+            claim.previousSpawn.putBoolean("Forced", player.isSpawnForced());
+        }
         claim.soulbound = true;
-        FormAbilityManager.applyForm(player, EarthenDrake.FORMS[3]);
+        if (EarthenDrake.stage(player) != 3) FormAbilityManager.applyForm(player, EarthenDrake.FORMS[3]);
+        if (punishment) {
+            claim.feral = true;
+            player.clearActiveItem();
+            player.closeHandledScreen();
+            DrakeFeralization.sync(player, claim);
+        }
         SoulboundEquipment.enchant(player);
         player.setSpawnPoint(claim.world, claim.bed(), 180, true, false);
-        claim.attendants.clear(); claim.ritualTicks = 0;
+        finishAttendance(player, claim);
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
         player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.PLAYERS, 1, .7f);
-        hint(player, "ritual_complete");
+        hint(player, punishment ? "punishment_complete" : "ritual_complete");
     }
 
     public static void formChanged(PlayerEntity player, PlayerFormBase form) {
@@ -173,6 +294,9 @@ public final class DrakeSoulbinding {
 
     static void clearCurse(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         cancel(player, claim);
+        claim.feral = false;
+        DrakeFeralization.stop(player, claim);
+        DrakeFeralization.sync(player, claim);
         if (!claim.soulbound) return;
         claim.soulbound = false;
         claim.awaitingRespawn = false;

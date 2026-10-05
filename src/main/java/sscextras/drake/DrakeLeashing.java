@@ -164,7 +164,7 @@ public final class DrakeLeashing {
             double distance = delta.length();
             if (distance > 10) { detach(player, true); return; }
             boolean pillagerLead = holder instanceof net.minecraft.entity.mob.PillagerEntity;
-            if (distance > (pillagerLead ? 3 : 6)) {
+            if (distance > (pillagerLead ? DrakeSoulbinding.role(player) == DrakeSoulbinding.ESCORT ? 1.5 : 3 : 6)) {
                 Vec3d pull = delta;
                 if (holder instanceof net.minecraft.entity.mob.PillagerEntity pillager
                         && (leadPath != null || player.horizontalCollision || holder.getY() > player.getY() + .5)) {

@@ -51,6 +51,7 @@ public final class DrakeRiding {
     }
 
     public static boolean accepts(PlayerEntity mount, Entity passenger) {
+        if (DrakeSoulbinding.role(mount) != 0) return false;
         if (passenger instanceof PlayerEntity) return DrakeEquipment.canRide(mount);
         if (passenger instanceof PillagerEntity) return canCarryPillager(mount);
         return passenger instanceof MobEntity && canCarryMob(mount)
@@ -71,6 +72,7 @@ public final class DrakeRiding {
             });
         });
         ServerPlayNetworking.registerGlobalReceiver(CHEST, (server, player, handler, buf, sender) -> server.execute(() -> {
+            if (DrakeFeralization.restricted(player)) return;
             if (player.getVehicle() instanceof LivingEntity mount && DrakeEquipment.canRide(mount))
                 RiderChestInventory.open(player, mount);
             else RiderChestInventory.open(player, player);

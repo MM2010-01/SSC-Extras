@@ -54,8 +54,8 @@ public final class DrakeBodySlamPower extends CooldownPower implements Active {
     }
 
     private boolean eligible(PlayerEntity player) {
-        return player.isAlive() && !player.isSpectator() && !player.hasVehicle() && !player.isSleeping()
-                && EarthenDrake.stage(player) == 3 && isActive();
+        return player.isAlive() && !player.isSpectator() && !player.hasVehicle() && !player.isSleeping() && !DrakeSoulbinding.restrained(player)
+                && !DrakeFeralization.controlled(player) && EarthenDrake.stage(player) == 3 && isActive();
     }
 
     @Override public void onUse() {

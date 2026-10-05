@@ -16,12 +16,16 @@ public abstract class DrakeRidingPlayerMixin {
     @Unique private boolean sscExtras$ejectReady;
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
     private void sscExtras$boundPillagerAttack(Entity target, CallbackInfo ci) {
-        if (DrakeFaction.blocksAttack((PlayerEntity)(Object)this, target)) ci.cancel();
+        var player = (PlayerEntity)(Object)this;
+        if (DrakeFaction.blocksAttack(player, target) || DrakeFeralization.restricted(player)
+                && (DrakeFeralization.controlled(player) || !player.getMainHandStack().isEmpty())) ci.cancel();
     }
 
     @ModifyVariable(method = "travel", at = @At("HEAD"), argsOnly = true)
     private Vec3d sscExtras$riderMovement(Vec3d own) {
         var player = (PlayerEntity)(Object)this;
+        if (DrakeSoulbinding.restrained(player)) { player.setVelocity(Vec3d.ZERO); return Vec3d.ZERO; }
+        if (DrakeFeralization.controlled(player)) return DrakeFeralization.movement(player);
         Vec3d slam = DrakeBodySlamPower.movement(player, own);
         return slam == null ? DrakeRiding.movement(player, own) : slam;
     }

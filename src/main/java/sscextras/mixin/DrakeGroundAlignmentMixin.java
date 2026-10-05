@@ -18,6 +18,11 @@ public abstract class DrakeGroundAlignmentMixin {
             at = @At("TAIL"))
     private void sscExtras$alignPaws(AbstractClientPlayerEntity player, MatrixStack matrices,
             float tickDelta, CallbackInfo ci) {
+        if (sscextras.drake.DrakeSoulbinding.restrained(player)) {
+            float tremble = net.minecraft.util.math.MathHelper.sin((player.age + tickDelta) * 2.8f);
+            matrices.translate(tremble * .018, Math.abs(tremble) * .006, 0);
+            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Z.rotationDegrees(tremble * .8f));
+        }
         if (EarthenDrake.stage(player) != 2) return;
         float bodyY = AnimSystem.getPlayerBone3DTransform(player, "body", TransformType.POSITION, Vec3f.ZERO).getY();
         // Body motion precedes the player's 15/16 scale; limb offsets follow it.

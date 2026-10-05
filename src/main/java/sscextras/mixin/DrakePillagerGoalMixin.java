@@ -75,6 +75,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
     }
 
     @Override public ItemStack getMainHandStack() {
+        if (sscextras.drake.DrakeSoulbinding.role((PillagerEntity)(Object)this) == sscextras.drake.DrakeSoulbinding.CHANTING) return ItemStack.EMPTY;
         ItemStack offered = dataTracker.get(SSC_EXTRAS_OFFERED_GEAR);
         return offered.isEmpty() ? super.getMainHandStack() : offered;
     }

@@ -4,10 +4,15 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "DrakeFeralStateMixin",
+    "DrakeFeralInteractionMixin",
+    "DrakeFeralNetworkMixin",
+    "DrakeFeralUseMixin",
     "SoulboundInventoryMixin",
     "DrakeSoulboundRespawnMixin",
     "DrakeSoulboundSpawnMixin",
     "DrakeSoulboundMoonMixin",
+    "DrakeRitualStateMixin",
     "DrakeAttentionMixin",
     "TamingCollarPlacementMixin",
     "DrakeMountNameMixin",
@@ -54,6 +59,10 @@
     "CollarVoiceMixin"
   ],
   "client": [
+    "DrakeFeralTextMixin",
+    "DrakeFeralItemTextMixin",
+    "DrakeFeralInputMixin",
+    "DrakeFeralInventoryMixin",
     "DrakePettingIllagerModelMixin",
     "BlindingReinOverlayMixin",
     "BlindingReinFogMixin",

@@ -35,7 +35,7 @@ public final class DrakePetGoal extends Goal {
                 || !DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeRoaming.RANGE)) return false;
         if (candidate instanceof PlayerEntity player) {
             var claim = DrakeOutpostOwnership.claim(player);
-            if (player.isCreative() || player.isSpectator() || player.isSleeping() || EarthenDrake.stage(player) < 0
+            if (player.isCreative() || player.isSpectator() || player.isSleeping() || EarthenDrake.stage(player) < 0 || DrakeSoulbinding.ritualActive(player)
                     || claim == null || !claim.matches(actor.getWorld(), stable) || claim.tryingToEscape
                     || DrakeLeashing.holder(player) instanceof LivingEntity
                     || !actor.getWorld().isDay() && !claim.stall().contains(player.getPos())
