@@ -7,6 +7,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.particle.ItemStackParticleEffect;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -15,9 +19,10 @@ public final class DrakeFeedGoal extends Goal {
     private static final Item[] MEAT = {Items.BEEF, Items.PORKCHOP, Items.MUTTON, Items.RABBIT, Items.CHICKEN};
     private final PillagerEntity pillager;
     private PlayerEntity player;
+    private DrakeOutpostOwnership.Claim feedingClaim;
     private ItemStack meal = ItemStack.EMPTY;
-    private int nextSearch, started;
-    private boolean thrown;
+    private int nextSearch, started, nextBite;
+    private boolean thrown, handFeeding, announced;
 
     public DrakeFeedGoal(PillagerEntity pillager) {
         this.pillager = pillager;
@@ -40,36 +45,63 @@ public final class DrakeFeedGoal extends Goal {
         pillager.getWorld().spawnEntity(food);
     }
 
-    private boolean hungry(PlayerEntity player) {
+    private boolean inStall(PlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
-        return player.isAlive() && !player.isSpectator() && player.getHungerManager().getFoodLevel() < 10
+        return player.isAlive() && !player.isSpectator() && player.getWorld() == pillager.getWorld()
                 && claim != null && claim.world.equals(pillager.getWorld().getRegistryKey()) && claim.stall().contains(player.getPos())
                 && !BondOfTheBeastCompat.hasOwner(player);
+    }
+
+    private static boolean earlyStage(PlayerEntity player) {
+        int stage = EarthenDrake.stage(player);
+        return stage == 0 || stage == 1;
+    }
+
+    private static int rawMeatSlot(PlayerEntity player) {
+        for (int slot = 0; slot < player.getInventory().size(); slot++) {
+            var stack = player.getInventory().getStack(slot);
+            for (var meat : MEAT) if (stack.isOf(meat)) return slot;
+        }
+        return -1;
     }
 
     @Override public boolean canStart() {
         if (pillager.hasVehicle() || pillager.age < nextSearch || DrakeFaction.fighting(pillager)) return false;
         nextSearch = pillager.age + 40;
         player = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12), candidate ->
-                hungry(candidate) && DrakeOutpostOwnership.claim(candidate).nextMeal <= pillager.getWorld().getTime()).stream()
+                inStall(candidate) && candidate.getHungerManager().getFoodLevel() < 10 && !candidate.isUsingItem()
+                && DrakeOutpostOwnership.claim(candidate).nextMeal <= pillager.getWorld().getTime()).stream()
                 .min(Comparator.comparingDouble(pillager::squaredDistanceTo)).orElse(null);
         return player != null;
     }
 
     @Override public void start() {
-        started = pillager.age; thrown = false;
+        started = pillager.age; nextBite = started + 40; thrown = announced = false;
         var claim = DrakeOutpostOwnership.claim(player);
+        feedingClaim = claim;
         claim.nextMeal = pillager.getWorld().getTime() + 200;
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
-        meal = new ItemStack(MEAT[pillager.getRandom().nextInt(MEAT.length)], 1 + pillager.getRandom().nextInt(2));
+        int slot = rawMeatSlot(player);
+        handFeeding = earlyStage(player) && player.getHungerManager().getFoodLevel() <= 6 && slot >= 0
+                && !player.isCreative() && !player.isSleeping() && !player.hasVehicle() && !player.hasPassengers();
+        meal = handFeeding ? player.getInventory().getStack(slot).copyWithCount(1)
+                : new ItemStack(MEAT[pillager.getRandom().nextInt(MEAT.length)], 1 + pillager.getRandom().nextInt(2));
         pillager.clearActiveItem(); pillager.setCharging(false); pillager.setTarget(null);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(meal);
     }
 
-    @Override public boolean shouldContinue() { return !thrown && player != null && hungry(player) && !DrakeFaction.fighting(pillager) && pillager.age - started < 160; }
+    @Override public boolean shouldContinue() {
+        if (thrown || player == null || !inStall(player) || DrakeOutpostOwnership.claim(player) != feedingClaim
+                || pillager.hasVehicle() || DrakeFaction.fighting(pillager)) return false;
+        return handFeeding ? earlyStage(player) && player.canConsume(false) && !player.isCreative() && !player.isSleeping()
+                && !player.hasVehicle() && !player.hasPassengers() && pillager.age - started < 600
+                : player.getHungerManager().getFoodLevel() < 10 && pillager.age - started < 160;
+    }
 
     @Override public void tick() {
+        if (!shouldContinue()) return;
         pillager.getLookControl().lookAt(player, 30, 30);
+        if (handFeeding) { feedByHand(); return; }
         if (pillager.squaredDistanceTo(player) > 25) { pillager.getNavigation().startMovingTo(player, .8); return; }
         pillager.getNavigation().stop();
         if (pillager.age - started < 20) return;
@@ -78,8 +110,38 @@ public final class DrakeFeedGoal extends Goal {
         thrown = true;
     }
 
+    private void feedByHand() {
+        feedingClaim.nextMeal = pillager.getWorld().getTime() + 200;
+        if (!feedingClaim.stall().contains(pillager.getPos()) || pillager.squaredDistanceTo(player) > 4
+                || !pillager.getVisibilityCache().canSee(player)) {
+            nextBite = pillager.age + 40;
+            if (pillager.getNavigation().isIdle() || (pillager.age - started) % 10 == 0)
+                pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(player.getBlockPos(), 0), .8);
+            return;
+        }
+        pillager.getNavigation().stop();
+        if (player.isUsingItem()) { nextBite = pillager.age + 40; return; }
+        if (!announced) { DrakeDialogue.say(player, "hand_feed"); announced = true; }
+        if (pillager.age < nextBite) return;
+        nextBite = pillager.age + 40;
+        int slot = rawMeatSlot(player);
+        var food = slot < 0 ? meal.copyWithCount(1) : player.getInventory().getStack(slot);
+        meal = food.copyWithCount(1);
+        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(meal);
+        var remaining = food.finishUsing(player.getWorld(), player);
+        if (slot >= 0) {
+            player.getInventory().setStack(slot, remaining);
+            player.getInventory().markDirty();
+        }
+        DrakeInstinct.handFed(player);
+        pillager.swingHand(Hand.MAIN_HAND);
+        ((ServerWorld)player.getWorld()).spawnParticles(new ItemStackParticleEffect(ParticleTypes.ITEM, meal),
+                player.getX(), player.getEyeY() - .15, player.getZ(), 6, .15, .1, .15, .02);
+    }
+
     @Override public void stop() {
-        player = null; meal = ItemStack.EMPTY;
+        if (handFeeding && player != null) DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        player = null; feedingClaim = null; meal = ItemStack.EMPTY; handFeeding = false;
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
         pillager.getNavigation().stop();
     }

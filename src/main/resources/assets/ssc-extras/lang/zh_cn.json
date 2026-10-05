@@ -146,6 +146,7 @@
   "message.ssc-extras.drake.pillager.recall_leashed": "掠夺者：跟上，%s。顺着拴绳走，该回兽栏了。",
   "message.ssc-extras.drake.pillager.stable_arrived": "掠夺者：%s，回到你该待的地方了。乖乖拴在这里，安分些。",
   "message.ssc-extras.drake.pillager.feed": "掠夺者：饿了，%s？给，把肉吃了。",
+  "message.ssc-extras.drake.pillager.hand_feed": "掠夺者：%s，还不吃？张嘴，我来喂你。",
   "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。",
   "message.ssc-extras.drake.pillager.stable_rules": "掠夺者：听好了，%s。白天只能在兽栏周围64格内活动。不许逃跑，抓到了就带回来。天黑前回自己的栏位。这就是规矩。",
   "enchantment.ssc-extras.soulbound": "灵魂绑定",
@@ -157,7 +158,7 @@
   "message.ssc-extras.drake.ritual_begin": "三名掠夺者开始吟唱。永久坐骑仪式已经开始；你的地龙形态、诅咒装备和畜栏归属将跨越死亡。",
   "message.ssc-extras.drake.ritual_soul": "吟唱深入灵魂。你的灵魂正化为地龙本身。只有彻底解除地龙变身才能获得自由。",
   "message.ssc-extras.drake.ritual_interrupted": "仪式被打断了。你的服役进度仍然保留；回到干草上，等待三名看守到齐后重新开始。",
-  "message.ssc-extras.drake.ritual_complete": "你的灵魂如今就是地龙。你已成为兽栏的永久坐骑。诅咒装备获得灵魂绑定；死亡后，你将保留形态、名字和归属，回到自己的畜栏。",
+  "message.ssc-extras.drake.ritual_complete": "你的灵魂如今就是地龙。你已成为兽栏的永久坐骑。诅咒之月再也无法改变你的形态。诅咒装备获得灵魂绑定；死亡后，你将保留形态、名字和归属，回到自己的畜栏。",
   "message.ssc-extras.drake.soul_respawn": "你的地龙灵魂回到了分配给你的畜栏。死亡无法打破这份羁绊。",
   "message.ssc-extras.drake.soul_freed": "地龙变身已被彻底解除。你的灵魂重获自由，原来的重生点已恢复。"
 }

@@ -146,6 +146,7 @@
   "message.ssc-extras.drake.pillager.recall_leashed": "Pillager: Come along, %s. Follow the lead; it's time to return to the stable.",
   "message.ssc-extras.drake.pillager.stable_arrived": "Pillager: %s, back where you belong. Stay tied here and settle down.",
   "message.ssc-extras.drake.pillager.feed": "Pillager: Hungry, %s? Here. Eat your meat.",
+  "message.ssc-extras.drake.pillager.hand_feed": "Pillager: Still not eating, %s? Open up. I'll feed you.",
   "message.ssc-extras.drake.pillager.reward": "Pillager: Good work, %s. You've earned this meat.",
   "message.ssc-extras.drake.pillager.stable_rules": "Pillager: Listen carefully, %s. Stay within 64 blocks of the stable. No escaping; we'll bring you back if you're caught. Return to your stall before nightfall. Those are the rules.",
   "enchantment.ssc-extras.soulbound": "Soulbound",
@@ -157,7 +158,7 @@
   "message.ssc-extras.drake.ritual_begin": "The three pillagers begin their chant. Your permanent mount ritual has begun; your drake body, cursed equipment, and stall will follow you beyond death.",
   "message.ssc-extras.drake.ritual_soul": "The chant sinks deeper. Your soul is becoming the drake itself. Only completely undoing the drake transformation can free it.",
   "message.ssc-extras.drake.ritual_interrupted": "The ritual has been interrupted. Your service is remembered; return to your hay with all three keepers to begin the ritual again.",
-  "message.ssc-extras.drake.ritual_complete": "Your soul is a drake now. You are the stable's permanent mount. Your cursed equipment is Soulbound, and death will return you to your stall with your form, name, and assignment intact.",
+  "message.ssc-extras.drake.ritual_complete": "Your soul is a drake now. You are the stable's permanent mount. The Cursed Moon can no longer change your form. Your cursed equipment is Soulbound, and death will return you to your stall with your form, name, and assignment intact.",
   "message.ssc-extras.drake.soul_respawn": "Your drake soul returns to its assigned stall. Death cannot break this bond.",
   "message.ssc-extras.drake.soul_freed": "The drake transformation is completely undone. Your soul is free and your former respawn point is restored."
 }

@@ -1,5 +1,6 @@
 package sscextras.drake;
 
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,7 +30,18 @@ public final class DrakeSoulbinding {
 
     private DrakeSoulbinding() { }
 
-    public static void register() { SoulboundEquipment.register(); }
+    public static void register() {
+        SoulboundEquipment.register();
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            var claim = DrakeOutpostOwnership.claim(handler.player);
+            if (claim != null) claim.lastServiceTime = handler.player.getWorld().getTimeOfDay();
+        });
+    }
+
+    public static boolean bound(PlayerEntity player) {
+        var claim = DrakeOutpostOwnership.claim(player);
+        return claim != null && claim.soulbound;
+    }
 
     public static boolean ritualActive(PlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
@@ -38,7 +50,9 @@ public final class DrakeSoulbinding {
 
     public static void disobey(PlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
-        if (claim == null || claim.soulbound || claim.goodTicks == 0) return;
+        if (claim == null || claim.soulbound) return;
+        claim.lastServiceTime = player.getWorld().getTimeOfDay();
+        if (claim.goodTicks == 0) return;
         claim.goodTicks = 0; claim.ritualHint = 0;
         cancel(player, claim);
         hint(player, "service_reset");
@@ -46,6 +60,9 @@ public final class DrakeSoulbinding {
     }
 
     static void tick(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        long time = player.getWorld().getTimeOfDay();
+        long elapsed = claim.lastServiceTime == Long.MIN_VALUE ? 20 : Math.max(20, time - claim.lastServiceTime);
+        claim.lastServiceTime = time;
         if (!player.isAlive() || player.isSpectator() || claim.awaitingRespawn) return;
         if (claim.soulbound) { SoulboundEquipment.enchant(player); return; }
         if (player.isCreative() || EarthenDrake.stage(player) < 0) { cancel(player, claim); return; }
@@ -53,7 +70,7 @@ public final class DrakeSoulbinding {
                 (DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeRoaming.RANGE) || DrakeBattleGoal.riding(player));
         if (!serving || claim.tryingToEscape) { disobey(player); return; }
         if (claim.goodTicks < SERVICE_TICKS) {
-            claim.goodTicks = Math.min(SERVICE_TICKS, claim.goodTicks + 20);
+            claim.goodTicks += (int)Math.min(SERVICE_TICKS - claim.goodTicks, elapsed);
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
         }
         int hint = claim.goodTicks >= SERVICE_TICKS ? 3 : claim.goodTicks >= 8 * DAY_TICKS ? 2 : 1;

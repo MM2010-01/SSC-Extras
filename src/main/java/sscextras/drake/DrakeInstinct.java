@@ -81,6 +81,11 @@ public final class DrakeInstinct {
             InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_DRAKE_PET", .5f);
     }
 
+    public static void handFed(PlayerEntity player) {
+        if (!player.getWorld().isClient && EarthenDrake.stage(player) <= 1 && canGain(player))
+            InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_DRAKE_HAND_FED", 2);
+    }
+
     private static boolean canGain(PlayerEntity player) {
         return !InstinctTicker.isPausing && EarthenDrake.stage(player) >= 0
                 && CreatureInstinct.canGain(player, EarthenDrake.CURSE);

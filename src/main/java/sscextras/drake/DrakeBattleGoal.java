@@ -202,6 +202,7 @@ public final class DrakeBattleGoal extends Goal {
         if (complete || mount == null || !mount.isAlive() || mount.getWorld() != pillager.getWorld() || pillager.age - started > 3600) return false;
         if (mount instanceof PlayerEntity player && (purpose != Purpose.RECALL && !owned(player)
                 || player.isCreative() || player.isSpectator() || player.isSleeping()
+                || !DrakeRiding.canCarryPillager(player)
                 || purpose == Purpose.RECALL && (!DrakeCaptureGoal.eligible(player) || !DrakeOutpostOwnership.available((ServerWorld)pillager.getWorld(), stable, homeStall, player)))) return false;
         return phase == Phase.APPROACH || phase == Phase.LEAVE || pillager.getVehicle() == mount;
     }
@@ -363,6 +364,8 @@ public final class DrakeBattleGoal extends Goal {
             ((DrakeRiding.State)mount).sscExtras$nextPatrol(pillager.getWorld().getTime() + 1200);
             ((DrakeRiding.State)mount).sscExtras$setRiderInput(null);
             ((DrakeRiding.State)mount).sscExtras$battleRider(null);
+            if (mount instanceof PlayerEntity player && !DrakeRiding.canCarryPillager(player))
+                ((DrakeCaptureGoal.Captor)pillager).sscExtras$captureGoal().recallAfterDismount();
         }
         phase = null; pendingRecall = false; mount = enemy = null; nextSearch = pillager.age + 100;
         navigation().stop();

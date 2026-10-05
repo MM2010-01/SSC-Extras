@@ -6,12 +6,13 @@ import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
+import sscextras.drake.DrakeSoulbinding;
 
 public final class MoonlightInstinct {
     private MoonlightInstinct() { }
 
     public static float rate(PlayerEntity player) {
-        if (!player.isAlive() || player.isCreative() || player.isSpectator()
+        if (!player.isAlive() || player.isCreative() || player.isSpectator() || DrakeSoulbinding.bound(player)
                 || InstinctTicker.isPausing || TransformManager.getPlayerTransformData(player).isTransforming) return 0;
         var world = player.getWorld();
         if (!world.getDimension().hasSkyLight() || world.getDimension().hasCeiling()

@@ -154,6 +154,8 @@ public final class DrakeCaptureGoal extends Goal {
 
     public PlayerEntity quarry() { return player; }
 
+    public void recallAfterDismount() { nextSearch = pillager.age; }
+
     public boolean reserves(DrakeStablePiece home, int stall, PlayerEntity candidate) {
         return player != null && player != candidate && stable != null && targetStall == stall
                 && stable.getBoundingBox().equals(home.getBoundingBox());
@@ -176,6 +178,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public void tick() {
+        if (!leaving && DrakeLeashing.attached(player) && DrakeLeashing.holder(player) != pillager) return;
         pillager.getLookControl().lookAt(player, 30, 30);
         Vec3d gate = Vec3d.ofBottomCenter(stable.gate(targetStall).north(2)).add(.5, 0, 0);
         pillager.setSprinting(!leaving && !atGate && sourceGate == null && pillager.squaredDistanceTo(gate) > 100

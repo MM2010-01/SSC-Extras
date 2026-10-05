@@ -47,6 +47,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public int stallIndex, goodTicks, ritualHint;
         public boolean soulbound, awaitingRespawn;
         public NbtCompound previousSpawn = new NbtCompound();
+        long lastServiceTime = Long.MIN_VALUE;
         int ritualTicks;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
@@ -153,6 +154,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         var claim = new Claim(player.getWorld().getRegistryKey(), stable.getBoundingBox(),
                 DrakeMountNames.choose(player.getRandom(), stable.residentNames()));
         claim.stallIndex = stall;
+        claim.lastServiceTime = player.getWorld().getTimeOfDay();
         data.mounts.put(player.getUuid(), claim);
         data.updateSign(player.getServer(), GlobalPos.create(claim.world, claim.sign()), claim.name, true);
         data.markDirty();
