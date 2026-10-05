@@ -12,7 +12,10 @@ public final class DrakeDialogue {
         if (!(mount instanceof PlayerEntity player) || player.getWorld().isClient) return;
         var claim = DrakeOutpostOwnership.claim(player);
         String name = claim == null ? player.getName().getString() : claim.name;
-        player.sendMessage(Text.translatable("message.ssc-extras.drake.pillager." + line, name).formatted(Formatting.GRAY), false);
+        String key = "message.ssc-extras.drake.pillager." + line;
+        var text = line.equals("stable_rules") ? Text.translatable(key, name,
+                claim == null ? DrakeRoaming.RANGE : DrakeStableLayout.roamRange(claim.stable)) : Text.translatable(key, name);
+        player.sendMessage(text.formatted(Formatting.GRAY), false);
     }
 
     public static boolean escaping(PlayerEntity player) {

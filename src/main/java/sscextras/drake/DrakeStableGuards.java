@@ -33,9 +33,9 @@ public final class DrakeStableGuards {
         int inner = 0, outer = 0;
         for (var guard : nearby) {
             if (DrakeCaptureGoal.near(stable, guard.getPos())) outer++;
-            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) inner++;
+            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))) inner++;
         }
-        return outer < MAXIMUM * multiplier && (!DrakeCaptureGoal.near(stable.getBoundingBox(), Vec3d.ofCenter(pos), DrakeRoaming.RANGE) || inner < MINIMUM * multiplier);
+        return outer < MAXIMUM * multiplier && (!DrakeCaptureGoal.near(stable.getBoundingBox(), Vec3d.ofCenter(pos), DrakeStableLayout.roamRange(stable.getBoundingBox())) || inner < MINIMUM * multiplier);
     }
 
     public static void register() {
@@ -66,7 +66,7 @@ public final class DrakeStableGuards {
         for (var guard : guards) {
             if (!DrakeCaptureGoal.near(stable, guard.getPos())) continue;
             outer++;
-            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) nearby++;
+            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))) nearby++;
             if (guard.hasActiveRaid()) continue;
             var navigation = (DrakeStableNavigation)guard.getNavigation();
             var home = navigation.stable();
@@ -104,7 +104,7 @@ public final class DrakeStableGuards {
             ((DrakeStableNavigation)guard.getNavigation()).managedGuard(true);
             world.spawnEntity(guard);
             outer++;
-            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeRoaming.RANGE)) nearby++;
+            if (DrakeCaptureGoal.near(stable.getBoundingBox(), guard.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))) nearby++;
         }
     }
 }

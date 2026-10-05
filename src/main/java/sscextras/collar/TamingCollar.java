@@ -81,18 +81,24 @@ public final class TamingCollar {
     }
 
     public static ActionResult struggle(PlayerEntity player, Hand hand) {
-        if (!player.getWorld().isClient && hand == Hand.MAIN_HAND && player.getRandom().nextFloat() < .05f) {
+        if (struggleSucceeds(player, hand)) {
             DrakeLeashing.detach(player, true);
             player.sendMessage(Text.translatable("message.ssc-extras.drake.struggle_free").formatted(Formatting.YELLOW), false);
         }
         return ActionResult.SUCCESS;
     }
 
+    private static boolean struggleSucceeds(PlayerEntity player, Hand hand) {
+        return !player.getWorld().isClient && hand == Hand.MAIN_HAND && player.getRandom().nextFloat() < .05f;
+    }
+
     public static void register() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             var block = world.getBlockState(hit.getBlockPos());
-            return restricted(player) && block.getBlock() instanceof FenceGateBlock && !block.get(FenceGateBlock.OPEN)
-                    ? ActionResult.FAIL : ActionResult.PASS;
+            if (!restricted(player) || !(block.getBlock() instanceof FenceGateBlock) || block.get(FenceGateBlock.OPEN))
+                return ActionResult.PASS;
+            if (world.isClient) return ActionResult.SUCCESS;
+            return struggleSucceeds(player, hand) ? ActionResult.PASS : ActionResult.FAIL;
         });
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> restricted(player) ? ActionResult.FAIL : ActionResult.PASS);
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, entity) -> !restricted(player));

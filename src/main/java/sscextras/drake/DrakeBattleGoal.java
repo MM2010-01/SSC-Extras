@@ -161,11 +161,11 @@ public final class DrakeBattleGoal extends Goal {
                     || pillager.getWorld().isDay() && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), 8)
                     || !pillager.getWorld().isDay() && stable.gate(drake.homeStall()).equals(stable.gateAt(candidate.getPos())))) continue;
             if (purpose == Purpose.PATROL && (((DrakeRiding.State)candidate).sscExtras$nextPatrol() > pillager.getWorld().getTime()
-                    || !DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeRoaming.RANGE)
+                    || !DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))
                     || candidate instanceof PlayerEntity player && DrakeOutpostOwnership.claim(player).tryingToEscape)) continue;
             if (!navigation().reaches(candidate.getBlockPos())) continue;
             setMount(candidate);
-            if (navigation().reaches(homeTie.north(2))) return true;
+            if (navigation().reaches(stable.keeperPosition(homeStall))) return true;
         }
         mount = null; return false;
     }
@@ -175,7 +175,7 @@ public final class DrakeBattleGoal extends Goal {
         homeStall = candidate instanceof StableDrakeEntity drake ? drake.homeStall()
                 : DrakeOutpostOwnership.availableStall((ServerWorld)pillager.getWorld(), stable, (PlayerEntity)candidate);
         homeGate = stable.gate(homeStall);
-        homeTie = new BlockPos(homeGate.getX(), homeGate.getY(), stable.getBoundingBox().getMaxZ());
+        homeTie = stable.tie(homeStall);
     }
 
     public boolean recall(PlayerEntity player, DrakeStablePiece home) {
@@ -245,7 +245,7 @@ public final class DrakeBattleGoal extends Goal {
         }
         if (phase == Phase.EXIT) {
             navigation().open(exitGate);
-            if (mount.getBoundingBox().maxZ < exitGate.getZ() - .5) {
+            if (DrakeStableLayout.outsideGate(stable.getBoundingBox(), exitGate, mount.getBoundingBox(), .5)) {
                 navigation().close(exitGate); phase = afterExit(); nextPath = 0;
             } else { navigation().stop(); return; }
         }
@@ -269,7 +269,7 @@ public final class DrakeBattleGoal extends Goal {
                 DrakeDialogue.say(mount, "battle_spotted"); return;
             }
             if (!pillager.getWorld().isDay() || pillager.age >= patrolUntil
-                    || !DrakeCaptureGoal.near(stable.getBoundingBox(), mount.getPos(), DrakeRoaming.RANGE)) { beginReturn(); return; }
+                    || !DrakeCaptureGoal.near(stable.getBoundingBox(), mount.getPos(), DrakeStableLayout.roamRange(stable.getBoundingBox()))) { beginReturn(); return; }
             if (navigation().isIdle() && pillager.age >= nextPath) {
                 nextPath = pillager.age + 40;
                 var route = DrakeGuardGoal.patrolPath(pillager, stable);
@@ -279,20 +279,20 @@ public final class DrakeBattleGoal extends Goal {
         }
         if (phase == Phase.RETURN) {
             pillager.setTarget(null);
-            var outside = Vec3d.ofBottomCenter(homeGate.north(3)).add(.5, 0, 0);
+            var outside = DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, -2.5);
             pathTo(outside, 1);
             if (mount.squaredDistanceTo(outside) >= 2.25) return;
             phase = Phase.ALIGN; navigation().stop();
         }
         if (phase == Phase.ALIGN) {
             if (Math.abs(mount.getX() - homeGate.getX() - 1) < .2
-                    && Math.abs(mount.getZ() - homeGate.getZ() + 2.5) < .45 && mount.getY() >= homeGate.getY() - .2)
+                    && Math.abs(mount.getZ() - DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, -2.5).z) < .45 && mount.getY() >= homeGate.getY() - .2)
                 phase = Phase.ENTER;
             else return;
         }
         if (phase == Phase.ENTER) {
             navigation().open(homeGate);
-            if (mount.getBoundingBox().minZ < homeGate.getZ() + 2) return;
+            if (!DrakeStableLayout.insideGate(stable.getBoundingBox(), homeGate, mount.getBoundingBox(), 1)) return;
             pillager.stopRiding();
             ((DrakeRiding.State)mount).sscExtras$setRiderInput(null);
             if (mount instanceof PlayerEntity player) {
@@ -318,9 +318,9 @@ public final class DrakeBattleGoal extends Goal {
         }
         if (phase == Phase.LEAVE) {
             pillager.setTarget(null);
-            if (pillager.getBoundingBox().maxZ < homeGate.getZ() - .5) {
+            if (DrakeStableLayout.outsideGate(stable.getBoundingBox(), homeGate, pillager.getBoundingBox(), .5)) {
                 navigation().close(homeGate); complete = true;
-            } else pathTo(Vec3d.ofBottomCenter(homeGate.north(3)).add(.5, 0, 0), .8);
+            } else pathTo(DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, -2.5), .8);
         }
     }
 
@@ -348,9 +348,9 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     public Vec3d directDestination() {
-        if (phase == Phase.ALIGN) return Vec3d.ofBottomCenter(homeGate.north(3)).add(.5, 0, 0);
-        if (phase == Phase.EXIT) return new Vec3d(exitGate.getX() + 1, exitGate.getY(), exitGate.getZ() - 4);
-        if (phase == Phase.ENTER) return new Vec3d(homeGate.getX() + 1, homeGate.getY(), homeGate.getZ() + 5);
+        if (phase == Phase.ALIGN) return DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, -2.5);
+        if (phase == Phase.EXIT) return DrakeStableLayout.gatePoint(stable.getBoundingBox(), exitGate, -4);
+        if (phase == Phase.ENTER) return DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, 5);
         return null;
     }
 

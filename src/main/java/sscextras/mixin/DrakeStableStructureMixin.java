@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.drake.DrakeStablePiece;
+import sscextras.drake.DrakeStableLayout;
 import java.util.ArrayList;
 import java.util.function.Predicate;
 
@@ -34,7 +35,13 @@ public abstract class DrakeStableStructureMixin {
         var bounds = start.getBoundingBox();
         int stalls = mansion ? 6 : 3;
         int x = bounds.getMaxX() + 6, z = bounds.getCenter().getZ() - 6;
-        int y = generator.getHeight(x + stalls * 7 / 2, z + 6, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
+        if (mansion) {
+            // Vanilla adds the entrance first, using the mansion's overall rotation.
+            var entrance = (WoodlandMansionGenerator.Piece)start.getChildren().get(0);
+            var origin = DrakeStableLayout.mansionOrigin(bounds, entrance.getBoundingBox(), entrance.getRotation());
+            x = origin.getX(); z = origin.getZ();
+        }
+        int y = generator.getHeight(x + 10, z + (mansion ? 13 : 6), Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
         var pieces = new ArrayList<>(start.getChildren());
         pieces.add(new DrakeStablePiece(x, y, z, stalls));
         cir.setReturnValue(new StructureStart(start.getStructure(), start.getPos(), start.getReferences(), new StructurePiecesList(pieces)));

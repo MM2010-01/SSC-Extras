@@ -60,7 +60,8 @@ public final class DrakeVisitorEntity extends PillagerEntity {
         if (departure != null) nbt.putLong("VisitDeparture", departure.asLong());
         if (stable != null) {
             var box = stable.getBoundingBox();
-            nbt.putIntArray("VisitStable", new int[]{box.getMinX(), box.getMinY(), box.getMinZ(), (box.getBlockCountX() - 1) / 7});
+            nbt.putBoolean("VisitFacingRows", DrakeStableLayout.facingRows(box));
+            nbt.putIntArray("VisitStable", new int[]{box.getMinX(), box.getMinY(), box.getMinZ(), stable.stallCount()});
         }
     }
 
@@ -69,6 +70,6 @@ public final class DrakeVisitorEntity extends PillagerEntity {
         elapsed = nbt.getInt("VisitElapsed"); pets = nbt.getInt("VisitPets");
         int[] home = nbt.getIntArray("VisitStable");
         if (home.length == 4 && home[3] >= 2 && home[3] <= 32 && nbt.contains("VisitDeparture"))
-            visit(new DrakeStablePiece(home[0], home[1], home[2], home[3]), BlockPos.fromLong(nbt.getLong("VisitDeparture")));
+            visit(new DrakeStablePiece(home[0], home[1], home[2], home[3], nbt.getBoolean("VisitFacingRows")), BlockPos.fromLong(nbt.getLong("VisitDeparture")));
     }
 }

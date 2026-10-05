@@ -59,7 +59,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     public static boolean near(net.minecraft.util.math.BlockBox box, Vec3d position) {
-        return near(box, position, RANGE);
+        return near(box, position, DrakeStableLayout.captureRange(box));
     }
 
     public static boolean near(net.minecraft.util.math.BlockBox box, Vec3d position, int range) {
@@ -69,9 +69,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     public static Box stall(DrakeStablePiece piece) {
-        var center = piece.reservedStall();
-        return new Box(center.getX() - 2, center.getY(), center.getZ() - 4,
-                center.getX() + 4, center.getY() + 4, center.getZ() + 4);
+        return piece.stall(piece.stallCount() - 1);
     }
 
     public static DrakeStablePiece findStable(ServerWorld world, BlockPos pos) {
@@ -123,7 +121,7 @@ public final class DrakeCaptureGoal extends Goal {
             if (targetStall < 0 || !pillager.getWorld().getBlockState(stable.tie(targetStall)).isIn(BlockTags.FENCES)) continue;
             if (DrakeLeashing.holder(player) != pillager && DrakeOutpostOwnership.owns(player, stable)
                     && stable.stall(targetStall).contains(player.getPos())) continue;
-            if (!occupied() && navigation().reaches(player.getBlockPos()) && navigation().reaches(stable.tie(targetStall).north(2))) return true;
+            if (!occupied() && navigation().reaches(player.getBlockPos()) && navigation().reaches(stable.keeperPosition(targetStall))) return true;
         }
         player = null; targetStall = -1;
         return false;
@@ -180,7 +178,7 @@ public final class DrakeCaptureGoal extends Goal {
     @Override public void tick() {
         if (!leaving && DrakeLeashing.attached(player) && DrakeLeashing.holder(player) != pillager) return;
         pillager.getLookControl().lookAt(player, 30, 30);
-        Vec3d gate = Vec3d.ofBottomCenter(stable.gate(targetStall).north(2)).add(.5, 0, 0);
+        Vec3d gate = DrakeStableLayout.gatePoint(stable.getBoundingBox(), stable.gate(targetStall), -1.5);
         pillager.setSprinting(!leaving && !atGate && sourceGate == null && pillager.squaredDistanceTo(gate) > 100
                 && (DrakeLeashing.holder(player) != pillager || pillager.squaredDistanceTo(player) < 36));
         if (pillager.age >= nextDisplay) {
@@ -189,16 +187,16 @@ public final class DrakeCaptureGoal extends Goal {
                     ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         }
         if (leaving) {
-            if (pillager.getBoundingBox().maxZ < stable.gate(targetStall).getZ() - .25) {
+            if (DrakeStableLayout.outsideGate(stable.getBoundingBox(), stable.gate(targetStall), pillager.getBoundingBox(), .25)) {
                 gates(false);
                 complete = true; pillager.getNavigation().stop();
-            } else pillager.getNavigation().startMovingTo(gate.x, gate.y, gate.z - 1, .8);
+            } else pillager.getNavigation().startMovingTo(gate.x, gate.y, gate.z - DrakeStableLayout.inward(stable.getBoundingBox(), stable.gate(targetStall)), .8);
             return;
         }
         if (DrakeLeashing.holder(player) != pillager) {
             pillager.getNavigation().startMovingTo(player, 1);
             if (pillager.squaredDistanceTo(player) <= 4 && pillager.getVisibilityCache().canSee(player)
-                    && navigation().reaches(stable.tie(targetStall).north(2))) {
+                    && navigation().reaches(stable.keeperPosition(targetStall))) {
                 if (DrakeRiding.canCarryPillager(player) && pillager.getRandom().nextBoolean() && DrakeBattleGoal.of(pillager).recall(player, stable)) {
                     complete = true; return;
                 }
@@ -213,17 +211,19 @@ public final class DrakeCaptureGoal extends Goal {
         gates(true);
         if (sourceGate != null) {
             navigation().open(sourceGate);
-            if (player.getBoundingBox().maxZ < sourceGate.getZ() - .5
-                    && pillager.getBoundingBox().maxZ < sourceGate.getZ() - .5) {
+            if (DrakeStableLayout.outsideGate(stable.getBoundingBox(), sourceGate, player.getBoundingBox(), .5)
+                    && DrakeStableLayout.outsideGate(stable.getBoundingBox(), sourceGate, pillager.getBoundingBox(), .5)) {
                 navigation().close(sourceGate); sourceGate = null;
             } else {
                 pillager.getNavigation().stop();
-                if (pillager.squaredDistanceTo(player) <= 7 * 7)
-                    pillager.getMoveControl().moveTo(sourceGate.getX() + 1, sourceGate.getY(), sourceGate.getZ() - 4, .8);
+                if (pillager.squaredDistanceTo(player) <= 7 * 7) {
+                    var exit = DrakeStableLayout.gatePoint(stable.getBoundingBox(), sourceGate, -4);
+                    pillager.getMoveControl().moveTo(exit.x, exit.y, exit.z, .8);
+                }
                 return;
             }
         }
-        if (stable.stall(targetStall).contains(player.getPos()) && player.getBoundingBox().minZ >= stable.gate(targetStall).getZ() + 1
+        if (stable.stall(targetStall).contains(player.getPos()) && DrakeStableLayout.insideGate(stable.getBoundingBox(), stable.gate(targetStall), player.getBoundingBox(), 0)
                 && player.squaredDistanceTo(Vec3d.ofCenter(stable.tie(targetStall))) <= 81) {
             DrakeOutpostOwnership.capture(player, stable, targetStall);
             DrakeLeashing.attach(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), stable.tie(targetStall)));
@@ -234,7 +234,7 @@ public final class DrakeCaptureGoal extends Goal {
         }
         if (Math.abs(pillager.getX() - gate.x) < .2 && Math.abs(pillager.getZ() - gate.z) < .45
                 && pillager.getY() >= gate.y - .2 && pillager.squaredDistanceTo(player) < 16) atGate = true;
-        Vec3d destination = atGate ? Vec3d.ofBottomCenter(stable.tie(targetStall).north(2)).add(.5, 0, 0) : gate;
+        Vec3d destination = atGate ? Vec3d.ofBottomCenter(stable.keeperPosition(targetStall)).add(.5, 0, 0) : gate;
         if (pillager.squaredDistanceTo(player) > 7 * 7) pillager.getNavigation().stop();
         else if (atGate || pillager.squaredDistanceTo(gate) < 2.25) {
             pillager.getNavigation().stop();

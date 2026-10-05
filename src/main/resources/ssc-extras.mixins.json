@@ -59,6 +59,7 @@
     "CollarVoiceMixin"
   ],
   "client": [
+    "DrakeRitualTransformAnimationMixin",
     "DrakeFeralTextMixin",
     "DrakeFeralItemTextMixin",
     "DrakeFeralInputMixin",

@@ -33,7 +33,8 @@ public abstract class InstinctTickerMixin {
     private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
                                            CallbackInfoReturnable<Float> cir) {
         float rate = cir.getReturnValue() + Collars.instinctRate(player)
-                + sscextras.drake.DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player));
+                + sscextras.drake.DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player))
+                + sscextras.drake.DrakeSoulbinding.instinctRate(player);
         cir.setReturnValue(rate + (comp.instinctValue + rate >= 100 ? 0 : CreatureInstinct.cooldownRate(player, comp)));
     }
 

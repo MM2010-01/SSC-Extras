@@ -46,6 +46,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public boolean collarIssued;
         public int stallIndex, goodTicks, ritualHint;
         public boolean soulbound, awaitingRespawn, feral;
+        public int soulboundStage = 3;
         public NbtCompound previousSpawn = new NbtCompound();
         long lastServiceTime = Long.MIN_VALUE;
         int ritualTicks, feedingTicks;
@@ -57,14 +58,13 @@ public final class DrakeOutpostOwnership extends PersistentState {
         int witness;
         Claim(RegistryKey<World> world, BlockBox stable, String name) {
             this.world = world; this.stable = stable; this.name = name;
-            stallIndex = (stable.getBlockCountX() - 1) / 7 - 1;
+            stallIndex = DrakeStableLayout.stallCount(stable) - 1;
         }
-        public BlockPos sign() { return new BlockPos(stable.getMinX() + stallIndex * 7 + 2, stable.getMinY() + 1, stable.getMinZ() + 2); }
-        public BlockPos tie() { return new BlockPos(stable.getMinX() + stallIndex * 7 + 3, stable.getMinY() + 1, stable.getMinZ() + 12); }
-        public BlockPos bed() { return tie().north(4); }
-        public BlockPos gate() { return tie().north(9); }
-        public Box stall() { return new Box(stable.getMinX() + stallIndex * 7 + 1, stable.getMinY() + 1, stable.getMinZ() + 4,
-                stable.getMinX() + stallIndex * 7 + 7, stable.getMinY() + 5, stable.getMinZ() + 12); }
+        public BlockPos sign() { return DrakeStableLayout.sign(stable, stallIndex); }
+        public BlockPos tie() { return DrakeStableLayout.tie(stable, stallIndex); }
+        public BlockPos bed() { return DrakeStableLayout.bed(stable, stallIndex); }
+        public BlockPos gate() { return DrakeStableLayout.gate(stable, stallIndex); }
+        public Box stall() { return DrakeStableLayout.stall(stable, stallIndex); }
         public boolean matches(World other, DrakeStablePiece piece) {
             return world.equals(other.getRegistryKey()) && stable.equals(piece.getBoundingBox());
         }
@@ -123,7 +123,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
     public static void vacateResident(MinecraftServer server, String dimension, BlockBox stable, int stall) {
         var data = get(server);
         var world = RegistryKey.of(RegistryKeys.WORLD, new Identifier(dimension));
-        var sign = GlobalPos.create(world, new BlockPos(stable.getMinX() + stall * 7 + 2, stable.getMinY() + 1, stable.getMinZ() + 2));
+        var sign = GlobalPos.create(world, DrakeStableLayout.sign(stable, stall));
         if (!data.vacantResidents.add(sign)) return;
         data.updateSign(server, sign, "", false);
         data.markDirty();
@@ -314,6 +314,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.goodTicks = Math.max(0, Math.min(DrakeSoulbinding.SERVICE_TICKS, tag.getInt("GoodTicks")));
             claim.ritualHint = tag.getInt("RitualHint");
             claim.soulbound = tag.getBoolean("Soulbound");
+            claim.soulboundStage = tag.contains("SoulboundStage") && tag.getInt("SoulboundStage") == 2 ? 2 : 3;
             claim.feral = claim.soulbound && tag.getBoolean("Feral");
             claim.awaitingRespawn = tag.getBoolean("AwaitingRespawn");
             claim.previousSpawn = tag.getCompound("PreviousSpawn").copy();
@@ -338,6 +339,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putBoolean("CollarIssued", claim.collarIssued);
             tag.putInt("Stall", claim.stallIndex); tag.putInt("GoodTicks", claim.goodTicks); tag.putInt("RitualHint", claim.ritualHint);
             tag.putBoolean("Soulbound", claim.soulbound); tag.putBoolean("AwaitingRespawn", claim.awaitingRespawn);
+            tag.putInt("SoulboundStage", claim.soulboundStage);
             tag.putBoolean("Feral", claim.feral);
             tag.put("PreviousSpawn", claim.previousSpawn.copy()); mounts.add(tag);
         });

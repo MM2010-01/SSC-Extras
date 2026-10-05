@@ -63,7 +63,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     public void setStableHome(DrakeStablePiece stable, int stall) {
         homeStable = stable.getBoundingBox(); homeStall = stall; homeWorld = getWorld().getRegistryKey().getValue().toString();
-        setPositionTarget(new net.minecraft.util.math.BlockPos(homeStable.getMinX() + homeStall * 7 + 3, homeStable.getMinY() + 1, homeStable.getMinZ() + 8), 8);
+        setPositionTarget(DrakeStableLayout.bed(homeStable, homeStall), 8);
         ((DrakeStableNavigation)getNavigation()).home(stable);
     }
 
@@ -108,8 +108,8 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
             @Override public boolean shouldContinue() { return !riderControls() && !DrakeAttention.beingPetted(StableDrakeEntity.this) && super.shouldContinue(); }
             @Override protected Vec3d getWanderTarget() {
                 if (homeStable == null || !homeWorld.equals(getWorld().getRegistryKey().getValue().toString())) return super.getWanderTarget();
-                return new Vec3d(homeStable.getMinX() + homeStall * 7 + 2 + random.nextDouble() * 3,
-                        homeStable.getMinY() + 1, homeStable.getMinZ() + 5 + random.nextDouble() * 5);
+                var area = DrakeStableLayout.stall(homeStable, homeStall);
+                return new Vec3d(area.minX + 1 + random.nextDouble() * 3, area.minY, area.minZ + 1 + random.nextDouble() * 5);
             }
         });
         goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8));
@@ -269,9 +269,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         int[] box = nbt.getIntArray("StableHome");
         if (box.length == 6) {
             homeStable = new net.minecraft.util.math.BlockBox(box[0], box[1], box[2], box[3], box[4], box[5]);
-            homeStall = Math.max(0, Math.min((homeStable.getBlockCountX() - 1) / 7 - 1, nbt.getInt("HomeStall")));
+            homeStall = Math.max(0, Math.min(DrakeStableLayout.stallCount(homeStable) - 1, nbt.getInt("HomeStall")));
             homeWorld = nbt.getString("HomeWorld");
-            setPositionTarget(new net.minecraft.util.math.BlockPos(homeStable.getMinX() + homeStall * 7 + 3, homeStable.getMinY() + 1, homeStable.getMinZ() + 8), 8);
+            setPositionTarget(DrakeStableLayout.bed(homeStable, homeStall), 8);
         }
     }
 

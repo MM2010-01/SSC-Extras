@@ -48,7 +48,10 @@ public final class DrakeInstinct {
     private static boolean insideStall(BlockBox box, Vec3d pos) {
         double x = pos.x - box.getMinX();
         return x >= 1 && x < box.getBlockCountX() - 1 && x % 7 >= 1
-                && pos.z >= box.getMinZ() + 4 && pos.z < box.getMaxZ()
+                && (DrakeStableLayout.facingRows(box)
+                    ? pos.z >= box.getMinZ() + 1 && pos.z < box.getMinZ() + 9
+                        || pos.z >= box.getMinZ() + 18 && pos.z < box.getMaxZ()
+                    : pos.z >= box.getMinZ() + 4 && pos.z < box.getMaxZ())
                 && pos.y >= box.getMinY() + 1 && pos.y < box.getMinY() + 5;
     }
 

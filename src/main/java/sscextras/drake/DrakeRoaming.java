@@ -23,8 +23,8 @@ public final class DrakeRoaming {
             claim.seenSince = -1; claim.witness = 0;
             return;
         }
-        boolean inside = DrakeCaptureGoal.near(claim.stable, player.getPos(), RANGE);
-        boolean edge = inside && !DrakeCaptureGoal.near(claim.stable, player.getPos(), RANGE - 8);
+        boolean inside = DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeStableLayout.roamRange(claim.stable));
+        boolean edge = inside && !DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeStableLayout.roamRange(claim.stable) - 8);
         if (edge && !claim.warnedEdge && !claim.outside && player.getWorld().isDay()) hint(player, "roam_edge");
         claim.warnedEdge = edge;
         long time = player.getWorld().getTime();
@@ -65,8 +65,9 @@ public final class DrakeRoaming {
     }
 
     private static boolean tracking(PillagerEntity pillager, PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        int range = DrakeStableLayout.captureRange(claim.stable);
         return pillager.isAlive() && !pillager.isAiDisabled() && !pillager.hasVehicle()
-                && pillager.squaredDistanceTo(player) <= DrakeCaptureGoal.RANGE * DrakeCaptureGoal.RANGE
+                && pillager.squaredDistanceTo(player) <= range * range
                 && belongs(pillager, claim) && DrakeCaptureGoal.near(claim.stable, player.getPos());
     }
 

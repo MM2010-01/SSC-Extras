@@ -34,7 +34,7 @@ public final class DrakeVisits {
             visitor.setOnGround(true);
             if (!world.isSpaceEmpty(visitor) || !world.getOtherEntities(visitor, visitor.getBoundingBox()).isEmpty()) continue;
             visitor.visit(stable, pos);
-            var path = visitor.getNavigation().findPathTo(stable.gate(0).north(2), 1);
+            var path = visitor.getNavigation().findPathTo(BlockPos.ofFloored(DrakeStableLayout.gatePoint(stable.getBoundingBox(), stable.gate(0), -1.5)), 1);
             if (path == null || !path.reachesTarget()) continue;
             visitor.initialize(world, world.getLocalDifficulty(pos), SpawnReason.EVENT, null, null);
             world.spawnEntity(visitor);

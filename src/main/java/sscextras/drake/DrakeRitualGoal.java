@@ -79,17 +79,18 @@ public final class DrakeRitualGoal extends Goal {
         }
         if (sourceGate != null) {
             navigation.open(sourceGate);
-            if (player.getBoundingBox().maxZ < sourceGate.getZ() - .5 && pillager.getBoundingBox().maxZ < sourceGate.getZ() - .5) {
+            if (DrakeStableLayout.outsideGate(claim.stable, sourceGate, player.getBoundingBox(), .5)
+                    && DrakeStableLayout.outsideGate(claim.stable, sourceGate, pillager.getBoundingBox(), .5)) {
                 navigation.close(sourceGate); sourceGate = null;
-            } else { move(Vec3d.ofBottomCenter(sourceGate).add(.5, 0, -4)); return; }
+            } else { move(DrakeStableLayout.gatePoint(claim.stable, sourceGate, -3.5)); return; }
         }
         if (claim.stall().contains(player.getPos()) && player.squaredDistanceTo(DrakeSoulbinding.hayPosition(claim)) <= 2.25) {
             takePosition(claim, 0); return;
         }
-        var gate = Vec3d.ofBottomCenter(claim.gate().north(2)).add(.5, 0, 0);
+        var gate = DrakeStableLayout.gatePoint(claim.stable, claim.gate(), -1.5);
         if (Math.abs(pillager.getX() - gate.x) < .3 && Math.abs(pillager.getZ() - gate.z) < .5
                 && pillager.getY() >= gate.y - .2 && pillager.squaredDistanceTo(player) < 16) atGate = true;
-        var target = atGate ? DrakeSoulbinding.hayPosition(claim).add(0, 0, 1.8) : gate;
+        var target = atGate ? DrakeSoulbinding.hayPosition(claim).add(0, 0, 1.8 * DrakeStableLayout.inward(claim.stable, claim.gate())) : gate;
         if (pillager.squaredDistanceTo(player) > 49) navigation.stop();
         else if (atGate || pillager.squaredDistanceTo(gate) < 2.25) {
             navigation.stop();
@@ -101,8 +102,8 @@ public final class DrakeRitualGoal extends Goal {
         var target = DrakeSoulbinding.attendancePosition(claim, index);
         var bed = DrakeSoulbinding.hayPosition(claim);
         if (index < 2 && Math.abs(pillager.getX() - target.x) > .6
-                && pillager.getZ() > bed.z + .6)
-            target = new Vec3d(target.x, target.y, bed.z + 2.2);
+                && (pillager.getZ() - bed.z) * DrakeStableLayout.inward(claim.stable, claim.gate()) > .6)
+            target = new Vec3d(target.x, target.y, bed.z + 2.2 * DrakeStableLayout.inward(claim.stable, claim.gate()));
         move(target);
     }
 

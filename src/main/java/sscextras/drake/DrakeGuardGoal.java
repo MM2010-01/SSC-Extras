@@ -36,11 +36,12 @@ public final class DrakeGuardGoal extends Goal {
 
     public static Path patrolPath(PillagerEntity pillager, DrakeStablePiece stable) {
         var box = stable.getBoundingBox();
+        int radius = DrakeStableLayout.roamRange(box) - 4;
         for (int i = 0; i < 8; i++) {
-            int x = box.getMinX() - 60 + pillager.getRandom().nextInt(box.getBlockCountX() + 120);
-            int z = box.getMinZ() - 60 + pillager.getRandom().nextInt(box.getBlockCountZ() + 120);
+            int x = box.getMinX() - radius + pillager.getRandom().nextInt(box.getBlockCountX() + radius * 2);
+            int z = box.getMinZ() - radius + pillager.getRandom().nextInt(box.getBlockCountZ() + radius * 2);
             var column = new BlockPos(x, 0, z);
-            if (!pillager.getWorld().isChunkLoaded(column) || !DrakeCaptureGoal.near(box, Vec3d.ofCenter(column), DrakeRoaming.RANGE)) continue;
+            if (!pillager.getWorld().isChunkLoaded(column) || !DrakeCaptureGoal.near(box, Vec3d.ofCenter(column), DrakeStableLayout.roamRange(stable.getBoundingBox()))) continue;
             var pos = pillager.getWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, column);
             if (box.contains(pos) || pillager.squaredDistanceTo(Vec3d.ofBottomCenter(pos)) < 16) continue;
             var path = ((DrakeStableNavigation)pillager.getNavigation()).findPathTo(pos, 0);

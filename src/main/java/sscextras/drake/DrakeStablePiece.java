@@ -29,7 +29,12 @@ public final class DrakeStablePiece extends StructurePiece {
     }
 
     public DrakeStablePiece(int x, int y, int z, int stalls) {
-        super(DrakeStable.PIECE, 0, new BlockBox(x, y, z, x + stalls * 7, y + 7, z + 12));
+        this(x, y, z, stalls, stalls == 6);
+    }
+
+    public DrakeStablePiece(int x, int y, int z, int stalls, boolean facingRows) {
+        super(DrakeStable.PIECE, 0, new BlockBox(x, y, z, x + (facingRows ? 21 : stalls * 7),
+                y + (facingRows ? 11 : 7), z + (facingRows ? 26 : 12)));
         spawned = new boolean[residentCount()];
         names = new String[residentCount()];
         java.util.Arrays.fill(names, "");
@@ -58,40 +63,49 @@ public final class DrakeStablePiece extends StructurePiece {
 
     @Override public void generate(StructureWorldAccess world, StructureAccessor accessor, ChunkGenerator generator,
             Random random, BlockBox chunkBox, ChunkPos chunk, BlockPos pivot) {
-        int end = getBoundingBox().getBlockCountX() - 1;
-        fillWithOutline(world, chunkBox, 0, 1, 0, end, 7, 12, AIR, AIR, false);
-        fillWithOutline(world, chunkBox, 0, 0, 0, end, 0, 12, Blocks.COBBLESTONE.getDefaultState(), Blocks.COARSE_DIRT.getDefaultState(), false);
-        for (int x = 0; x <= end; x += 7) for (int z : new int[]{0, 12}) {
-            fillWithOutline(world, chunkBox, x, 1, z, x, 4, z, Blocks.DARK_OAK_LOG.getDefaultState(), Blocks.DARK_OAK_LOG.getDefaultState(), false);
-            fillDownwards(world, Blocks.COBBLESTONE.getDefaultState(), x, -1, z, chunkBox);
-        }
-        for (int z = 0; z <= 12; z++) {
-            int height = 5 + Math.min(z, 12 - z) / 3;
+        var box = getBoundingBox();
+        boolean facing = DrakeStableLayout.facingRows(box);
+        int end = box.getBlockCountX() - 1, depth = box.getBlockCountZ() - 1;
+        int eaves = facing ? 7 : 5;
+        fillWithOutline(world, chunkBox, 0, 1, 0, end, box.getBlockCountY() - 1, depth, AIR, AIR, false);
+        fillWithOutline(world, chunkBox, 0, 0, 0, end, 0, depth, Blocks.COBBLESTONE.getDefaultState(), Blocks.COARSE_DIRT.getDefaultState(), false);
+        for (int z = 0; z <= depth; z++) {
+            int height = eaves + Math.min(z, depth - z) / 3;
             fillWithOutline(world, chunkBox, 0, height, z, end, height, z,
                     Blocks.DARK_OAK_PLANKS.getDefaultState(), Blocks.DARK_OAK_PLANKS.getDefaultState(), false);
         }
-        for (int x = 0; x <= end; x++) for (int y = 1; y <= 2; y++) {
-            addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), x, y, 12, chunkBox);
-            if (x % 7 != 3 && x % 7 != 4)
-                addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), x, y, 3, chunkBox);
+        for (int row = 0; row < (facing ? 2 : 1); row++) {
+            int first = row * 3;
+            int front = DrakeStableLayout.rowZ(box, first, 3), back = DrakeStableLayout.rowZ(box, first, 12);
+            for (int x = 0; x <= end; x++) for (int y = 1; y <= 2; y++) {
+                addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), x, y, back, chunkBox);
+                if (x % 7 != 3 && x % 7 != 4)
+                    addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), x, y, front, chunkBox);
+            }
+            for (int x = 0; x <= end; x += 7) for (int z = Math.min(front, back); z <= Math.max(front, back); z++)
+                for (int y = 1; y <= 2; y++) addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), x, y, z, chunkBox);
+            for (int x = 3; x < end; x++) if (x % 7 == 3 || x % 7 == 4) addBlock(world,
+                    Blocks.DARK_OAK_FENCE_GATE.getDefaultState().with(FenceGateBlock.FACING, back > front ? Direction.SOUTH : Direction.NORTH), x, 1, front, chunkBox);
+            for (int x = 2; x < end; x += 7) {
+                int hayA = DrakeStableLayout.rowZ(box, first, 6), hayB = DrakeStableLayout.rowZ(box, first, 10);
+                fillWithOutline(world, chunkBox, x, 0, Math.min(hayA, hayB), x + 3, 0, Math.max(hayA, hayB),
+                        Blocks.HAY_BLOCK.getDefaultState(), Blocks.HAY_BLOCK.getDefaultState(), false);
+                addBlock(world, Blocks.WATER_CAULDRON.getDefaultState(), x + 3, 1, DrakeStableLayout.rowZ(box, first, 11), chunkBox);
+                int lanternZ = DrakeStableLayout.rowZ(box, first, 1);
+                addBlock(world, Blocks.LANTERN.getDefaultState().with(LanternBlock.HANGING, true), x + 1,
+                        eaves + Math.min(lanternZ, depth - lanternZ) / 3 - 1, lanternZ, chunkBox);
+            }
         }
-        for (int x = 0; x <= end; x += 7) for (int z = 3; z < 12; z++)
-            for (int y = 1; y <= 2; y++) addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), x, y, z, chunkBox);
-        for (int x = 3; x < end; x++) if (x % 7 == 3 || x % 7 == 4) addBlock(world,
-                Blocks.DARK_OAK_FENCE_GATE.getDefaultState().with(FenceGateBlock.FACING, Direction.SOUTH), x, 1, 3, chunkBox);
-        for (int x = 2; x < end; x += 7) {
-            fillWithOutline(world, chunkBox, x, 0, 6, x + 3, 0, 10, Blocks.HAY_BLOCK.getDefaultState(), Blocks.HAY_BLOCK.getDefaultState(), false);
-            addBlock(world, Blocks.WATER_CAULDRON.getDefaultState(), x + 3, 1, 11, chunkBox);
-            addBlock(world, Blocks.LANTERN.getDefaultState().with(LanternBlock.HANGING, true), x + 1, 4, 1, chunkBox);
+        // Build supports last so the stall fencing cannot replace their lower logs.
+        for (int x = 0; x <= end; x += 7) for (int z : new int[]{0, depth}) {
+            fillWithOutline(world, chunkBox, x, 1, z, x, eaves - 1, z, Blocks.DARK_OAK_LOG.getDefaultState(), Blocks.DARK_OAK_LOG.getDefaultState(), false);
+            fillDownwards(world, Blocks.COBBLESTONE.getDefaultState(), x, -1, z, chunkBox);
         }
-        // Build the supports last so the stall fencing cannot replace their lower logs.
-        for (int x = 0; x <= end; x += 7) for (int z : new int[]{0, 12})
-            fillWithOutline(world, chunkBox, x, 1, z, x, 4, z, Blocks.DARK_OAK_LOG.getDefaultState(), Blocks.DARK_OAK_LOG.getDefaultState(), false);
-        addChest(world, chunkBox, random, 1, 1, 1, EarthenDrake.id("chests/drake_stable"));
-        for (int stall = 0; stall < end / 7; stall++) {
-            int x = stall * 7 + 2;
-            addBlock(world, Blocks.DARK_OAK_SIGN.getDefaultState().with(SignBlock.ROTATION, 8), x, 1, 2, chunkBox);
-            var pos = offsetPos(x, 1, 2);
+        addChest(world, chunkBox, random, 1, 1, facing ? 13 : 1, EarthenDrake.id("chests/drake_stable"));
+        for (int stall = 0; stall < stallCount(); stall++) {
+            var pos = sign(stall);
+            addBlock(world, Blocks.DARK_OAK_SIGN.getDefaultState().with(SignBlock.ROTATION,
+                    DrakeStableLayout.inward(box, gate(stall)) < 0 ? 0 : 8), pos.getX() - box.getMinX(), 1, pos.getZ() - box.getMinZ(), chunkBox);
             if (chunkBox.contains(pos) && world.getBlockEntity(pos) instanceof SignBlockEntity sign) {
                 var text = new SignText().withMessage(1, Text.literal(stall < residentCount() ? name(stall) : ""));
                 // Generation block entities have no world yet; live text setters send world updates.
@@ -102,35 +116,37 @@ public final class DrakeStablePiece extends StructurePiece {
             }
         }
         for (int i = 0; i < residentCount(); i++)
-            if (!spawned[i]) spawned[i] = spawn(world, chunkBox, i * 7 + 3, 8, name(i));
+            if (!spawned[i]) spawned[i] = spawn(world, chunkBox, i, name(i));
     }
 
-    public int stallCount() { return (getBoundingBox().getBlockCountX() - 1) / 7; }
+    public int stallCount() { return DrakeStableLayout.stallCount(getBoundingBox()); }
     public int residentCount() { return stallCount() == 2 ? 2 : stallCount() - 1; }
-    public BlockPos reservedStall() { return stallCount() >= 3 ? offsetPos((stallCount() - 1) * 7 + 3, 1, 8) : null; }
-    public BlockPos gate(int stall) { return offsetPos(stall * 7 + 3, 1, 3); }
+    public BlockPos reservedStall() { return stallCount() >= 3 ? bed(stallCount() - 1) : null; }
+    public BlockPos gate(int stall) { return DrakeStableLayout.gate(getBoundingBox(), stall); }
     public BlockPos reservedGate() { return gate(stallCount() - 1); }
     public BlockPos gateAt(net.minecraft.util.math.Vec3d position) {
         var box = getBoundingBox();
-        int stall = (int)Math.floor((position.x - box.getMinX()) / 7);
-        return stall >= 0 && stall < (box.getBlockCountX() - 1) / 7
-                && position.z >= gate(stall).getZ() && position.z <= box.getMaxZ() + 1
-                && position.y >= box.getMinY() && position.y <= box.getMaxY() + 1 ? gate(stall) : null;
+        if (position.y < box.getMinY() || position.y > box.getMaxY() + 1) return null;
+        int column = (int)Math.floor((position.x - box.getMinX()) / 7);
+        int columns = (box.getBlockCountX() - 1) / 7;
+        if (column < 0 || column >= columns) return null;
+        for (int stall = column; stall < stallCount(); stall += columns) {
+            int gate = gate(stall).getZ(), tie = tie(stall).getZ();
+            if (position.z >= Math.min(gate, tie) && position.z <= Math.max(gate, tie) + 1) return gate(stall);
+        }
+        return null;
     }
     public boolean isGate(BlockPos pos) {
-        for (int stall = 0; stall < (getBoundingBox().getBlockCountX() - 1) / 7; stall++)
+        for (int stall = 0; stall < stallCount(); stall++)
             if (pos.equals(gate(stall)) || pos.equals(gate(stall).east())) return true;
         return false;
     }
-    public BlockPos reservedTie() { return offsetPos((stallCount() - 1) * 7 + 3, 1, 12); }
-    public BlockPos tie(int stall) { return offsetPos(stall * 7 + 3, 1, 12); }
-    public BlockPos bed(int stall) { return offsetPos(stall * 7 + 3, 1, 8); }
-    public net.minecraft.util.math.Box stall(int stall) {
-        var center = bed(stall);
-        return new net.minecraft.util.math.Box(center.getX() - 2, center.getY(), center.getZ() - 4,
-                center.getX() + 4, center.getY() + 4, center.getZ() + 4);
-    }
-    public BlockPos sign(int stall) { return offsetPos(stall * 7 + 2, 1, 2); }
+    public BlockPos reservedTie() { return tie(stallCount() - 1); }
+    public BlockPos tie(int stall) { return DrakeStableLayout.tie(getBoundingBox(), stall); }
+    public BlockPos bed(int stall) { return DrakeStableLayout.bed(getBoundingBox(), stall); }
+    public BlockPos keeperPosition(int stall) { return DrakeStableLayout.position(getBoundingBox(), stall, 3, 10); }
+    public net.minecraft.util.math.Box stall(int stall) { return DrakeStableLayout.stall(getBoundingBox(), stall); }
+    public BlockPos sign(int stall) { return DrakeStableLayout.sign(getBoundingBox(), stall); }
     public String firstName() { return name(0); }
     public String secondName() { return name(1); }
     public String name(int stall) { ensureNames(); return names[stall]; }
@@ -142,15 +158,15 @@ public final class DrakeStablePiece extends StructurePiece {
             if (names[i].isEmpty()) names[i] = DrakeMountNames.choose(random, names);
     }
 
-    private boolean spawn(StructureWorldAccess world, BlockBox chunkBox, int x, int z, String name) {
-        BlockPos pos = offsetPos(x, 1, z);
+    private boolean spawn(StructureWorldAccess world, BlockBox chunkBox, int stall, String name) {
+        BlockPos pos = bed(stall);
         if (!chunkBox.contains(pos)) return false;
         var drake = DrakeStable.DRAKE.create(world.toServerWorld());
         if (drake == null) return false;
-        drake.refreshPositionAndAngles(pos.getX() + .5, pos.getY(), pos.getZ() + .5, 180, 0);
+        drake.refreshPositionAndAngles(pos.getX() + .5, pos.getY(), pos.getZ() + .5, DrakeStableLayout.outwardYaw(getBoundingBox(), gate(stall)), 0);
         drake.setPersistent();
         drake.setCustomName(Text.literal(name));
-        drake.setStableHome(this, x / 7);
+        drake.setStableHome(this, stall);
         world.spawnEntityAndPassengers(drake);
         return true;
     }

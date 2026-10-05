@@ -89,6 +89,14 @@ public final class DrakeStableNavigation extends MobNavigation {
                             || cachedWorld.getBlockState(pos).canPathfindThrough(cachedWorld, pos, net.minecraft.entity.ai.pathing.NavigationType.LAND))) pos = pos.down();
                     pos = pos.up();
                 }
+                // Match vanilla's fallback when a wide body straddles a blocked starting node.
+                if (!canPathThrough(pos)) {
+                    var bounds = player.getBoundingBox();
+                    for (double x : new double[]{bounds.minX, bounds.maxX}) for (double z : new double[]{bounds.minZ, bounds.maxZ}) {
+                        var corner = BlockPos.ofFloored(x, pos.getY(), z);
+                        if (canPathThrough(corner)) return getStart(corner);
+                    }
+                }
                 return getStart(pos);
             }
             @Override public PathNodeType getDefaultNodeType(BlockView world, int x, int y, int z) {
@@ -164,9 +172,11 @@ public final class DrakeStableNavigation extends MobNavigation {
     }
 
     @Override public void tick() {
-        if (canOpenGates() && currentPath != null && !currentPath.isFinished() && stable != null) {
-            for (int i = currentPath.getCurrentNodeIndex(); i < Math.min(currentPath.getLength(), currentPath.getCurrentNodeIndex() + 3); i++) {
-                var pos = currentPath.getNodePos(i);
+        var path = currentPath;
+        if (canOpenGates() && path != null && !path.isFinished() && stable != null) {
+            // Opening a gate can synchronously replace or clear the active path.
+            for (int i = path.getCurrentNodeIndex(); currentPath == path && i < Math.min(path.getLength(), path.getCurrentNodeIndex() + 3); i++) {
+                var pos = path.getNodePos(i);
                 if (stable.isGate(pos) && entity.squaredDistanceTo(Vec3d.ofCenter(pos)) < 9)
                     open(stable.gateAt(Vec3d.ofCenter(pos)));
             }

@@ -24,6 +24,16 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     @Override public void processAnimation(FormRenderer formRenderer, FormModel model, PlayerEntityRenderer renderer,
             PlayerEntity player, float limbAngle, float limbDistance, float tickDelta, float age, float headYaw, float headPitch) {
         super.processAnimation(formRenderer, model, renderer, player, limbAngle, limbDistance, tickDelta, age, headYaw, headPitch);
+        boolean struggling = sscextras.drake.DrakeSoulbinding.restrained(player);
+        float phase = age * .075f;
+        float effort = struggling ? Math.max(0, MathHelper.sin(phase)) : 0;
+        effort *= effort;
+        float pull = struggling ? MathHelper.sin(phase * 2) * effort : 0;
+        if (struggling) {
+            rotate(model.getCachedGeoBone("bipedHead"), .045f * effort, .10f * pull);
+            rotate(model.getCachedGeoBone("bipedLeftArm"), .035f * effort + .025f * pull, 0);
+            rotate(model.getCachedGeoBone("bipedRightArm"), .035f * effort - .025f * pull, 0);
+        }
         if (stage == 2) {
             var body = model.getCachedGeoBone("bipedBody");
             anchorHip(model.getCachedGeoBone("bipedLeftLeg"), body);
@@ -34,7 +44,8 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             if (tail == null) continue;
             // Authored rearward: translate SSC's downward-tail sway onto the yaw axis.
             tail.setRotY(tail.getRotZ() + (sscextras.drake.DrakeAttention.beingPetted(player)
-                    ? sscextras.drake.DrakeAttention.wag(age, i) : 0));
+                    ? sscextras.drake.DrakeAttention.wag(age, i) : 0)
+                    + (struggling ? .02f * effort * MathHelper.sin(phase - i * .45f) : 0));
             tail.setRotZ(0);
             if (i == 0 && stage == 2) {
                 var body = model.getCachedGeoBone("bipedBody");
@@ -52,9 +63,15 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
         var jaw = model.getCachedGeoBone("jaw");
         if (jaw != null) {
             float opening = player.isUsingItem() && player.getActiveItem().isFood()
-                    ? .10f + Math.abs(MathHelper.sin(age * 1.4f)) * .12f : .015f;
+                    ? .10f + Math.abs(MathHelper.sin(age * 1.4f)) * .12f : .015f + .02f * effort;
             jaw.setRotX(opening);
         }
+    }
+
+    private static void rotate(GeoBone bone, float pitch, float yaw) {
+        if (bone == null) return;
+        bone.setRotX(bone.getRotX() + pitch);
+        bone.setRotY(bone.getRotY() + yaw);
     }
 
     private static void anchorHip(GeoBone leg, GeoBone body) {
