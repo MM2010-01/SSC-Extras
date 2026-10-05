@@ -60,8 +60,6 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     private void equipStableAccessories() {
         if (getWorld().isClient) return;
-        if (getEquippedStack(EquipmentSlot.MAINHAND).isEmpty()) equipStack(EquipmentSlot.MAINHAND, DrakeEquipment.SHOES.getDefaultStack());
-        if (getEquippedStack(EquipmentSlot.FEET).isEmpty()) equipStack(EquipmentSlot.FEET, DrakeEquipment.SHOES.getDefaultStack());
         if (getEquippedStack(EquipmentSlot.HEAD).isEmpty()) {
             var collar = new ItemStack(Collars.CURSED);
             Collars.CURSED.ensureBinding(collar);
@@ -262,6 +260,8 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     @Override public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
+        for (var slot : new EquipmentSlot[]{EquipmentSlot.MAINHAND, EquipmentSlot.FEET})
+            if (getEquippedStack(slot).isOf(DrakeEquipment.SHOES)) equipStack(slot, ItemStack.EMPTY);
         equipStableAccessories();
         saddle = ItemStack.fromNbt(nbt.getCompound("DrakeSaddle"));
         reins = ItemStack.fromNbt(nbt.getCompound("DrakeReins"));

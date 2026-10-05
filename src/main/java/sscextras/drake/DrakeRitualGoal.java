@@ -51,7 +51,7 @@ public final class DrakeRitualGoal extends Goal {
                 ? DrakeEquipment.SHOES.getDefaultStack()
                 : shoeing && DrakeSoulbinding.restrained(player) ? ItemStack.EMPTY
                 : DrakeSoulbinding.role(pillager) == DrakeSoulbinding.FEEDING
-                ? new ItemStack(BeastizationCatalyst.ITEM)
+                ? DrakeSoulbinding.catalyst(claim)
                 : (punishment ? index != 0 : index < 2) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         if (DrakeSoulbinding.restrained(player)) {
             if (shoeing && index == 2) {

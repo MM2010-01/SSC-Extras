@@ -63,6 +63,7 @@ public final class DrakeSoulbinding {
             var claim = DrakeOutpostOwnership.claim(handler.player);
             if (claim != null) claim.lastServiceTime = handler.player.getWorld().getTimeOfDay();
             syncSoul(handler.player);
+            DrakeRitualTransform.recover(handler.player);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             var claim = DrakeOutpostOwnership.claim(handler.player);
@@ -142,7 +143,7 @@ public final class DrakeSoulbinding {
         }
         if (player.isSleeping()) player.wakeUp();
         DrakeLeashing.detach(player, false);
-        TransformManager.getPlayerTransformData(player).reset();
+        DrakeRitualTransform.finish(player);
         if (EarthenDrake.stage(player) < 0) FormAbilityManager.applyForm(player, EarthenDrake.FORMS[0]);
         player.teleport(world, bed.x, bed.y, bed.z, DrakeStableLayout.outwardYaw(claim.stable, claim.gate()), 0);
         player.clearActiveItem(); player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
@@ -280,11 +281,11 @@ public final class DrakeSoulbinding {
                     ? Math.max(9, claim.catalystsFed + (finishBody ? 1 : 0)) : Math.min(4, claim.ritualTicks / 60);
             if (claim.catalystsFed < required) {
                 if (!feed(player, claim, feeder)) return;
-                if (claim.catalystsFed < required || finishBody) { claim.feedingTicks = 20; return; }
+                if (claim.catalystsFed < required || finishBody) { feed(player, claim, feeder); return; }
             }
             role((LivingEntity)world.getEntity(claim.attendants.get(feeder)), CHANTING);
-        } else if (EarthenDrake.stage(player) < 2 && claim.ritualTicks <= SOUL_TRANSFORM_TICKS) {
-            if (feed(player, claim, feeder)) claim.feedingTicks = 20;
+        } else if ((EarthenDrake.stage(player) < 2 && claim.ritualTicks <= SOUL_TRANSFORM_TICKS) || claim.feedingTicks > 0) {
+            if (feed(player, claim, feeder) && EarthenDrake.stage(player) < 2) feed(player, claim, feeder);
         } else {
             claim.feedingTicks = 0;
             role((LivingEntity)world.getEntity(claim.attendants.get(feeder)), CHANTING);
@@ -292,7 +293,7 @@ public final class DrakeSoulbinding {
         if (claim.ritualTicks % 80 == 0)
             world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, SoundCategory.HOSTILE, .65f, .7f);
         if (commanded && !punishment && claim.ritualTicks == SOUL_TRANSFORM_TICKS) {
-            TransformManager.getPlayerTransformData(player).reset();
+            DrakeRitualTransform.finish(player);
             if (EarthenDrake.stage(player) < 2) FormAbilityManager.applyForm(player, EarthenDrake.FORMS[2]);
         }
         boolean waitingForBody = claim.ritualTicks == SOUL_TRANSFORM_TICKS
@@ -308,20 +309,40 @@ public final class DrakeSoulbinding {
     }
 
     private static boolean feed(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim, int feeder) {
+        if (claim.feedingTicks == -1) { claim.feedingTicks = 0; return true; }
         var world = player.getServerWorld();
         var leader = (PillagerEntity)world.getEntity(claim.attendants.get(feeder));
         role(leader, FEEDING);
         if (claim.feedingTicks == 0 && claim.catalystsFed == 0)
             hint(player, punishment(claim) ? "punishment_feed" : "ritual_feed");
-        var catalyst = new ItemStack(BeastizationCatalyst.ITEM);
-        world.spawnParticles(new net.minecraft.particle.ItemStackParticleEffect(net.minecraft.particle.ParticleTypes.ITEM, catalyst),
-                player.getX(), player.getEyeY() - .15, player.getZ(), 5, .12, .08, .12, .01);
-        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.PLAYERS, .6f, .7f);
-        if (claim.feedingTicks < FEED_TICKS) { claim.feedingTicks += 20; return false; }
+        if (claim.feedingTicks == 0) claim.feedingTicks = FEED_TICKS;
+        return false;
+    }
+
+    static ItemStack catalyst(DrakeOutpostOwnership.Claim claim) {
+        return new ItemStack(punishment(claim) ? BeastizationCatalyst.ITEM
+                : net.onixary.shapeShifterCurseFabric.items.RegCustomItem.CATALYST);
+    }
+
+    private static void tickFeeding(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        if (claim.feedingTicks <= 0) return;
+        var world = player.getServerWorld();
+        int feeder = punishment(claim) ? 0 : 2;
+        if (!(world.getEntity(claim.attendants.get(feeder)) instanceof PillagerEntity leader)
+                || !available(leader) || role(leader) != FEEDING) { claim.feedingTicks = 0; return; }
+        var catalyst = catalyst(claim);
+        if (claim.feedingTicks <= FEED_TICKS - 7 && claim.feedingTicks % 4 == 0) {
+            var mouth = DrakeView.atHead(player, 1, player.getEyePos());
+            world.spawnParticles(new net.minecraft.particle.ItemStackParticleEffect(net.minecraft.particle.ParticleTypes.ITEM, catalyst),
+                    mouth.x, mouth.y - .15, mouth.z, 5, .12, .08, .12, .01);
+            var random = player.getRandom();
+            world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EAT, SoundCategory.PLAYERS,
+                    .5f + .5f * random.nextInt(2), 1 + (random.nextFloat() - random.nextFloat()) * .2f);
+        }
+        if (--claim.feedingTicks != 0) return;
         catalyst.finishUsing(world, player);
         leader.swingHand(net.minecraft.util.Hand.MAIN_HAND);
-        claim.feedingTicks = 0; claim.catalystsFed++;
-        return true;
+        claim.feedingTicks = -1; claim.catalystsFed++;
     }
 
     private static boolean missedAttendance(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
@@ -380,6 +401,7 @@ public final class DrakeSoulbinding {
             }
         }
         pin(player, claim);
+        tickFeeding(player, claim);
         if (!shoeing(player) && claim.ritualTicks > 0 && player.age % 2 == 0) for (int i = 0; i < 2; i++)
             player.getServerWorld().spawnParticles(StaticParams.PLAYER_TRANSFORM_PARTICLE,
                     player.getX() + (player.getRandom().nextDouble() - .5) * 1.4,
@@ -431,6 +453,7 @@ public final class DrakeSoulbinding {
     }
 
     private static void finishAttendance(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        if (claim.ritualTicks > 0 && player instanceof ServerPlayerEntity serverPlayer) DrakeRitualTransform.finish(serverPlayer);
         role(player, 0);
         soulTicks(player, 0);
         var world = player.getServer().getWorld(claim.world);
@@ -480,7 +503,6 @@ public final class DrakeSoulbinding {
     private static void complete(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         boolean punishment = punishment(claim);
         if (claim.commandRitual != null) {
-            TransformManager.getPlayerTransformData(player).reset();
             if (!punishment && EarthenDrake.stage(player) < 2) FormAbilityManager.applyForm(player, EarthenDrake.FORMS[2]);
         }
         if (!punishment && !claim.soulbound) {

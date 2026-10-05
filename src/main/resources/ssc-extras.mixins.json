@@ -61,6 +61,7 @@
     "CollarVoiceMixin"
   ],
   "client": [
+    "DrakeLeawindCameraMixin",
     "DrakeSoulPostureMixin",
     "DrakeShoeingBodyMixin",
     "DrakeShoeingPoseMixin",

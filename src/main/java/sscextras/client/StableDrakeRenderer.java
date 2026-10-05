@@ -21,14 +21,10 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
         shadowRadius = .8f;
         addRenderLayer(new GeoRenderLayer<StableDrakeEntity>(this) {
             private final DrakeGearModel gear = new DrakeGearModel(3);
-            private final DrakeShoeModel shoes = new DrakeShoeModel(3);
             private final CollarModel collar = new CollarModel();
             @Override public void renderForBone(MatrixStack matrices, StableDrakeEntity drake, GeoBone bone, RenderLayer type,
                     VertexConsumerProvider buffers, VertexConsumer buffer, float tickDelta, int light, int overlay) {
                 gear.render(bone.getName(), matrices, buffers, light, drake.hasReins(), drake.isSaddled(), drake.hasChest(), false, drake.hasVanillaSaddle(), drake.hasBlinkers(), drake.hasClosedBlinkers());
-                shoes.render(bone.getName(), matrices, buffers, light,
-                        drake.getEquippedStack(EquipmentSlot.MAINHAND).isOf(DrakeEquipment.SHOES),
-                        drake.getEquippedStack(EquipmentSlot.FEET).isOf(DrakeEquipment.SHOES));
                 if (bone.getName().equals("bipedBody") && drake.getEquippedStack(EquipmentSlot.HEAD).isOf(Collars.CURSED)) {
                     matrices.push();
                     matrices.translate(0, .7125, .340625);

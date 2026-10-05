@@ -12,6 +12,7 @@ import sscextras.drake.DrakeSoulbinding;
 public abstract class DrakeRitualLookMixin {
     @Inject(method = "changeLookDirection", at = @At("HEAD"), cancellable = true)
     private void sscExtras$heldFacing(double cursorDeltaX, double cursorDeltaY, CallbackInfo ci) {
-        if ((Object)this instanceof PlayerEntity player && DrakeSoulbinding.restrained(player)) ci.cancel();
+        if (sscextras.client.DrakeCameraControl.look((Entity)(Object)this, cursorDeltaX, cursorDeltaY)
+                || (Object)this instanceof PlayerEntity player && DrakeSoulbinding.restrained(player)) ci.cancel();
     }
 }
