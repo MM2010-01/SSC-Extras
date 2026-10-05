@@ -228,7 +228,7 @@ public final class DrakeSoulbinding {
             var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(claim.stable).expand(DrakeStableLayout.roamRange(claim.stable)), guard -> {
                 if (!available(guard)) return false;
                 var stable = ((DrakeStableNavigation)guard.getNavigation()).stable();
-                return stable != null && claim.matches(world, stable) && attendee(guard) == null;
+                return stable != null && claim.matches(world, stable) && attendee(guard) == null && reachesRitual(guard, player, claim);
             });
             guards.sort(Comparator.comparingDouble(player::squaredDistanceTo));
             if (guards.size() < 3) return;
@@ -239,7 +239,24 @@ public final class DrakeSoulbinding {
         }
         for (int i = 0; i < 3; i++) {
             var entity = world.getEntity(claim.attendants.get(i));
-            if (!(entity instanceof PillagerEntity guard) || !available(guard)) { cancel(player, claim); return; }
+            if (entity instanceof PillagerEntity guard && available(guard)
+                    && (restrained(player) || reachesRitual(guard, player, claim))) continue;
+            if (restrained(player)) { cancel(player, claim); return; }
+            var replacements = world.getEntitiesByClass(PillagerEntity.class,
+                    Box.from(claim.stable).expand(DrakeStableLayout.roamRange(claim.stable)), guard -> {
+                if (!available(guard) || attendee(guard) != null) return false;
+                var home = ((DrakeStableNavigation)guard.getNavigation()).stable();
+                return home != null && claim.matches(world, home) && reachesRitual(guard, player, claim);
+            });
+            var replacement = replacements.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
+            if (replacement == null) { cancel(player, claim); return; }
+            if (entity instanceof PillagerEntity previous) {
+                DrakeBattleGoal.of(previous).stopPursuit();
+                role(previous, 0); previous.getNavigation().stop();
+                ((DrakeFaction.EquipmentDisplay)previous).sscExtras$showEquipment(ItemStack.EMPTY);
+                if (DrakeLeashing.holder(player) == previous) DrakeLeashing.detach(player, false);
+            }
+            claim.attendants.set(i, replacement.getUuid());
         }
         if (!restrained(player)) {
             var guide = world.getEntity(claim.attendants.get(0));
@@ -428,6 +445,11 @@ public final class DrakeSoulbinding {
 
     static boolean available(PillagerEntity guard) {
         return available(guard, false);
+    }
+
+    private static boolean reachesRitual(PillagerEntity guard, ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        var navigation = (DrakeStableNavigation)guard.getNavigation();
+        return navigation.reaches(player.getBlockPos()) && navigation.reaches(claim.bed());
     }
 
     static boolean available(PillagerEntity guard, boolean defending) {

@@ -114,7 +114,7 @@ public final class DrakeStableNavigation extends MobNavigation {
         nodes.setCanSwim(canSwim());
         var pos = player.getBlockPos();
         var cache = new net.minecraft.world.chunk.ChunkCache(world, pos.add(-16, -16, -16), pos.add(16, 16, 16));
-        return new PathNodeNavigator(nodes, 1024).findPathToAny(cache, entity, Set.of(entity.getBlockPos()), 24, 0, 1);
+        return new PathNodeNavigator(nodes, 1024).findPathToAny(cache, entity, Set.of(entity.getRootVehicle().getBlockPos()), 24, 0, 1);
     }
 
     @Override protected Vec3d getPos() {

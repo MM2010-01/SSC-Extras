@@ -4,6 +4,7 @@ import sscextras.CreatureInstinct;
 import sscextras.MoonlightInstinct;
 import sscextras.collar.Collars;
 import sscextras.cuffs.MetalCuffs;
+import sscextras.drake.DrakeInstinct;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
@@ -33,8 +34,8 @@ public abstract class InstinctTickerMixin {
     private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
                                            CallbackInfoReturnable<Float> cir) {
         float rate = cir.getReturnValue() + Collars.instinctRate(player)
-                + sscextras.drake.DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player))
-                + sscextras.drake.DrakeSoulbinding.instinctRate(player);
+                + (DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player))
+                + sscextras.drake.DrakeSoulbinding.instinctRate(player)) / DrakeInstinct.costMultiplier(player);
         cir.setReturnValue(rate + (comp.instinctValue + rate >= 100 ? 0 : CreatureInstinct.cooldownRate(player, comp)));
     }
 
@@ -48,21 +49,21 @@ public abstract class InstinctTickerMixin {
     private static void sscExtras$permanentBaseRate(PlayerEntity player, CallbackInfoReturnable<Float> cir) {
         float base = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player)) != null
                 ? 5.5555557E-4f / CreatureInstinct.PERMANENT_INSTINCT_COST : cir.getReturnValue();
-        cir.setReturnValue(Collars.gain(player, base));
+        cir.setReturnValue(Collars.gain(player, base) / DrakeInstinct.costMultiplier(player));
     }
 
     @Redirect(method = "calculateCurrentRate", at = @At(value = "INVOKE", target =
             "Lnet/onixary/shapeShifterCurseFabric/player_form/instinct/InstinctEffect;getRateModifier()F"))
     private static float sscExtras$scaleSustainedEffect(InstinctEffect effect, PlayerEntity player,
                                                        PlayerInstinctComponent comp) {
-        return Collars.gain(player, effect.getRateModifier()) / CreatureInstinct.costMultiplier(FormAbilityManager.getForm(player));
+        return Collars.gain(player, effect.getRateModifier()) / CreatureInstinct.costMultiplier(player);
     }
 
     @Redirect(method = "tick", at = @At(value = "INVOKE", target =
             "Lnet/onixary/shapeShifterCurseFabric/player_form/instinct/InstinctTicker;processImmediateEffects(Lnet/onixary/shapeShifterCurseFabric/player_form/instinct/PlayerInstinctComponent;)V"))
     private static void sscExtras$scaleImmediateEffects(PlayerInstinctComponent comp, ServerPlayerEntity player) {
         if (comp.immediateEffects.isEmpty()) return;
-        float cost = CreatureInstinct.costMultiplier(FormAbilityManager.getForm(player));
+        float cost = CreatureInstinct.costMultiplier(player);
         float multiplier = Collars.gain(player, 1);
         if (cost == 1 && multiplier == 1 && MetalCuffs.equipped(player, false, false).isEmpty()
                 && MetalCuffs.equipped(player, true, false).isEmpty()) {

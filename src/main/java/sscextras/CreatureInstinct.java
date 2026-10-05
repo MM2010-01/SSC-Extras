@@ -38,7 +38,7 @@ public final class CreatureInstinct {
         }
         sscextras.collar.Collars.equipCarried(player);
         instinct.instinctValue = sscextras.cuffs.MetalCuffs.apply(player, instinct.instinctValue,
-                sscextras.collar.Collars.gain(player, amount) / costMultiplier(current));
+                sscextras.collar.Collars.gain(player, amount) / costMultiplier(player));
         RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
         return true;
     }
@@ -74,8 +74,9 @@ public final class CreatureInstinct {
         if (instinct.instinctValue >= 100 || !player.isAlive() || player.isCreative() || player.isSpectator()
                 || TransformManager.getPlayerTransformData(player).isTransforming) return 0;
         PlayerFormBase form = FormAbilityManager.getForm(player);
-        if (form.equals(RegPlayerForms.ORIGINAL_SHIFTER)) return -0.025f;
-        return permanentTarget(form) != null ? -0.005f : 0;
+        float rate = form.equals(RegPlayerForms.ORIGINAL_SHIFTER) ? -0.025f
+                : permanentTarget(form) != null ? -0.005f : 0;
+        return rate / sscextras.drake.DrakeInstinct.costMultiplier(player);
     }
 
     public static void clearTarget(PlayerEntity player) {
@@ -89,6 +90,10 @@ public final class CreatureInstinct {
 
     public static float costMultiplier(PlayerFormBase form) {
         return permanentTarget(form) != null ? PERMANENT_INSTINCT_COST : 1.0f;
+    }
+
+    public static float costMultiplier(PlayerEntity player) {
+        return costMultiplier(FormAbilityManager.getForm(player)) * sscextras.drake.DrakeInstinct.costMultiplier(player);
     }
 
     public static PlayerFormBase getTarget(PlayerEntity player) {

@@ -160,14 +160,15 @@ public final class DrakeLeashing {
                 if (holder == null) { if (++waitTicks > 100) detach(player, true); return; }
             }
             if (!holder.isAlive() || holder.getWorld() != player.getWorld()) { detach(player, true); return; }
-            Vec3d delta = holder.getPos().subtract(player.getPos());
+            var anchor = holder instanceof net.minecraft.entity.mob.PillagerEntity ? holder.getRootVehicle() : holder;
+            Vec3d delta = anchor.getPos().subtract(player.getPos());
             double distance = delta.length();
             if (distance > 10) { detach(player, true); return; }
             boolean pillagerLead = holder instanceof net.minecraft.entity.mob.PillagerEntity;
             if (distance > (pillagerLead ? DrakeSoulbinding.role(player) == DrakeSoulbinding.ESCORT ? 1.5 : 3 : 6)) {
                 Vec3d pull = delta;
                 if (holder instanceof net.minecraft.entity.mob.PillagerEntity pillager
-                        && (leadPath != null || player.horizontalCollision || holder.getY() > player.getY() + .5)) {
+                        && (leadPath != null || player.horizontalCollision || anchor.getY() > player.getY() + .5)) {
                     if (player.getWorld().getTime() >= nextPath) {
                         nextPath = player.getWorld().getTime() + 10;
                         leadPath = ((DrakeStableNavigation)pillager.getNavigation()).leadPath(player);

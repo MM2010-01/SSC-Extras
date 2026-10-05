@@ -260,7 +260,7 @@ public final class Collars {
             }
             if (CreatureInstinct.getTarget(player) == null) return 0;
         } else if (form.getIndex() < 0 || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(form) == null)) return 0;
-        return sscextras.drake.DrakeInstinct.stallGain(player, strength * 0.05f) / CreatureInstinct.costMultiplier(form);
+        return sscextras.drake.DrakeInstinct.stallGain(player, strength * 0.05f) / CreatureInstinct.costMultiplier(player);
     }
 
     public static java.util.function.Consumer<net.minecraft.entity.Entity> ambientVoice(PlayerFormBase form) {

@@ -56,6 +56,11 @@ public final class DrakeRoaming {
         }
         claim.outside = !inside;
         if (inside) { claim.spotted = false; claim.seenSince = -1; }
+        if (!claim.tryingToEscape && DrakeLeashing.holder(player) instanceof PillagerEntity holder
+                && claim.escort == holder.getId()) {
+            claim.spotted = false; claim.seenSince = -1;
+            return;
+        }
         var previous = player.getWorld().getEntityById(claim.witness);
         PillagerEntity witness = previous instanceof PillagerEntity pillager && tracking(pillager, player, claim)
                 && time < claim.recallUntil ? pillager : null;

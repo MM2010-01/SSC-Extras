@@ -38,6 +38,7 @@ public final class DrakeBattleGoal extends Goal {
     private int nextSearch, nextPatrolSearch, started, nextPath, nextEnemySearch, lastSeen, hungerBefore, patrolUntil;
     private boolean complete, fighting, won, engaged, pendingRecall;
     private int nextPursuitSearch;
+    private Vec3d pursuitDestination;
 
     public DrakeBattleGoal(PillagerEntity pillager) {
         this.pillager = pillager;
@@ -54,6 +55,8 @@ public final class DrakeBattleGoal extends Goal {
     public boolean returning() { return phase == Phase.RETURN || phase == Phase.ALIGN || phase == Phase.ENTER || phase == Phase.LEAVE; }
     public boolean pathing() { return returning() || phase == Phase.PATROL || phase == Phase.PURSUIT; }
     public boolean pursuing(PlayerEntity target) { return target != null && purpose == Purpose.PURSUIT && phase != null && enemy == target; }
+    public PlayerEntity pursuitTarget() { return purpose == Purpose.PURSUIT && phase != null && enemy instanceof PlayerEntity player ? player : null; }
+    public boolean leading() { return purpose == Purpose.PURSUIT && enemy instanceof PlayerEntity player && DrakeLeashing.holder(player) == pillager; }
     public boolean patrolling() { return purpose == Purpose.PATROL && phase != null; }
     public void shot(LivingEntity target) { if (purpose == Purpose.BATTLE && phase == Phase.FIGHT && target == enemy) engaged = true; }
     public boolean holdsOpen(BlockPos gate) {
@@ -141,7 +144,7 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     @Override public boolean canStart() {
-        if (phase != null) return false;
+        if (phase != null || DrakeSoulbinding.attendee(pillager) != null) return false;
         if (pendingRecall) {
             if (mount instanceof PlayerEntity player && DrakeCaptureGoal.eligible(player) && DrakeRiding.canCarryPillager(player)
                     && !mount.hasPassengers() && !mount.hasVehicle() && !pillager.hasVehicle()) return true;
@@ -200,14 +203,17 @@ public final class DrakeBattleGoal extends Goal {
         return (candidate instanceof PlayerEntity ? 0 : 2) + (stable.stall(stall).contains(candidate.getPos()) ? 0 : 1);
     }
 
-    // The recruitment, capture or ritual goal owns this ride and continues its work after dismounting.
+    // The owning goal equips or leashes its target without giving up the borrowed mount.
     public boolean pursue(PlayerEntity target) {
         if (pursuing(target)) {
             if (!shouldContinue() || !target.isAlive() || target.getWorld() != pillager.getWorld()
-                    || phase != Phase.APPROACH && !DrakeRiding.canControl(mount, pillager)
-                    || mount.squaredDistanceTo(target.getRootVehicle()) <= 4 && pillager.getVisibilityCache().canSee(target)) {
+                    || phase != Phase.APPROACH && !DrakeRiding.canControl(mount, pillager)) {
                 stopPursuit(); return false;
             }
+            if (phase == Phase.PURSUIT && mount.squaredDistanceTo(target.getRootVehicle()) <= 4 && pillager.getVisibilityCache().canSee(target)) {
+                movePursuit(target, null, 0, false); return false;
+            }
+            pursuitDestination = null;
             tick();
             if (complete) { stopPursuit(); return false; }
             return true;
@@ -228,6 +234,15 @@ public final class DrakeBattleGoal extends Goal {
         if (purpose == Purpose.PURSUIT && phase != null) {
             stop(); nextPursuitSearch = pillager.age + 100;
         }
+    }
+
+    public boolean movePursuit(PlayerEntity target, Vec3d destination, double speed, boolean direct) {
+        if (!pursuing(target) || phase != Phase.PURSUIT) return false;
+        if (!shouldContinue() || !DrakeRiding.canControl(mount, pillager)) { stopPursuit(); return false; }
+        pursuitDestination = direct ? destination : null;
+        if (destination == null || direct) navigation().stop();
+        else navigation().startMovingTo(destination.x, destination.y, destination.z, speed);
+        return true;
     }
 
     private void setMount(LivingEntity candidate) {
@@ -426,6 +441,7 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     public Vec3d directDestination() {
+        if (phase == Phase.PURSUIT) return pursuitDestination;
         if (phase == Phase.ALIGN) return DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, -2.5);
         if (phase == Phase.EXIT) return DrakeStableLayout.gatePoint(stable.getBoundingBox(), exitGate, -4);
         if (phase == Phase.ENTER) return DrakeStableLayout.gatePoint(stable.getBoundingBox(), homeGate, 5);
@@ -435,6 +451,7 @@ public final class DrakeBattleGoal extends Goal {
     private DrakeStableNavigation navigation() { return (DrakeStableNavigation)pillager.getNavigation(); }
 
     @Override public void stop() {
+        pursuitDestination = null;
         if (fighting) attack.stop();
         if (pillager.getVehicle() == mount) pillager.stopRiding();
         if (mount != null) {

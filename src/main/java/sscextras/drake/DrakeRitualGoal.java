@@ -43,6 +43,7 @@ public final class DrakeRitualGoal extends Goal {
         int index = claim.attendants.indexOf(pillager.getUuid());
         if (index < 0) return;
         var navigation = (DrakeStableNavigation)pillager.getNavigation();
+        var body = pillager.getRootVehicle();
         navigation.open(claim.gate());
         pillager.getLookControl().lookAt(player, 30, 30);
         boolean shoeing = claim.shoeingRitual;
@@ -69,17 +70,17 @@ public final class DrakeRitualGoal extends Goal {
         var guide = player.getServerWorld().getEntity(claim.attendants.get(0));
         boolean leashed = DrakeLeashing.holder(player) == guide;
         if (!leashed && DrakeBattleGoal.of(pillager).pursue(player)) return;
-        if (leashed) DrakeBattleGoal.of(pillager).stopPursuit();
         if (index != 0) {
+            if (leashed) DrakeBattleGoal.of(pillager).stopPursuit();
             move(leashed ? DrakeSoulbinding.attendancePosition(claim, index) : player.getPos().add(index == 1 ? 1.5 : -1.5, 0, 0));
             return;
         }
         if (!leashed) {
             move(player.getPos());
-            if (pillager.squaredDistanceTo(player) > 4 || !pillager.getVisibilityCache().canSee(player)) return;
+            if (body.squaredDistanceTo(player) > 4 || !pillager.getVisibilityCache().canSee(player)) return;
             for (var id : claim.attendants) {
                 var other = player.getServerWorld().getEntity(id);
-                if (other == null || other.squaredDistanceTo(player) > 36) return;
+                if (other == null || other.getRootVehicle().squaredDistanceTo(player) > 36) return;
             }
             if (DrakeLeashing.attachPillager(player, pillager)) {
                 var home = navigation.stable();
@@ -92,19 +93,23 @@ public final class DrakeRitualGoal extends Goal {
         if (sourceGate != null) {
             navigation.open(sourceGate);
             if (DrakeStableLayout.outsideGate(claim.stable, sourceGate, player.getBoundingBox(), .5)
-                    && DrakeStableLayout.outsideGate(claim.stable, sourceGate, pillager.getBoundingBox(), .5)) {
+                    && DrakeStableLayout.outsideGate(claim.stable, sourceGate, body.getBoundingBox(), .5)) {
                 navigation.close(sourceGate); sourceGate = null;
             } else { move(DrakeStableLayout.gatePoint(claim.stable, sourceGate, -3.5)); return; }
         }
         if (claim.stall().contains(player.getPos()) && player.squaredDistanceTo(DrakeSoulbinding.hayPosition(claim)) <= 2.25) {
+            DrakeBattleGoal.of(pillager).stopPursuit();
             takePosition(claim, 0); return;
         }
         var gate = DrakeStableLayout.gatePoint(claim.stable, claim.gate(), -1.5);
-        if (Math.abs(pillager.getX() - gate.x) < .3 && Math.abs(pillager.getZ() - gate.z) < .5
-                && pillager.getY() >= gate.y - .2 && pillager.squaredDistanceTo(player) < 16) atGate = true;
+        if (Math.abs(body.getX() - gate.x) < .3 && Math.abs(body.getZ() - gate.z) < .5
+                && body.getY() >= gate.y - .2 && body.squaredDistanceTo(player) < 16) atGate = true;
         var target = atGate ? DrakeSoulbinding.hayPosition(claim).add(0, 0, 1.8 * DrakeStableLayout.inward(claim.stable, claim.gate())) : gate;
-        if (pillager.squaredDistanceTo(player) > 49) navigation.stop();
-        else if (atGate || pillager.squaredDistanceTo(gate) < 2.25) {
+        if (body.squaredDistanceTo(player) > 49) {
+            DrakeBattleGoal.of(pillager).movePursuit(player, null, 0, false); navigation.stop();
+        }
+        else if (atGate || body.squaredDistanceTo(gate) < 2.25) {
+            if (DrakeBattleGoal.of(pillager).movePursuit(player, target, .8, true)) return;
             navigation.stop();
             pillager.getMoveControl().moveTo(target.x, target.y, target.z, .8);
         } else move(target);
@@ -121,7 +126,8 @@ public final class DrakeRitualGoal extends Goal {
 
     private void move(Vec3d target) {
         var navigation = pillager.getNavigation();
-        double distance = pillager.squaredDistanceTo(target);
+        double distance = pillager.getRootVehicle().squaredDistanceTo(target);
+        if (DrakeBattleGoal.of(pillager).movePursuit(player, distance <= .16 ? null : target, .8, distance < 4)) return;
         if (distance <= (DrakeSoulbinding.shoeing(player) ? .01 : .16)) navigation.stop();
         else if (distance < 4) {
             navigation.stop();

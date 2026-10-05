@@ -128,7 +128,7 @@ public final class DrakeRiding {
                 double dx = node.x - mount.getX(), dz = node.z - mount.getZ();
                 yaw = (float)(MathHelper.atan2(dz, dx) * 180 / Math.PI) - 90;
                 forward = direct != null ? .8f : MathHelper.clamp((float)pillager.getMoveControl().getSpeed(), 0, 1);
-                sprint = direct == null && path != null && path.getEnd() != null
+                sprint = (battle == null || !battle.leading()) && direct == null && path != null && path.getEnd() != null
                         && mount.squaredDistanceTo(Vec3d.ofBottomCenter(path.getTarget())) > 100
                         && (!(mount instanceof PlayerEntity player) || player.getHungerManager().getFoodLevel() > 6);
                 if (sprint) forward = 1;

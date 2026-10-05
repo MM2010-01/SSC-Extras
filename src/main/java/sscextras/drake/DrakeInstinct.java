@@ -15,6 +15,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
+import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
@@ -22,7 +23,19 @@ import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManag
 import sscextras.CreatureInstinct;
 
 public final class DrakeInstinct {
+    private static final float INSTINCT_COST = 5.0f;
+
     private DrakeInstinct() { }
+
+    public static float costMultiplier(PlayerEntity player) {
+        int stage = EarthenDrake.stage(player);
+        if (stage >= 0) return stage < 3 ? INSTINCT_COST : 1;
+        if (FormAbilityManager.getForm(player) != RegPlayerForms.ORIGINAL_SHIFTER) return 1;
+        var target = CreatureInstinct.getTarget(player);
+        if (target != null) return target.getGroup() == EarthenDrake.GROUP ? INSTINCT_COST : 1;
+        var curse = EffectManager.getTransformativeEffect(player);
+        return curse != null && curse.getTransformativeEffectType() == EarthenDrake.CURSE ? INSTINCT_COST : 1;
+    }
 
     public static float stallGain(PlayerEntity player, float amount) {
         if (amount <= 0 || !(player.getWorld() instanceof ServerWorld world)) return amount;
