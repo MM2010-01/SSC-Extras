@@ -23,7 +23,8 @@ public final class DrakeRoaming {
 
     public static boolean canSee(PillagerEntity pillager, PlayerEntity player) {
         double range = pillager.getAttributeValue(EntityAttributes.GENERIC_FOLLOW_RANGE);
-        return pillager.isAlive() && !pillager.isAiDisabled() && !pillager.hasVehicle()
+        return pillager.isAlive() && !pillager.isAiDisabled()
+                && (!pillager.hasVehicle() || DrakeBattleGoal.of(pillager).pursuing(player))
                 && pillager.squaredDistanceTo(player) <= range * range && pillager.getVisibilityCache().canSee(player);
     }
 
@@ -86,7 +87,8 @@ public final class DrakeRoaming {
 
     private static boolean tracking(PillagerEntity pillager, PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         int range = DrakeStableLayout.captureRange(claim.stable);
-        return pillager.isAlive() && !pillager.isAiDisabled() && !pillager.hasVehicle()
+        return pillager.isAlive() && !pillager.isAiDisabled()
+                && (!pillager.hasVehicle() || DrakeBattleGoal.of(pillager).pursuing(player))
                 && pillager.squaredDistanceTo(player) <= range * range
                 && belongs(pillager, claim) && DrakeCaptureGoal.near(claim.stable, player.getPos());
     }

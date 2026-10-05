@@ -128,7 +128,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public boolean shouldContinue() {
-        if (complete || player == null || pillager.hasVehicle()) return false;
+        if (complete || player == null || pillager.hasVehicle() && !DrakeBattleGoal.of(pillager).pursuing(player)) return false;
         if (leaving) return player.isAlive() && player.getWorld() == pillager.getWorld();
         return (!DrakeFaction.fighting(pillager) || DrakeLeashing.holder(player) == pillager) && wants(player)
                 && near(stable, player.getPos()) && !occupied()
@@ -194,6 +194,7 @@ public final class DrakeCaptureGoal extends Goal {
             return;
         }
         if (DrakeLeashing.holder(player) != pillager) {
+            if (DrakeBattleGoal.of(pillager).pursue(player)) return;
             pillager.getNavigation().startMovingTo(player, 1);
             if (pillager.squaredDistanceTo(player) <= 4 && pillager.getVisibilityCache().canSee(player)
                     && navigation().reaches(stable.keeperPosition(targetStall))) {
@@ -208,6 +209,7 @@ public final class DrakeCaptureGoal extends Goal {
             }
             return;
         }
+        DrakeBattleGoal.of(pillager).stopPursuit();
         gates(true);
         if (sourceGate != null) {
             navigation().open(sourceGate);
@@ -244,6 +246,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public void stop() {
+        DrakeBattleGoal.of(pillager).stopPursuit();
         if (player != null && DrakeLeashing.holder(player) == pillager) DrakeLeashing.detach(player, true);
         player = null; stable = null; sourceGate = null; targetStall = -1; nextSearch = pillager.age + 100;
         pillager.setSprinting(false);

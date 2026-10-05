@@ -208,7 +208,8 @@ public final class DrakeFaction {
         }
 
         @Override public boolean shouldContinue() {
-            return wearer != null && !pillager.hasVehicle() && !fighting(pillager) && missingPiece(wearer) != null
+            return wearer != null && (!pillager.hasVehicle() || DrakeBattleGoal.of(pillager).pursuing(wearer))
+                    && !fighting(pillager) && missingPiece(wearer) != null
                     && wearer.getWorld() == pillager.getWorld() && inRange(pillager, wearer);
         }
 
@@ -222,7 +223,8 @@ public final class DrakeFaction {
 
         private boolean isNearest(PlayerEntity player) {
             var candidates = pillager.getWorld().getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(DrakeCaptureGoal.RANGE * 2 + 24),
-                    candidate -> candidate.isAlive() && !(candidate instanceof DrakeVisitorEntity) && !candidate.isAiDisabled() && !candidate.hasVehicle()
+                    candidate -> candidate.isAlive() && !(candidate instanceof DrakeVisitorEntity) && !candidate.isAiDisabled()
+                            && (!candidate.hasVehicle() || DrakeBattleGoal.of(candidate).pursuing(player))
                             && inRange(candidate, player));
             for (var candidate : candidates)
                 if (((EquipmentDisplay)candidate).sscExtras$recruiting() == player) return candidate == pillager;
@@ -245,6 +247,7 @@ public final class DrakeFaction {
 
         @Override public void tick() {
             pillager.getLookControl().lookAt(wearer, 30, 30);
+            if (DrakeBattleGoal.of(pillager).pursue(wearer)) return;
             pillager.getNavigation().startMovingTo(wearer, 1.1);
             if (pillager.age < nextEquip || pillager.squaredDistanceTo(wearer) > 4 || !pillager.getVisibilityCache().canSee(wearer)) return;
             var missing = missingPiece(wearer);
@@ -261,6 +264,7 @@ public final class DrakeFaction {
         }
 
         @Override public void stop() {
+            DrakeBattleGoal.of(pillager).stopPursuit();
             equipping = false; wearer = null;
             ((EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
             pillager.getNavigation().stop();

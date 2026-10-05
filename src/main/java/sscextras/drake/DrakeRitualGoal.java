@@ -54,6 +54,7 @@ public final class DrakeRitualGoal extends Goal {
                 ? DrakeSoulbinding.catalyst(claim)
                 : (punishment ? index != 0 : index < 2) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         if (DrakeSoulbinding.restrained(player)) {
+            DrakeBattleGoal.of(pillager).stopPursuit();
             if (shoeing && index == 2) {
                 DrakeSoulbinding.role(pillager, pillager.squaredDistanceTo(DrakeSoulbinding.attendancePosition(claim, index)) <= 1.44
                         ? DrakeSoulbinding.SHOEING : 0);
@@ -67,6 +68,8 @@ public final class DrakeRitualGoal extends Goal {
         DrakeSoulbinding.role(pillager, 0);
         var guide = player.getServerWorld().getEntity(claim.attendants.get(0));
         boolean leashed = DrakeLeashing.holder(player) == guide;
+        if (!leashed && DrakeBattleGoal.of(pillager).pursue(player)) return;
+        if (leashed) DrakeBattleGoal.of(pillager).stopPursuit();
         if (index != 0) {
             move(leashed ? DrakeSoulbinding.attendancePosition(claim, index) : player.getPos().add(index == 1 ? 1.5 : -1.5, 0, 0));
             return;
@@ -131,6 +134,7 @@ public final class DrakeRitualGoal extends Goal {
     }
 
     @Override public void stop() {
+        DrakeBattleGoal.of(pillager).stopPursuit();
         DrakeSoulbinding.role(pillager, 0);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
         player = null; pillager.getNavigation().stop();

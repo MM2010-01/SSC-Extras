@@ -23,8 +23,8 @@ import java.util.EnumSet;
 
 public final class DrakeBattleGoal extends Goal {
     public interface Rider { DrakeBattleGoal sscExtras$battleGoal(); }
-    private enum Phase { APPROACH, EXIT, FIGHT, PATROL, RETURN, ALIGN, ENTER, LEAVE }
-    private enum Purpose { BATTLE, PATROL, RECALL }
+    private enum Phase { APPROACH, EXIT, FIGHT, PATROL, PURSUIT, RETURN, ALIGN, ENTER, LEAVE }
+    private enum Purpose { BATTLE, PATROL, RECALL, PURSUIT }
     private final PillagerEntity pillager;
     private final CrossbowAttackGoal<PillagerEntity> attack;
     private DrakeStablePiece stable;
@@ -37,6 +37,7 @@ public final class DrakeBattleGoal extends Goal {
     private Purpose purpose;
     private int nextSearch, nextPatrolSearch, started, nextPath, nextEnemySearch, lastSeen, hungerBefore, patrolUntil;
     private boolean complete, fighting, won, engaged, pendingRecall;
+    private int nextPursuitSearch;
 
     public DrakeBattleGoal(PillagerEntity pillager) {
         this.pillager = pillager;
@@ -51,7 +52,8 @@ public final class DrakeBattleGoal extends Goal {
                 && homeStall == stall && stable.getBoundingBox().equals(home.getBoundingBox());
     }
     public boolean returning() { return phase == Phase.RETURN || phase == Phase.ALIGN || phase == Phase.ENTER || phase == Phase.LEAVE; }
-    public boolean pathing() { return returning() || phase == Phase.PATROL; }
+    public boolean pathing() { return returning() || phase == Phase.PATROL || phase == Phase.PURSUIT; }
+    public boolean pursuing(PlayerEntity target) { return target != null && purpose == Purpose.PURSUIT && phase != null && enemy == target; }
     public boolean patrolling() { return purpose == Purpose.PATROL && phase != null; }
     public void shot(LivingEntity target) { if (purpose == Purpose.BATTLE && phase == Phase.FIGHT && target == enemy) engaged = true; }
     public boolean holdsOpen(BlockPos gate) {
@@ -119,11 +121,17 @@ public final class DrakeBattleGoal extends Goal {
     private boolean available(LivingEntity candidate) {
         if (!candidate.isAlive() || candidate.hasPassengers() || candidate.hasVehicle()
                 || !(DrakeEquipment.canRide(candidate) || candidate instanceof PlayerEntity player && DrakeRiding.canCarryPillager(player))
-                || !DrakeEquipment.hasReins(candidate) || !DrakeCaptureGoal.near(stable, candidate.getPos()) || assigned(candidate) || candidate instanceof PlayerEntity player && DrakeSoulbinding.ritualActive(player)) return false;
+                || !DrakeEquipment.hasReins(candidate) || !DrakeCaptureGoal.near(stable, candidate.getPos())
+                || assigned(candidate) && ((DrakeRiding.State)candidate).sscExtras$battleRider() != pillager
+                || candidate instanceof PlayerEntity player && DrakeSoulbinding.ritualActive(player)) return false;
         if (candidate instanceof PlayerEntity player) {
             var claim = DrakeOutpostOwnership.claim(player);
             var holder = DrakeLeashing.holder(player);
             return !player.isCreative() && !player.isSpectator() && !player.isSleeping() && owned(player)
+                    && !claim.tryingToEscape && !claim.returning
+                    && pillager.getWorld().getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(DrakeCaptureGoal.RANGE),
+                        guard -> guard.isAlive() && (((DrakeCaptureGoal.Captor)guard).sscExtras$captureGoal().quarry() == player
+                            || ((DrakeFaction.EquipmentDisplay)guard).sscExtras$recruiting() == player)).isEmpty()
                     && (holder == null || holder instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(claim.tie())
                         || holder == pillager && DrakeRoaming.following(pillager) == player);
         }
@@ -133,6 +141,7 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     @Override public boolean canStart() {
+        if (phase != null) return false;
         if (pendingRecall) {
             if (mount instanceof PlayerEntity player && DrakeCaptureGoal.eligible(player) && DrakeRiding.canCarryPillager(player)
                     && !mount.hasPassengers() && !mount.hasVehicle() && !pillager.hasVehicle()) return true;
@@ -158,23 +167,20 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     private boolean chooseMount() {
-        if (purpose == Purpose.BATTLE) {
-            var escorted = DrakeRoaming.following(pillager);
-            if (escorted != null && available(escorted) && navigation().reaches(escorted.getBlockPos())) {
-                setMount(escorted);
-                if (navigation().reaches(stable.keeperPosition(homeStall))) return true;
-            }
-        }
         var candidates = new ArrayList<LivingEntity>();
         candidates.addAll(pillager.getWorld().getEntitiesByClass(StableDrakeEntity.class,
                 Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE), this::available));
         for (var player : pillager.getWorld().getPlayers()) if (available(player)) candidates.add(player);
+        if (purpose == Purpose.PURSUIT) candidates.remove(enemy);
+        candidates.sort(Comparator.comparingInt(this::mountPriority));
         while (!candidates.isEmpty()) {
-            int total = candidates.stream().mapToInt(candidate -> DrakeAttention.called(candidate) ? 3 : 1).sum();
+            int priority = mountPriority(candidates.get(0));
+            int total = candidates.stream().filter(candidate -> mountPriority(candidate) == priority)
+                    .mapToInt(candidate -> DrakeAttention.called(candidate) ? 3 : 1).sum();
             int choice = pillager.getRandom().nextInt(total), index = 0;
             while ((choice -= DrakeAttention.called(candidates.get(index)) ? 3 : 1) >= 0) index++;
             var candidate = candidates.remove(index);
-            if (purpose != Purpose.BATTLE && (!pillager.getVisibilityCache().canSee(candidate)
+            if (purpose != Purpose.BATTLE && purpose != Purpose.PURSUIT && (!pillager.getVisibilityCache().canSee(candidate)
                     || pillager.squaredDistanceTo(candidate) > 32 * 32)) continue;
             if (purpose == Purpose.RECALL && (!(candidate instanceof StableDrakeEntity drake)
                     || pillager.getWorld().isDay() && DrakeCaptureGoal.near(stable.getBoundingBox(), candidate.getPos(), 8)
@@ -187,6 +193,41 @@ public final class DrakeBattleGoal extends Goal {
             if (navigation().reaches(stable.keeperPosition(homeStall))) return true;
         }
         mount = null; return false;
+    }
+
+    private int mountPriority(LivingEntity candidate) {
+        int stall = candidate instanceof StableDrakeEntity drake ? drake.homeStall() : DrakeOutpostOwnership.claim((PlayerEntity)candidate).stallIndex;
+        return (candidate instanceof PlayerEntity ? 0 : 2) + (stable.stall(stall).contains(candidate.getPos()) ? 0 : 1);
+    }
+
+    // The recruitment, capture or ritual goal owns this ride and continues its work after dismounting.
+    public boolean pursue(PlayerEntity target) {
+        if (pursuing(target)) {
+            if (!shouldContinue() || !target.isAlive() || target.getWorld() != pillager.getWorld()
+                    || phase != Phase.APPROACH && !DrakeRiding.canControl(mount, pillager)
+                    || mount.squaredDistanceTo(target) <= 4 && pillager.getVisibilityCache().canSee(target)) {
+                stopPursuit(); return false;
+            }
+            tick();
+            if (complete) { stopPursuit(); return false; }
+            return true;
+        }
+        if (phase != null || pendingRecall || pillager.hasVehicle() || pillager.age < nextPursuitSearch
+                || pillager.squaredDistanceTo(target) <= 64) return false;
+        nextPursuitSearch = pillager.age + 40;
+        stable = navigation().stable();
+        if (stable == null) return false;
+        purpose = Purpose.PURSUIT; enemy = target;
+        if (!chooseMount()) { enemy = null; return false; }
+        start(); tick();
+        if (complete) { stopPursuit(); return false; }
+        return true;
+    }
+
+    public void stopPursuit() {
+        if (purpose == Purpose.PURSUIT && phase != null) {
+            stop(); nextPursuitSearch = pillager.age + 100;
+        }
     }
 
     private void setMount(LivingEntity candidate) {
@@ -213,7 +254,7 @@ public final class DrakeBattleGoal extends Goal {
         ((DrakeRiding.State)mount).sscExtras$battleRider(pillager);
         pillager.clearActiveItem(); pillager.setCharging(false); pillager.setTarget(null);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(net.minecraft.item.ItemStack.EMPTY);
-        DrakeDialogue.say(mount, purpose == Purpose.BATTLE ? "mount_battle" : purpose == Purpose.RECALL ? "mount_recall"
+        if (purpose != Purpose.PURSUIT) DrakeDialogue.say(mount, purpose == Purpose.BATTLE ? "mount_battle" : purpose == Purpose.RECALL ? "mount_recall"
                 : (pillager.getId() & 1) == 0 ? "mount_guard" : "mount_roam");
     }
 
@@ -244,7 +285,8 @@ public final class DrakeBattleGoal extends Goal {
             }
         }
         if (phase == Phase.APPROACH) {
-            if (mount.hasPassengers() || mount.hasVehicle() || mount instanceof PlayerEntity player && player.isSleeping()) {
+            if (mount.hasPassengers() || mount.hasVehicle() || mount instanceof PlayerEntity player && player.isSleeping()
+                    || (purpose != Purpose.RECALL || mount instanceof StableDrakeEntity) && !available(mount)) {
                 complete = true; return;
             }
             pathTo(mount.getPos(), 1);
@@ -283,6 +325,12 @@ public final class DrakeBattleGoal extends Goal {
             pillager.setTarget(enemy);
             if (!fighting) { attack.start(); fighting = true; }
             attack.tick();
+            return;
+        }
+        if (phase == Phase.PURSUIT) {
+            pillager.setTarget(null);
+            pillager.getLookControl().lookAt(enemy, 30, 30);
+            pathTo(enemy.getPos(), 1);
             return;
         }
         if (phase == Phase.PATROL) {
@@ -354,6 +402,7 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     private Phase afterExit() {
+        if (purpose == Purpose.PURSUIT) return Phase.PURSUIT;
         if (purpose == Purpose.PATROL) { patrolUntil = pillager.age + 400 + pillager.getRandom().nextInt(401); return Phase.PATROL; }
         return purpose == Purpose.RECALL ? Phase.RETURN : Phase.FIGHT;
     }
@@ -389,10 +438,11 @@ public final class DrakeBattleGoal extends Goal {
         if (fighting) attack.stop();
         if (pillager.getVehicle() == mount) pillager.stopRiding();
         if (mount != null) {
-            mount.setSprinting(false);
+            if (!mount.hasPassengers()) mount.setSprinting(false);
             ((DrakeRiding.State)mount).sscExtras$nextPatrol(pillager.getWorld().getTime() + 1200);
-            ((DrakeRiding.State)mount).sscExtras$setRiderInput(null);
-            ((DrakeRiding.State)mount).sscExtras$battleRider(null);
+            var input = ((DrakeRiding.State)mount).sscExtras$getRiderInput();
+            if (input != null && input.rider() == pillager.getId()) ((DrakeRiding.State)mount).sscExtras$setRiderInput(null);
+            if (((DrakeRiding.State)mount).sscExtras$battleRider() == pillager) ((DrakeRiding.State)mount).sscExtras$battleRider(null);
             if (mount instanceof PlayerEntity player && !DrakeRiding.canCarryPillager(player))
                 ((DrakeCaptureGoal.Captor)pillager).sscExtras$captureGoal().recallAfterDismount();
         }
