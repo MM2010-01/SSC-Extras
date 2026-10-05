@@ -48,6 +48,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public boolean soulbound, awaitingRespawn, feral;
         public boolean shoeingDue;
         boolean shoeingRitual;
+        DrakeSoulbinding.Ritual commandRitual;
         int shoeingTicks, shoeingStage;
         public int soulboundStage = 3;
         public NbtCompound previousSpawn = new NbtCompound();

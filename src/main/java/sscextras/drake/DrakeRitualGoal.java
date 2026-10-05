@@ -46,7 +46,7 @@ public final class DrakeRitualGoal extends Goal {
         navigation.open(claim.gate());
         pillager.getLookControl().lookAt(player, 30, 30);
         boolean shoeing = claim.shoeingRitual;
-        boolean punishment = !shoeing && DrakeFeralization.due(claim);
+        boolean punishment = !shoeing && DrakeSoulbinding.punishment(claim);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(shoeing && index == 2 && DrakeSoulbinding.restrained(player)
                 ? DrakeEquipment.SHOES.getDefaultStack()
                 : shoeing && DrakeSoulbinding.restrained(player) ? ItemStack.EMPTY

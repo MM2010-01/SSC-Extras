@@ -16,6 +16,7 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -28,6 +29,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManage
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import sscextras.CreatureInstinct;
 import sscextras.SscExtrasConfig;
+import sscextras.collar.Collars;
 
 public final class StableDrakeEntity extends PathAwareEntity implements GeoEntity {
     private static final TrackedData<Boolean> SADDLED = DataTracker.registerData(StableDrakeEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -53,6 +55,19 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         reins = new ItemStack(DrakeEquipment.REINS);
         dataTracker.set(SADDLED, true);
         dataTracker.set(REINED, true);
+        equipStableAccessories();
+    }
+
+    private void equipStableAccessories() {
+        if (getWorld().isClient) return;
+        if (getEquippedStack(EquipmentSlot.MAINHAND).isEmpty()) equipStack(EquipmentSlot.MAINHAND, DrakeEquipment.SHOES.getDefaultStack());
+        if (getEquippedStack(EquipmentSlot.FEET).isEmpty()) equipStack(EquipmentSlot.FEET, DrakeEquipment.SHOES.getDefaultStack());
+        if (getEquippedStack(EquipmentSlot.HEAD).isEmpty()) {
+            var collar = new ItemStack(Collars.CURSED);
+            Collars.CURSED.ensureBinding(collar);
+            collar.getOrCreateNbt().putString(Collars.INFUSION, Registries.STATUS_EFFECT.getId(EarthenDrake.CURSE).toString());
+            equipStack(EquipmentSlot.HEAD, collar);
+        }
     }
 
     public static DefaultAttributeContainer.Builder attributes() {
@@ -247,6 +262,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
 
     @Override public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
+        equipStableAccessories();
         saddle = ItemStack.fromNbt(nbt.getCompound("DrakeSaddle"));
         reins = ItemStack.fromNbt(nbt.getCompound("DrakeReins"));
         chest = ItemStack.fromNbt(nbt.getCompound("DrakeChest"));

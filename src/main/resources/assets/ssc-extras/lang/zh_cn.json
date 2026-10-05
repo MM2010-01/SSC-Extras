@@ -183,5 +183,14 @@
   "message.ssc-extras.drake.shoeing_paw_1": "看守握住另一条前肢，为前爪穿上铁靴。很快，你就只能用嘴叼物品了。",
   "message.ssc-extras.drake.shoeing_paw_2": "看守抓住你的第一条后肢，将相同的铁靴套上后爪。",
   "message.ssc-extras.drake.shoeing_paw_3": "看守握住最后一条后肢，为后爪穿上铁靴。绑定诅咒封住了四只爪靴。",
-  "message.ssc-extras.drake.shoeing_complete": "铁靴使你的爪子无法使用方块或工具，但仍可使用干草。物品只能用嘴叼着。空爪攻击更强，冲刺的饥饿消耗减少30%。"
+  "message.ssc-extras.drake.shoeing_complete": "铁靴使你的爪子无法使用方块或工具，但仍可使用干草。物品只能用嘴叼着。空爪攻击更强，冲刺的饥饿消耗减少30%。",
+  "ritual.ssc-extras.irondrakeshoefitting": "地龙铁靴穿戴仪式",
+  "ritual.ssc-extras.soulbinding": "灵魂绑定仪式",
+  "ritual.ssc-extras.feralization": "完全兽化仪式",
+  "message.ssc-extras.ritual_command.no_stall": "没有分配给你的畜栏，无法举行仪式。",
+  "message.ssc-extras.ritual_command.not_ready": "死亡或处于旁观模式时无法举行仪式。",
+  "message.ssc-extras.ritual_command.busy": "你正在参加仪式或被骑乘。",
+  "message.ssc-extras.ritual_command.unavailable": "你的畜栏目前无法使用。仪式需要畜栏里的干草和看守。",
+  "message.ssc-extras.ritual_command.started": "已在分配给你的畜栏开始%s。",
+  "message.ssc-extras.drake.ritual_soul_returned": "完全化为地龙的灵魂回到你的体内。看守开始封缚这份契约。"
 }

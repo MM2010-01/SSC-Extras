@@ -89,11 +89,11 @@ public final class DrakeRoaming {
     private static void escort(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (!roaming(player, claim)) { claim.escort = 0; return; }
         if (DrakeLeashing.holder(player) instanceof PillagerEntity holder) {
-            claim.escort = escortAvailable(holder, player, claim) ? holder.getId() : 0;
+            claim.escort = escortAvailable(holder, player, claim, true) ? holder.getId() : 0;
             return;
         }
         var previous = player.getWorld().getEntityById(claim.escort);
-        if (previous instanceof PillagerEntity guard && escortAvailable(guard, player, claim)) return;
+        if (previous instanceof PillagerEntity guard && escortAvailable(guard, player, claim, true)) return;
         boolean replaced = claim.escort != 0;
         claim.escort = 0;
         long time = player.getWorld().getTime();
@@ -101,13 +101,14 @@ public final class DrakeRoaming {
         claim.nextEscortSearch = time + 20;
         var guard = player.getWorld().getEntitiesByClass(PillagerEntity.class,
                 Box.from(claim.stable).expand(DrakeStableLayout.captureRange(claim.stable)), candidate ->
-                        escortAvailable(candidate, player, claim) && following(candidate) == null).stream()
+                        escortAvailable(candidate, player, claim, false) && following(candidate) == null).stream()
                 .min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
         if (guard != null) claim.escort = guard.getId();
     }
 
-    private static boolean escortAvailable(PillagerEntity guard, PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
-        return DrakeSoulbinding.available(guard) && DrakeSoulbinding.attendee(guard) == null && belongs(guard, claim)
+    private static boolean escortAvailable(PillagerEntity guard, PlayerEntity player, DrakeOutpostOwnership.Claim claim, boolean defending) {
+        return DrakeSoulbinding.available(guard, defending && DrakeRiding.canCarryPillager(player))
+                && DrakeSoulbinding.attendee(guard) == null && belongs(guard, claim)
                 && DrakeCaptureGoal.near(claim.stable, player.getPos());
     }
 
@@ -115,7 +116,7 @@ public final class DrakeRoaming {
         for (var player : pillager.getWorld().getPlayers()) {
             var claim = DrakeOutpostOwnership.claim(player);
             if (claim == null) continue;
-            if (claim.escort == pillager.getId() && roaming(player, claim) && escortAvailable(pillager, player, claim)) return player;
+            if (claim.escort == pillager.getId() && roaming(player, claim) && escortAvailable(pillager, player, claim, true)) return player;
             if ((claim.outside || claim.warnedEdge) && !DrakeLeashing.attached(player) && claim.witness == pillager.getId()
                     && player.getWorld().getTime() < claim.recallUntil && tracking(pillager, player, claim)) return player;
         }

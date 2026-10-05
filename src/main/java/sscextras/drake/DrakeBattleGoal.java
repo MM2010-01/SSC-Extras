@@ -1,6 +1,7 @@
 package sscextras.drake;
 
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ai.goal.CrossbowAttackGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.decoration.LeashKnotEntity;
@@ -117,7 +118,8 @@ public final class DrakeBattleGoal extends Goal {
             var claim = DrakeOutpostOwnership.claim(player);
             var holder = DrakeLeashing.holder(player);
             return !player.isCreative() && !player.isSpectator() && !player.isSleeping() && owned(player)
-                    && (holder == null || holder instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(claim.tie()));
+                    && (holder == null || holder instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(claim.tie())
+                        || holder == pillager && DrakeRoaming.following(pillager) == player);
         }
         return candidate instanceof StableDrakeEntity drake && drake.belongsTo(stable)
                 && (!drake.isLeashed() || drake.getHoldingEntity() instanceof LeashKnotEntity knot
@@ -130,7 +132,9 @@ public final class DrakeBattleGoal extends Goal {
                     && !mount.hasPassengers() && !mount.hasVehicle() && !pillager.hasVehicle()) return true;
             stop(); return false;
         }
-        if (pillager.hasVehicle() || pillager.age < nextSearch || !pillager.isHolding(net.minecraft.item.Items.CROSSBOW)) return false;
+        if (pillager.hasVehicle() || pillager.age < nextSearch
+                || !pillager.getEquippedStack(EquipmentSlot.MAINHAND).isOf(net.minecraft.item.Items.CROSSBOW)
+                    && !pillager.getEquippedStack(EquipmentSlot.OFFHAND).isOf(net.minecraft.item.Items.CROSSBOW)) return false;
         nextSearch = pillager.age + 40;
         stable = navigation().stable();
         if (stable == null) return false;
@@ -148,6 +152,13 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     private boolean chooseMount() {
+        if (purpose == Purpose.BATTLE) {
+            var escorted = DrakeRoaming.following(pillager);
+            if (escorted != null && available(escorted) && navigation().reaches(escorted.getBlockPos())) {
+                setMount(escorted);
+                if (navigation().reaches(stable.keeperPosition(homeStall))) return true;
+            }
+        }
         var candidates = new ArrayList<LivingEntity>();
         candidates.addAll(pillager.getWorld().getEntitiesByClass(StableDrakeEntity.class,
                 Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE), this::available));

@@ -69,6 +69,6 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
         if (self instanceof PlayerEntity player && EarthenDrake.stage(player) == 3) cir.setReturnValue(1.15);
         else if (self instanceof PlayerEntity player && EarthenDrake.stage(player) == 2 && self.hasPassengers()) cir.setReturnValue(.95);
         else if (self instanceof PlayerEntity player && DrakeRiding.mountForm(player) && self.hasPassengers())
-            cir.setReturnValue(EarthenDrake.stage(player) == 1 ? .8 : .72);
+            cir.setReturnValue(EarthenDrake.stage(player) == 1 ? .87 : .78);
     }
 }

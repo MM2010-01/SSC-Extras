@@ -15,6 +15,7 @@ public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         DrakeEquipmentClient.register();
         DrakeLeashRenderer.register();
+        DrakeSoulRenderer.register();
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
                 sscextras.drake.DrakeStable.DRAKE, StableDrakeRenderer::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
@@ -32,6 +33,7 @@ public final class SscExtrasClient implements ClientModInitializer {
         });
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
             if (renderer instanceof PlayerEntityRenderer playerRenderer) {
+                DrakeSoulRenderer.initialize(context);
                 helper.register(new CollarFeatureRenderer(playerRenderer));
                 helper.register(new CuffsFeatureRenderer(playerRenderer));
                 helper.register(new DrakeGearFeatureRenderer(playerRenderer));

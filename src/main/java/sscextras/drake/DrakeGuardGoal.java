@@ -4,6 +4,8 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -63,6 +65,7 @@ public final class DrakeGuardGoal extends Goal {
         pillager.clearActiveItem(); pillager.setCharging(false);
         nextPath = 0;
         correcting = following != null && DrakeLeashing.holder(following) == pillager;
+        if (following != null) ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(new ItemStack(Items.LEAD));
         if (following == null) navigation().startMovingAlong(patrol, .65);
     }
 
@@ -116,6 +119,7 @@ public final class DrakeGuardGoal extends Goal {
                 && !(claim != null && claim.tryingToEscape && DrakeCaptureGoal.eligible(following))
                 && ((DrakeCaptureGoal.Captor)pillager).sscExtras$captureGoal().quarry() != following)
             DrakeLeashing.detach(following, false);
+        if (following != null) ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
         correcting = false; following = null; patrol = null; pillager.setSprinting(false); navigation().stop();
     }
 }

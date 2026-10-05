@@ -16,6 +16,7 @@ public final class SscExtras implements ModInitializer {
         sscextras.drake.DrakeStable.register();
         sscextras.drake.DrakeOutpostOwnership.register();
         sscextras.drake.DrakeHaySleep.register();
+        sscextras.drake.DrakeRitualCommands.register();
     }
 
     public static float instinctPerHit() {

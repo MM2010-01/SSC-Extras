@@ -8,9 +8,11 @@ import mod.azure.azurelib.renderer.layer.GeoRenderLayer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import sscextras.drake.*;
+import sscextras.collar.Collars;
 
 public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEntity> {
     public StableDrakeRenderer(EntityRendererFactory.Context context) {
@@ -19,9 +21,23 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
         shadowRadius = .8f;
         addRenderLayer(new GeoRenderLayer<StableDrakeEntity>(this) {
             private final DrakeGearModel gear = new DrakeGearModel(3);
+            private final DrakeShoeModel shoes = new DrakeShoeModel(3);
+            private final CollarModel collar = new CollarModel();
             @Override public void renderForBone(MatrixStack matrices, StableDrakeEntity drake, GeoBone bone, RenderLayer type,
                     VertexConsumerProvider buffers, VertexConsumer buffer, float tickDelta, int light, int overlay) {
                 gear.render(bone.getName(), matrices, buffers, light, drake.hasReins(), drake.isSaddled(), drake.hasChest(), false, drake.hasVanillaSaddle(), drake.hasBlinkers(), drake.hasClosedBlinkers());
+                shoes.render(bone.getName(), matrices, buffers, light,
+                        drake.getEquippedStack(EquipmentSlot.MAINHAND).isOf(DrakeEquipment.SHOES),
+                        drake.getEquippedStack(EquipmentSlot.FEET).isOf(DrakeEquipment.SHOES));
+                if (bone.getName().equals("bipedBody") && drake.getEquippedStack(EquipmentSlot.HEAD).isOf(Collars.CURSED)) {
+                    matrices.push();
+                    matrices.translate(0, .7125, .340625);
+                    matrices.scale(1, -1, -1);
+                    matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(35));
+                    matrices.scale(.78f, .65f, .88f);
+                    collar.render(matrices, buffers, light, true);
+                    matrices.pop();
+                }
                 buffers.getBuffer(type);
             }
         });

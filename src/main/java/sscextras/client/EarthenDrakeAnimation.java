@@ -115,6 +115,31 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
         model.hat.copyTransform(model.head); model.jacket.copyTransform(model.body);
     }
 
+    public static void poseSoulBody(PlayerEntityModel<?> model, PlayerEntity player, float limbAngle, float limbDistance,
+            float age, float yaw, float pitch) {
+        int stage = EarthenDrake.stage(player);
+        if (stage < 0 || stage >= 2 || !sscextras.drake.DrakeSoulbinding.bound(player)
+                || sscextras.drake.DrakeSoulbinding.shoeing(player) || player.isSleeping()) return;
+        poseAllFours(model, limbAngle, limbDistance, age, yaw, pitch);
+    }
+
+    public static void poseAllFours(PlayerEntityModel<?> model, float limbAngle, float limbDistance, float age, float yaw, float pitch) {
+        float swing = MathHelper.cos(limbAngle * .6662f) * Math.min(.6f, limbDistance) * .75f;
+        model.body.setPivot(0, 11, -6);
+        model.body.pitch = MathHelper.HALF_PI; model.body.yaw = model.body.roll = 0;
+        model.head.setPivot(0, 11, -6);
+        model.head.pitch = MathHelper.clamp(pitch, -35, 35) * MathHelper.RADIANS_PER_DEGREE;
+        model.head.yaw = MathHelper.clamp(yaw, -50, 50) * MathHelper.RADIANS_PER_DEGREE; model.head.roll = 0;
+        model.leftArm.setPivot(5, 11, -4); model.rightArm.setPivot(-5, 11, -4);
+        model.leftLeg.setPivot(1.9f, 11, 6); model.rightLeg.setPivot(-1.9f, 11, 6);
+        model.leftArm.pitch = swing; model.rightArm.pitch = -swing;
+        model.leftLeg.pitch = -swing; model.rightLeg.pitch = swing;
+        for (var limb : new ModelPart[]{model.leftArm, model.rightArm, model.leftLeg, model.rightLeg}) limb.yaw = limb.roll = 0;
+        model.leftSleeve.copyTransform(model.leftArm); model.rightSleeve.copyTransform(model.rightArm);
+        model.leftPants.copyTransform(model.leftLeg); model.rightPants.copyTransform(model.rightLeg);
+        model.hat.copyTransform(model.head); model.jacket.copyTransform(model.body);
+    }
+
     private static void copyShoeingPose(GeoBone bone, ModelPart limb) {
         if (bone == null) return;
         bone.setRotX(limb.pitch); bone.setRotY(-limb.yaw); bone.setRotZ(-limb.roll);
