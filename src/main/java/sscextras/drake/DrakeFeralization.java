@@ -32,6 +32,7 @@ public final class DrakeFeralization {
         Control sscExtras$feralRuntime();
         boolean sscExtras$feral();
         void sscExtras$feral(boolean value);
+        void sscExtras$refreshFeralDimensions(net.minecraft.entity.data.TrackedData<?> data);
         int sscExtras$sentience();
         void sscExtras$sentience(int value);
         boolean sscExtras$feralControl();
@@ -53,6 +54,12 @@ public final class DrakeFeralization {
     public static boolean edible(ItemStack stack) { return stack.isFood(); }
     public static boolean restricted(PlayerEntity player) { return feral(player) && !player.isCreative() && !player.isSpectator(); }
     public static boolean controlled(PlayerEntity player) { return ((State)player).sscExtras$feralControl(); }
+
+    public static boolean forcedQuadruped(PlayerEntity player) {
+        return ((State)player).sscExtras$feral() && EarthenDrake.stage(player) < 0
+                && FormAbilityManager.getForm(player).getBodyType()
+                    != net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBodyType.FERAL;
+    }
 
     public static int recovery(PlayerEntity player) { return permanent(player) ? ((State)player).sscExtras$sentience() : 0; }
     public static boolean blocksRestricted(PlayerEntity player) { return restricted(player) && (controlled(player) || recovery(player) < 1); }
@@ -95,8 +102,13 @@ public final class DrakeFeralization {
             var state = (State)player;
             state.sscExtras$feral(true);
             int recovered = recovery(player) + 1;
-            if (recovered >= 4) { DrakeSoulbinding.clearFeralization(player); return; }
+            if (recovered >= 4) {
+                DrakeSoulbinding.clearFeralization(player);
+                player.sendMessage(SentientCatalyst.hint(4), false);
+                return;
+            }
             state.sscExtras$sentience(recovered);
+            player.sendMessage(SentientCatalyst.hint(recovered), false);
         }
         player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
         var claim = DrakeOutpostOwnership.claim(player);
@@ -140,6 +152,16 @@ public final class DrakeFeralization {
         }
         return action == SlotActionType.PICKUP || action == SlotActionType.THROW
                 || action == SlotActionType.QUICK_MOVE && (edible(stack) || recovery(player) >= 1 && stack.getItem() instanceof net.minecraft.item.BlockItem);
+    }
+
+    public static ActionResult eatAtBlock(PlayerEntity player, net.minecraft.util.Hand hand) {
+        if ((!blocksRestricted(player) && !DrakeShoes.restricted(player)) || controlled(player)
+                || DrakeSoulbinding.restrained(player) || !DrakeShoes.canUse(player, hand)) return ActionResult.PASS;
+        var stack = player.getStackInHand(hand);
+        if (!edible(stack) || !canUse(player, stack)) return ActionResult.PASS;
+        var result = stack.use(player.getWorld(), player, hand).getResult();
+        // Fabric sends the block-use packet only for SUCCESS on the client.
+        return result.isAccepted() ? ActionResult.success(player.getWorld().isClient) : result;
     }
 
     private static boolean canTakeOver(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
@@ -244,7 +266,10 @@ public final class DrakeFeralization {
         BeastizationCatalyst.register();
         SentientCatalyst.register();
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> restricted(player) && controlled(player) ? ActionResult.FAIL : ActionResult.PASS);
-        UseBlockCallback.EVENT.register((player, world, hand, hit) -> useBlock(player, hit.getBlockPos()));
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            var eating = eatAtBlock(player, hand);
+            return eating != ActionResult.PASS ? eating : useBlock(player, hit.getBlockPos());
+        });
         UseItemCallback.EVENT.register((player, world, hand) -> !canUse(player, player.getStackInHand(hand))
                 ? TypedActionResult.fail(player.getStackInHand(hand)) : TypedActionResult.pass(player.getStackInHand(hand)));
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> useEntity(player, entity, hand));

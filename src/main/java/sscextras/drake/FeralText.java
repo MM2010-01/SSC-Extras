@@ -27,7 +27,7 @@ public final class FeralText {
         original.accept((index, style, point) -> { text.appendCodePoint(point); points.add(point); styles.add(style); return true; });
         String value = text.toString();
         if (value.codePoints().noneMatch(Character::isLetter)
-                || styles.stream().allMatch(style -> DrakeFeralization.TAKEOVER_TEXT_MARKER.equals(style.getInsertion()))
+                || styles.stream().allMatch(FeralText::readableHint)
                 || value.equals(Text.translatable("message.ssc-extras.drake.feral_takeover").getString())
                 || value.equals(Text.translatable("item.ssc-extras.feral_raw_food").getString())
                 || value.equals(Text.translatable("item.ssc-extras.feral_other_food").getString())) return original;
@@ -40,12 +40,17 @@ public final class FeralText {
             for (int i = 0; i < points.size(); i++) {
                 int point = points.get(i);
                 int order = Math.floorMod(Integer.rotateLeft(point * 0x9e3779b9, i & 31) ^ i * 0x85ebca6b, 100);
-                var style = styles.get(i).withObfuscated(!readable[offset] && (styles.get(i).isObfuscated() || order < strength * 100))
+                var style = readableHint(styles.get(i)) ? styles.get(i) : styles.get(i).withObfuscated(!readable[offset] && (styles.get(i).isObfuscated() || order < strength * 100))
                         .withHoverEvent(null).withClickEvent(null).withInsertion(null);
                 if (!visitor.accept(offset, style, point)) return false;
                 offset += Character.charCount(point);
             }
             return true;
         };
+    }
+
+    private static boolean readableHint(Style style) {
+        return DrakeFeralization.TAKEOVER_TEXT_MARKER.equals(style.getInsertion())
+                || SentientCatalyst.HINT_MARKER.equals(style.getInsertion());
     }
 }

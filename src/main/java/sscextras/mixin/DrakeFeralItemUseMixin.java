@@ -14,6 +14,7 @@ public abstract class DrakeFeralItemUseMixin {
     @Inject(method = "useOnBlock", at = @At("HEAD"), cancellable = true)
     private void sscExtras$blockItemsOnly(ItemUsageContext context, CallbackInfoReturnable<ActionResult> cir) {
         var player = context.getPlayer();
-        if (player != null && !DrakeFeralization.canUse(player, (ItemStack)(Object)this)) cir.setReturnValue(ActionResult.FAIL);
+        if (player != null && (!DrakeFeralization.canUse(player, (ItemStack)(Object)this)
+                || sscextras.drake.FormItemRestrictions.prevents(player, (ItemStack)(Object)this))) cir.setReturnValue(ActionResult.FAIL);
     }
 }

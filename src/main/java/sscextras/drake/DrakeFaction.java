@@ -61,7 +61,7 @@ public final class DrakeFaction {
     public static boolean fighting(PillagerEntity pillager) {
         var target = pillager.getTarget();
         return target != null && target.isAlive() && !pillager.isTeammate(target)
-                && !(target instanceof PlayerEntity player && friendly(player));
+                && !(target instanceof PlayerEntity player && (friendly(player) || missingPiece(player) != null));
     }
 
     public static boolean blocksDamage(Entity target, DamageSource source) {

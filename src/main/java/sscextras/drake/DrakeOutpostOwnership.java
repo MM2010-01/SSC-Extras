@@ -170,8 +170,9 @@ public final class DrakeOutpostOwnership extends PersistentState {
         }
         release(player);
         var data = get(player.getServer());
+        String collarName = sscextras.collar.Collars.mountName(player);
         var claim = new Claim(player.getWorld().getRegistryKey(), stable.getBoundingBox(),
-                DrakeMountNames.choose(player.getRandom(), stable.residentNames()));
+                collarName.isEmpty() ? DrakeMountNames.choose(player.getRandom(), stable.residentNames()) : collarName);
         claim.stallIndex = stall;
         claim.nextCatalyst = player.getWorld().getTime() + DrakeFeedGoal.catalystDelay(player);
         claim.lastServiceTime = player.getWorld().getTimeOfDay();
@@ -194,6 +195,21 @@ public final class DrakeOutpostOwnership extends PersistentState {
             if (!stable.stall(stall).contains(player.getPos()) || !available(world, stable, stall, player)) continue;
             capture(player, stable, stall);
             return;
+        }
+    }
+
+    private static void registerCollared(PlayerEntity player) {
+        if (!(player.getWorld() instanceof ServerWorld world) || !player.isAlive() || player.isCreative()
+                || player.isSpectator() || BondOfTheBeastCompat.hasOwner(player)
+                || sscextras.collar.Collars.mountName(sscextras.collar.CollarSlots.visibleCollar(player)).isEmpty()) return;
+        for (var guard : world.getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(64),
+                keeper -> !(keeper instanceof DrakeVisitorEntity) && DrakeRoaming.canSee(keeper, player))) {
+            var stable = ((DrakeStableNavigation)guard.getNavigation()).stable();
+            if (stable == null || !DrakeCaptureGoal.near(stable, player.getPos())) continue;
+            int stall = availableStall(world, stable, player);
+            if (stall < 0) continue;
+            capture(player, stable, stall);
+            if (claim(player) != null) return;
         }
     }
 
@@ -221,6 +237,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     private static void display(PlayerEntity player, String name) {
+        if (name.isEmpty() && !BondOfTheBeastCompat.hasOwner(player)) name = sscextras.collar.Collars.mountName(player);
         var state = (Display)player;
         if (state.sscExtras$mountName().equals(name)) return;
         state.sscExtras$mountName(name);
@@ -231,22 +248,33 @@ public final class DrakeOutpostOwnership extends PersistentState {
     public static void tick(PlayerEntity player) {
         var claim = claim(player);
         if (claim == null) { registerLeashed(player); claim = claim(player); }
+        if (claim == null) { registerCollared(player); claim = claim(player); }
         if (claim == null) { display(player, ""); DrakeFeralization.sync(player, null); return; }
         if (claim.escapeCatalystDue && EarthenDrake.stage(player) >= 2) {
             claim.escapeCatalystDue = false;
             get(player.getServer()).markDirty();
         }
         DrakeFeralization.sync(player, claim);
-        if (!claim.soulbound && (recruitEscaped(player, claim) || BondOfTheBeastCompat.hasOwner(player))) {
+        if (!claim.soulbound && recruitEscaped(player, claim)) {
+            escape(player); return;
+        }
+        if (!claim.soulbound && BondOfTheBeastCompat.hasOwner(player)) {
             release(player); return;
         }
         display(player, claim.name);
         introduce(player, claim);
         DrakeRoaming.tick(player, claim);
+        if (claim(player) != claim) return;
         DrakeSoulbinding.tick((ServerPlayerEntity)player, claim);
         if (player.getWorld().getRegistryKey().equals(claim.world)
                 && DrakeLeashing.holder(player) instanceof LeashKnotEntity ownedKnot
                 && ownedKnot.getDecorationBlockPos().equals(claim.tie())) issueCollar(player, claim);
+    }
+
+    static void escape(PlayerEntity player) {
+        release(player);
+        player.sendMessage(Text.translatable("message.ssc-extras.drake.escape_success")
+                .formatted(net.minecraft.util.Formatting.YELLOW), false);
     }
 
     private static boolean recruitEscaped(PlayerEntity player, Claim claim) {
@@ -267,13 +295,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             get(player.getServer()).markDirty();
         }
         if (time - claim.recruitOutsideSince < RECRUIT_ESCAPE_TICKS) return false;
-        if (DrakeLeashing.holder(player) instanceof PillagerEntity holder && holder.isAlive()) return false;
-        return player.getWorld().getEntitiesByClass(PillagerEntity.class,
-                player.getBoundingBox().expand(DrakeCaptureGoal.RANGE * 2 + 24), pillager -> {
-                    if (!pillager.isAlive() || pillager.isAiDisabled()) return false;
-                    var capture = ((DrakeCaptureGoal.Captor)pillager).sscExtras$captureGoal();
-                    return capture != null && capture.quarry() == player && capture.shouldContinue();
-                }).isEmpty();
+        return !DrakeRoaming.pursued(player);
     }
 
     private static void introduce(PlayerEntity player, Claim claim) {

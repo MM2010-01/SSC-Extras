@@ -17,7 +17,8 @@ public abstract class DrakeRidingPlayerMixin {
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
     private void sscExtras$boundPillagerAttack(Entity target, CallbackInfo ci) {
         var player = (PlayerEntity)(Object)this;
-        if (DrakeFaction.blocksAttack(player, target) || DrakeFeralization.blocksAttack(player)) ci.cancel();
+        if (DrakeFaction.blocksAttack(player, target) || DrakeFeralization.blocksAttack(player)
+                || FormItemRestrictions.rejectHeldTool(player)) ci.cancel();
     }
 
     @ModifyVariable(method = "travel", at = @At("HEAD"), argsOnly = true)

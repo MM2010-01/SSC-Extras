@@ -165,6 +165,20 @@ public final class Collars {
         return true;
     }
 
+    public static String mountName(ItemStack stack) {
+        if ((!stack.isOf(CURSED) && !stack.isOf(TAMING)) || !stack.hasCustomName()
+                || !(stack.getName().getContent() instanceof net.minecraft.text.TranslatableTextContent text)) return "";
+        if (!text.getKey().equals("item.ssc-extras.named_cursed_feralizing_collar")
+                && !text.getKey().equals("item.ssc-extras.named_cursed_taming_collar")) return "";
+        var args = text.getArgs();
+        return args.length == 1 && args[0] instanceof String name ? name : "";
+    }
+
+    public static String mountName(PlayerEntity player) {
+        return CollarSlots.get(player).stream().map(slot -> mountName(slot.stack()))
+                .filter(name -> !name.isEmpty()).findFirst().orElse("");
+    }
+
     public static void openedContainer(ServerPlayerEntity player) {
         if (!canAutoEquip(player)) return;
         for (Slot slot : player.currentScreenHandler.slots) {

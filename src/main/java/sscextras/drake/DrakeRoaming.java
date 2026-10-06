@@ -30,7 +30,7 @@ public final class DrakeRoaming {
     }
 
     static void tick(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
-        escapeHint(player, claim);
+        if (escapeHint(player, claim)) return;
         if (!player.isAlive() || player.isCreative() || player.isSpectator() || EarthenDrake.stage(player) < 0
                 || !claim.world.equals(player.getWorld().getRegistryKey()) || player.hasPassengers()) {
             claim.seenSince = -1; claim.witness = claim.escort = 0;
@@ -92,30 +92,36 @@ public final class DrakeRoaming {
         }
     }
 
-    private static void escapeHint(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+    private static boolean escapeHint(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (!player.isAlive() || player.isCreative() || player.isSpectator()
-                || claim.returning || player.hasVehicle() || player.hasPassengers() || claim.awaitingRespawn
+                || claim.soulbound || claim.feral || claim.returning || player.hasVehicle() || player.hasPassengers() || claim.awaitingRespawn
                 || DrakeSoulbinding.ritualActive(player)
                 || claim.world.equals(player.getWorld().getRegistryKey())
                     && DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeStableLayout.roamRange(claim.stable))) {
             claim.escapeOutsideSince = -1; claim.escapeHinted = false;
-            return;
+            return false;
         }
         long time = player.getServer().getOverworld().getTime();
         if (claim.escapeOutsideSince < 0) claim.escapeOutsideSince = time;
         if (claim.escapeHinted || time - claim.escapeOutsideSince < ESCAPE_HINT_TICKS
-                || time % 20 != 0 || DrakeLeashing.attached(player)) return;
-        if (!player.getWorld().getEntitiesByClass(PillagerEntity.class,
+                || time % 20 != 0 || DrakeLeashing.attached(player) || pursued(player)) return false;
+        claim.escapeHinted = true;
+        DrakeOutpostOwnership.escape(player);
+        return true;
+    }
+
+    static boolean pursued(PlayerEntity player) {
+        if (DrakeLeashing.holder(player) instanceof PillagerEntity holder && holder.isAlive()) return true;
+        return !player.getWorld().getEntitiesByClass(PillagerEntity.class,
                 player.getBoundingBox().expand(DrakeCaptureGoal.RANGE * 2 + 24), guard -> {
                     if (!guard.isAlive() || guard.isAiDisabled()) return false;
                     var capture = ((DrakeCaptureGoal.Captor)guard).sscExtras$captureGoal();
                     var battle = DrakeBattleGoal.of(guard);
                     return capture != null && capture.quarry() == player && capture.shouldContinue()
                             || battle != null && battle.pursuing(player) && battle.shouldContinue()
+                            || ((DrakeFaction.EquipmentDisplay)guard).sscExtras$recruiting() == player
                             || following(guard) == player;
-                }).isEmpty()) return;
-        claim.escapeHinted = true;
-        hint(player, "escape_success");
+                }).isEmpty();
     }
 
     private static boolean tracking(PillagerEntity pillager, PlayerEntity player, DrakeOutpostOwnership.Claim claim) {

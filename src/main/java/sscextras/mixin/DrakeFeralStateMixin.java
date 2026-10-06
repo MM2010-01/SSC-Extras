@@ -13,6 +13,7 @@ import sscextras.drake.DrakeFeralization;
 
 @Mixin(PlayerEntity.class)
 public abstract class DrakeFeralStateMixin implements DrakeFeralization.State {
+    @Unique private boolean sscExtras$feralDataReady;
     @Unique private final DrakeFeralization.Control sscExtras$feralRuntime = new DrakeFeralization.Control();
     public DrakeFeralization.Control sscExtras$feralRuntime() { return sscExtras$feralRuntime; }
     @Unique private static final TrackedData<Boolean> SSC_EXTRAS_FERAL = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -23,9 +24,13 @@ public abstract class DrakeFeralStateMixin implements DrakeFeralization.State {
         var tracker = ((PlayerEntity)(Object)this).getDataTracker();
         tracker.startTracking(SSC_EXTRAS_FERAL, false); tracker.startTracking(SSC_EXTRAS_FERAL_CONTROL, false);
         tracker.startTracking(SSC_EXTRAS_SENTIENCE, 0);
+        sscExtras$feralDataReady = true;
     }
-    public boolean sscExtras$feral() { return ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_FERAL); }
+    public boolean sscExtras$feral() { return sscExtras$feralDataReady && ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_FERAL); }
     public void sscExtras$feral(boolean value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_FERAL, value); }
+    public void sscExtras$refreshFeralDimensions(TrackedData<?> data) {
+        if (data == SSC_EXTRAS_FERAL) ((PlayerEntity)(Object)this).calculateDimensions();
+    }
     public int sscExtras$sentience() { return ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_SENTIENCE); }
     public void sscExtras$sentience(int value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_SENTIENCE, net.minecraft.util.math.MathHelper.clamp(value, 0, 3)); }
     public boolean sscExtras$feralControl() { return ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_FERAL_CONTROL); }

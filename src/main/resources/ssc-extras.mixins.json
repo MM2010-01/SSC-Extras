@@ -6,6 +6,7 @@
   "mixins": [
     "DrakeShoesPlayerMixin",
     "DrakeFeralStateMixin",
+    "DrakeFeralPostureMixin",
     "DrakeFeralItemUseMixin",
     "DrakeFeralVillagerMixin",
     "SentientCatalystTradeMixin",

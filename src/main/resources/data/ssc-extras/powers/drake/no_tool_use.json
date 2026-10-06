@@ -32,6 +32,18 @@
         "ingredient": {
           "item": "minecraft:fishing_rod"
         }
+      },
+      {
+        "type": "origins:ingredient",
+        "ingredient": {
+          "item": "minecraft:flint_and_steel"
+        }
+      },
+      {
+        "type": "origins:ingredient",
+        "ingredient": {
+          "item": "minecraft:shears"
+        }
       }
     ]
   }

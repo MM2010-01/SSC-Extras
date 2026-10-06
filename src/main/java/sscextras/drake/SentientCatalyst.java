@@ -25,6 +25,12 @@ import java.util.List;
 public final class SentientCatalyst extends Item {
     public static final SentientCatalyst ITEM = new SentientCatalyst();
     public static final float LOOT_CHANCE = .05f, TRADE_CHANCE = .05f;
+    public static final String HINT_MARKER = "ssc-extras:sentient_catalyst_hint";
+
+    public static Text hint(int dose) {
+        return Text.translatable("message.ssc-extras.sentient_catalyst." + dose)
+                .formatted(Formatting.AQUA).styled(style -> style.withInsertion(HINT_MARKER));
+    }
 
     private SentientCatalyst() {
         super(new Settings().maxCount(16).rarity(net.minecraft.util.Rarity.RARE)

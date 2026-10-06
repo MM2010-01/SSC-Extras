@@ -122,7 +122,8 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     public static void poseSoulBody(PlayerEntityModel<?> model, PlayerEntity player, float limbAngle, float limbDistance,
             float age, float yaw, float pitch) {
         int stage = EarthenDrake.stage(player);
-        if (stage < 0 || stage >= 2 || !EarthenDrake.onAllFours(player)
+        if ((!sscextras.drake.DrakeFeralization.forcedQuadruped(player)
+                && (stage < 0 || stage >= 2 || !EarthenDrake.onAllFours(player)))
                 || sscextras.drake.DrakeSoulbinding.shoeing(player) || player.isSleeping()) return;
         poseAllFours(model, limbAngle, limbDistance, age, yaw, pitch);
     }

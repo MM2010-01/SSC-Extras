@@ -23,17 +23,21 @@ public abstract class DrakeFeralInteractionMixin {
     @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
     private void sscExtras$noMining(CallbackInfo ci) {
         if (DrakeFeralization.restricted(player) && DrakeFeralization.controlled(player)
-                || DrakeShoes.restricted(player) || DrakeSoulbinding.restrained(player)) ci.cancel();
+                || DrakeShoes.restricted(player) || DrakeSoulbinding.restrained(player)
+                || sscextras.drake.FormItemRestrictions.rejectHeldTool(player)) ci.cancel();
     }
     @Inject(method = "tryBreakBlock", at = @At("HEAD"), cancellable = true)
     private void sscExtras$noBreaking(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
         if (DrakeFeralization.restricted(player) && DrakeFeralization.controlled(player)
-                || DrakeShoes.restricted(player) || DrakeSoulbinding.restrained(player)) cir.setReturnValue(false);
+                || DrakeShoes.restricted(player) || DrakeSoulbinding.restrained(player)
+                || sscextras.drake.FormItemRestrictions.rejectHeldTool(player)) cir.setReturnValue(false);
     }
     @Inject(method = "interactBlock", at = @At("HEAD"), cancellable = true)
     private void sscExtras$hayOnly(ServerPlayerEntity player, World world, ItemStack stack, Hand hand,
                                    net.minecraft.util.hit.BlockHitResult hit, CallbackInfoReturnable<ActionResult> cir) {
         if (DrakeSoulbinding.restrained(player)) { cir.setReturnValue(ActionResult.FAIL); return; }
+        var eating = DrakeFeralization.eatAtBlock(player, hand);
+        if (eating != ActionResult.PASS) { cir.setReturnValue(eating); return; }
         var result = DrakeShoes.useBlock(player, hit.getBlockPos());
         if (result == ActionResult.PASS) result = DrakeFeralization.useBlock(player, hit.getBlockPos());
         if (result != ActionResult.PASS) cir.setReturnValue(result);

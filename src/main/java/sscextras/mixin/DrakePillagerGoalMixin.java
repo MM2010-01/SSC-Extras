@@ -46,10 +46,16 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
         if (sscExtras$battleGoal != null) sscExtras$battleGoal.shot(target);
     }
 
+    @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
+    private void sscExtras$recruitInsteadOfShooting(LivingEntity target, float pullProgress, CallbackInfo ci) {
+        if (target instanceof PlayerEntity player && DrakeFaction.missingPiece(player) != null) {
+            setTarget(null); clearActiveItem(); ((PillagerEntity)(Object)this).setCharging(false);
+            ci.cancel();
+        }
+    }
+
     @Override public boolean canTarget(LivingEntity target) {
-        return !(target instanceof PlayerEntity player && DrakeFaction.missingPiece(player) != null
-                && getWorld().getTime() - net.onixary.shapeShifterCurseFabric.util.AttackEntityDataTracker
-                .lastAttackPillagerTimeMap.getOrDefault(player.getUuid(), -1200L) >= 1200) && super.canTarget(target);
+        return !(target instanceof PlayerEntity player && DrakeFaction.missingPiece(player) != null) && super.canTarget(target);
     }
 
     @Override protected net.minecraft.entity.ai.pathing.EntityNavigation createNavigation(World world) {
@@ -57,7 +63,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
     }
 
     @Override protected void mobTick() {
-        if (getTarget() instanceof PlayerEntity player && DrakeFaction.friendly(player)) {
+        if (getTarget() instanceof PlayerEntity player && (DrakeFaction.friendly(player) || DrakeFaction.missingPiece(player) != null)) {
             setTarget(null); clearActiveItem(); ((PillagerEntity)(Object)this).setCharging(false);
         }
         super.mobTick();

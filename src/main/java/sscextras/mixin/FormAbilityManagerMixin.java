@@ -23,6 +23,7 @@ public abstract class FormAbilityManagerMixin {
 
     @Inject(method = "applyForm", at = @At("TAIL"))
     private static void sscExtras$drakeSize(PlayerEntity player, PlayerFormBase newForm, CallbackInfo ci) {
+        if (((sscextras.drake.DrakeFeralization.State)player).sscExtras$feral()) player.calculateDimensions();
         if (player.getWorld().isClient) return;
         if (newForm.getGroup() == sscextras.drake.EarthenDrake.GROUP)
             io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, sscextras.drake.DrakeBodyPower.class)

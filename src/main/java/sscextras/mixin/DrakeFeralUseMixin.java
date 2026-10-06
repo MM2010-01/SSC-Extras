@@ -11,6 +11,11 @@ import sscextras.drake.DrakeFeralization;
 
 @Mixin(LivingEntity.class)
 public abstract class DrakeFeralUseMixin {
+    @Inject(method = "onTrackedDataSet", at = @At("TAIL"))
+    private void sscExtras$feralSize(net.minecraft.entity.data.TrackedData<?> data, CallbackInfo ci) {
+        if ((Object)this instanceof PlayerEntity player) ((DrakeFeralization.State)player).sscExtras$refreshFeralDimensions(data);
+    }
+
     @Inject(method = "setCurrentHand", at = @At("HEAD"), cancellable = true)
     private void sscExtras$onlyEatFood(Hand hand, CallbackInfo ci) {
         if ((Object)this instanceof PlayerEntity player && (sscextras.drake.DrakeSoulbinding.restrained(player)
