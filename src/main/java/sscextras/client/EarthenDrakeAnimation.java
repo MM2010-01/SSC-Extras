@@ -63,7 +63,7 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             rotate(model.getCachedGeoBone("bipedLeftArm"), .035f * effort + .025f * pull, 0);
             rotate(model.getCachedGeoBone("bipedRightArm"), .035f * effort - .025f * pull, 0);
         }
-        boolean earlySoul = stage < 2 && sscextras.drake.DrakeSoulbinding.drakeSoul(player);
+        boolean earlyQuadruped = stage < 2 && EarthenDrake.onAllFours(player);
         if (stage == 2) {
             var body = model.getCachedGeoBone("bipedBody");
             anchorHip(model.getCachedGeoBone("bipedLeftLeg"), body);
@@ -77,7 +77,7 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
                     ? sscextras.drake.DrakeAttention.wag(age, i) : 0)
                     + (struggling ? .02f * effort * MathHelper.sin(phase - i * .45f) : 0));
             tail.setRotZ(0);
-            if (i == 0 && (stage == 2 || earlySoul)) {
+            if (i == 0 && (stage == 2 || earlyQuadruped)) {
                 var body = model.getCachedGeoBone("bipedBody");
                 if (body != null) {
                     tail.setPosZ((body.getPivotZ() - tail.getPivotZ()) * MathHelper.sin(body.getRotX()));
@@ -122,7 +122,7 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     public static void poseSoulBody(PlayerEntityModel<?> model, PlayerEntity player, float limbAngle, float limbDistance,
             float age, float yaw, float pitch) {
         int stage = EarthenDrake.stage(player);
-        if (stage < 0 || stage >= 2 || !sscextras.drake.DrakeSoulbinding.drakeSoul(player)
+        if (stage < 0 || stage >= 2 || !EarthenDrake.onAllFours(player)
                 || sscextras.drake.DrakeSoulbinding.shoeing(player) || player.isSleeping()) return;
         poseAllFours(model, limbAngle, limbDistance, age, yaw, pitch);
     }

@@ -173,7 +173,7 @@
   "message.ssc-extras.drake.punishment_mind_returned": "野化的心智重新融入你的身体。看守完成了仪式。",
   "message.ssc-extras.drake.punishment_mind": "话语和记忆在吟唱中消散。只有坐骑名字和肉还对你有意义。领头的掠夺者再喂你五份催化剂，并继续喂食，直到你的身体化为野生地龙。",
   "message.ssc-extras.drake.punishment_complete": "仪式完成了。你的地龙心智只懂吃食、睡觉和它的坐骑名字。",
-  "message.ssc-extras.drake.feral_takeover": "*地龙本能夺走了你的身体控制权。*",
+  "message.ssc-extras.drake.feral_takeover": "*%s本能夺走了你的身体控制权。*",
   "item.ssc-extras.feral_raw_food": "好吃的！",
   "item.ssc-extras.feral_other_food": "食物！",
   "item.ssc-extras.cursed_iron_drake_shoes": "诅咒铁制龙爪靴",

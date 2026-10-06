@@ -27,6 +27,7 @@ public final class FeralText {
         original.accept((index, style, point) -> { text.appendCodePoint(point); points.add(point); styles.add(style); return true; });
         String value = text.toString();
         if (value.codePoints().noneMatch(Character::isLetter)
+                || styles.stream().allMatch(style -> DrakeFeralization.TAKEOVER_TEXT_MARKER.equals(style.getInsertion()))
                 || value.equals(Text.translatable("message.ssc-extras.drake.feral_takeover").getString())
                 || value.equals(Text.translatable("item.ssc-extras.feral_raw_food").getString())
                 || value.equals(Text.translatable("item.ssc-extras.feral_other_food").getString())) return original;

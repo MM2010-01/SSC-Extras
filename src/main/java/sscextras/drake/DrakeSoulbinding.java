@@ -311,10 +311,6 @@ public final class DrakeSoulbinding {
         }
         if (claim.ritualTicks % 80 == 0)
             world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK, SoundCategory.HOSTILE, .65f, .7f);
-        if (commanded && !punishment && claim.ritualTicks == SOUL_TRANSFORM_TICKS) {
-            DrakeRitualTransform.finish(player);
-            if (EarthenDrake.stage(player) < 2) FormAbilityManager.applyForm(player, EarthenDrake.FORMS[2]);
-        }
         boolean waitingForBody = claim.ritualTicks == SOUL_TRANSFORM_TICKS
                 && (EarthenDrake.stage(player) < (punishment ? 3 : 2) || TransformManager.getPlayerTransformData(player).isTransforming);
         if (!waitingForBody) {
@@ -324,7 +320,7 @@ public final class DrakeSoulbinding {
             if (claim.ritualTicks == SOUL_RETURN_TICKS) hint(player, punishment ? "punishment_mind_returned" : "ritual_soul_returned");
         }
         if (claim.ritualTicks >= RITUAL_TICKS && EarthenDrake.stage(player) >= (punishment ? 3 : 2)
-                && (commanded || !TransformManager.getPlayerTransformData(player).isTransforming)) complete(player, claim);
+                && !TransformManager.getPlayerTransformData(player).isTransforming) complete(player, claim);
     }
 
     private static boolean feed(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim, int feeder) {
@@ -541,9 +537,6 @@ public final class DrakeSoulbinding {
 
     private static void complete(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         boolean punishment = punishment(claim);
-        if (claim.commandRitual != null) {
-            if (!punishment && EarthenDrake.stage(player) < 2) FormAbilityManager.applyForm(player, EarthenDrake.FORMS[2]);
-        }
         if (!punishment && !claim.soulbound) {
             claim.previousSpawn.putString("World", player.getSpawnPointDimension().getValue().toString());
             if (player.getSpawnPointPosition() != null) claim.previousSpawn.putLong("Pos", player.getSpawnPointPosition().asLong());

@@ -13,15 +13,19 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 
 public final class DrakeFeralization {
     public static final int ESCAPES = 6, MIN_CONTROL_TICKS = 100, MAX_CONTROL_TICKS = 600;
     public static final TagKey<net.minecraft.item.Item> RAW_FOOD = TagKey.of(RegistryKeys.ITEM, EarthenDrake.id("drake_raw_food"));
+    public static final String TAKEOVER_TEXT_MARKER = "ssc-extras:feral_takeover";
 
     public static final class Control {
         int ticks, next;
-        FeralDrakeBrain brain;
+        FeralBrain brain;
+        Identifier form;
     }
 
     public interface State {
@@ -87,19 +91,43 @@ public final class DrakeFeralization {
         if (!canTakeOver(player, claim)) return;
         var control = ((State)player).sscExtras$feralRuntime();
         control.ticks = net.minecraft.util.math.MathHelper.clamp(ticks, MIN_CONTROL_TICKS, MAX_CONTROL_TICKS);
-        control.brain = new FeralDrakeBrain(player);
+        selectBrain(player, control);
         player.clearActiveItem();
         player.closeHandledScreen();
         player.setSprinting(false); player.setSneaking(false);
         ((State)player).sscExtras$feralControl(true);
-        player.sendMessage(Text.translatable("message.ssc-extras.drake.feral_takeover"), true);
+        player.sendMessage(takeoverMessage(player), true);
+    }
+
+    public static Text takeoverMessage(PlayerEntity player) {
+        return Text.translatable("message.ssc-extras.drake.feral_takeover", FeralForm.resolve(FormAbilityManager.getForm(player)).name())
+                .styled(style -> style.withInsertion(TAKEOVER_TEXT_MARKER));
+    }
+
+    private static void selectBrain(ServerPlayerEntity player, Control control) {
+        if (control.brain != null) control.brain.stop();
+        var form = FormAbilityManager.getForm(player);
+        var profile = FeralForm.resolve(form);
+        control.form = form.FormID;
+        control.brain = profile.drake() ? new FeralDrakeBrain(player) : new FeralMobBrain(player, profile);
+    }
+
+    public static void formChanged(PlayerEntity player) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || !controlled(player)) return;
+        var claim = DrakeOutpostOwnership.claim(player);
+        var control = ((State)player).sscExtras$feralRuntime();
+        if (claim != null && claim.returning || FormAbilityManager.getForm(player).FormID.equals(control.form)) return;
+        selectBrain(serverPlayer, control);
+        player.sendMessage(takeoverMessage(player), true);
     }
 
     static void stop(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (claim != null) claim.returning = false;
         var control = ((State)player).sscExtras$feralRuntime();
         control.ticks = 0;
+        if (control.brain != null) control.brain.stop();
         control.brain = null;
+        control.form = null;
         control.next = nextTakeover(player);
         if (controlled(player)) {
             player.setJumping(false); player.setSprinting(false);
@@ -119,8 +147,9 @@ public final class DrakeFeralization {
         sync(player, claim);
         var control = ((State)player).sscExtras$feralRuntime();
         if (claim != null && DrakeRoaming.mustReturn(player, claim)) {
-            if (!claim.returning || control.brain == null || control.brain.getWorld() != player.getWorld()) {
+            if (!claim.returning || control.brain == null || control.brain.world() != player.getWorld()) {
                 claim.returning = true;
+                if (control.brain != null) control.brain.stop();
                 control.brain = new FeralDrakeBrain(player, true);
                 player.setSprinting(false); player.setSneaking(false);
                 ((State)player).sscExtras$feralControl(true);
@@ -139,7 +168,7 @@ public final class DrakeFeralization {
             if (--control.next > 0) return;
             begin(player, MIN_CONTROL_TICKS + player.getRandom().nextInt(MAX_CONTROL_TICKS - MIN_CONTROL_TICKS + 1));
         }
-        if (control.ticks-- <= 0 || control.brain == null || control.brain.getWorld() != player.getWorld()) {
+        if (control.ticks-- <= 0 || control.brain == null || control.brain.world() != player.getWorld()) {
             stop(player, claim); return;
         }
         control.brain.think();

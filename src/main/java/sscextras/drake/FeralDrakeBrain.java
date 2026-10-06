@@ -12,7 +12,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 
 /** Unspawned navigator: native mob goals drive the existing player body. */
-final class FeralDrakeBrain extends PathAwareEntity {
+final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
     private final ServerPlayerEntity player;
     private final boolean returning;
 
@@ -32,6 +32,7 @@ final class FeralDrakeBrain extends PathAwareEntity {
     }
 
     @Override public EntityDimensions getDimensions(EntityPose pose) { return player == null ? super.getDimensions(pose) : player.getDimensions(pose); }
+    @Override public net.minecraft.world.World world() { return getWorld(); }
     @Override public boolean isTouchingWater() { return player != null && player.isTouchingWater(); }
     @Override public boolean isInLava() { return player != null && player.isInLava(); }
     @Override public double getFluidHeight(net.minecraft.registry.tag.TagKey<net.minecraft.fluid.Fluid> fluid) {
@@ -56,7 +57,7 @@ final class FeralDrakeBrain extends PathAwareEntity {
         goalSelector.add(7, new LookAroundGoal(this));
     }
 
-    void think() {
+    public void think() {
         age++;
         setPosition(player.getPos()); setOnGround(player.isOnGround());
         setVelocity(player.getVelocity()); horizontalCollision = player.horizontalCollision;
@@ -68,7 +69,7 @@ final class FeralDrakeBrain extends PathAwareEntity {
         player.setSneaking(false); player.setSprinting(false);
     }
 
-    Vec3d movement() { return new Vec3d(0, 0, forwardSpeed == 0 ? 0 : Math.min(1, getMoveControl().getSpeed())); }
+    public Vec3d movement() { return new Vec3d(0, 0, forwardSpeed == 0 ? 0 : Math.min(1, getMoveControl().getSpeed())); }
 
     private final class ReturnGoal extends Goal {
         private int nextPath;

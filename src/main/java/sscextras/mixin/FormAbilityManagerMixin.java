@@ -23,8 +23,10 @@ public abstract class FormAbilityManagerMixin {
 
     @Inject(method = "applyForm", at = @At("TAIL"))
     private static void sscExtras$drakeSize(PlayerEntity player, PlayerFormBase newForm, CallbackInfo ci) {
-        if (newForm.getGroup() != sscextras.drake.EarthenDrake.GROUP || player.getWorld().isClient) return;
-        io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, sscextras.drake.DrakeBodyPower.class)
-                .forEach(sscextras.drake.DrakeBodyPower::refreshSize);
+        if (player.getWorld().isClient) return;
+        if (newForm.getGroup() == sscextras.drake.EarthenDrake.GROUP)
+            io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, sscextras.drake.DrakeBodyPower.class)
+                    .forEach(sscextras.drake.DrakeBodyPower::refreshSize);
+        sscextras.drake.DrakeFeralization.formChanged(player);
     }
 }

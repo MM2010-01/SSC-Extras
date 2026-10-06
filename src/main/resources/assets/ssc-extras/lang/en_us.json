@@ -173,7 +173,7 @@
   "message.ssc-extras.drake.punishment_mind_returned": "Your feralized mind settles back into your body. The keepers finish the ritual.",
   "message.ssc-extras.drake.punishment_mind": "Words and memories dissolve beneath the chant. Only your mount name and meat still mean anything. The leader feeds you five more catalysts, then keeps feeding until your body is a Feral Drake.",
   "message.ssc-extras.drake.punishment_complete": "The ritual is complete. Your drake mind knows only food, sleep, and its mount name.",
-  "message.ssc-extras.drake.feral_takeover": "*Your drake instincts took over your body.*",
+  "message.ssc-extras.drake.feral_takeover": "*Your %s instincts took over your body.*",
   "item.ssc-extras.feral_raw_food": "yummy!",
   "item.ssc-extras.feral_other_food": "food!",
   "item.ssc-extras.cursed_iron_drake_shoes": "Cursed Iron Drake Shoes",
