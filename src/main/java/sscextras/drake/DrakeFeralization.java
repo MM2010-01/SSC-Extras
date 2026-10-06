@@ -61,6 +61,10 @@ public final class DrakeFeralization {
                     != net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBodyType.FERAL;
     }
 
+    public static boolean carriesInMouth(PlayerEntity player) {
+        return permanent(player) || temporary(player) && EarthenDrake.stage(player) >= 0 || DrakeShoes.hands(player);
+    }
+
     public static int recovery(PlayerEntity player) { return permanent(player) ? ((State)player).sscExtras$sentience() : 0; }
     public static boolean blocksRestricted(PlayerEntity player) { return restricted(player) && (controlled(player) || recovery(player) < 1); }
     public static boolean itemsRestricted(PlayerEntity player) { return restricted(player) && recovery(player) < 2; }

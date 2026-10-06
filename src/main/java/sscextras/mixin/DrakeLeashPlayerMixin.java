@@ -3,7 +3,6 @@ package sscextras.mixin;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -21,11 +20,7 @@ public abstract class DrakeLeashPlayerMixin extends LivingEntity implements Drak
     protected DrakeLeashPlayerMixin(EntityType<? extends LivingEntity> type, World world) { super(type, world); }
 
     @Override public float getStepHeight() {
-        float height = super.getStepHeight();
-        if (sscextras.drake.EarthenDrake.onAllFours((PlayerEntity)(Object)this)) return 1;
-        var holder = DrakeLeashing.holder((PlayerEntity)(Object)this);
-        double distance = holder instanceof PillagerEntity ? squaredDistanceTo(holder) : 0;
-        return distance > 9 && distance <= 100 ? Math.max(1, height) : height;
+        return DrakeLeashing.stepHeight((PlayerEntity)(Object)this, super.getStepHeight());
     }
 
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_LEASH = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);

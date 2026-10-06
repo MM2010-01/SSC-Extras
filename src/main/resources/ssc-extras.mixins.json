@@ -28,6 +28,8 @@
     "DrakeMountTabNameMixin",
     "DrakeHaySleepMixin",
     "DrakeLeashPlayerMixin",
+    "DrakeStepHeightMixin",
+    "TrinketsMissingSlotMixin",
     "DrakeRidingEntityMixin",
     "DrakeRidingPlayerMixin",
     "DrakeRiderDamageMixin",

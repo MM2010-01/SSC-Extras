@@ -5,6 +5,10 @@
     "type": "origins:drop_inventory",
     "slots": [
       "weapon.offhand"
-    ]
+    ],
+    "item_condition": {
+      "type": "shape-shifter-curse:is_morph_scale_item",
+      "inverted": true
+    }
   }
 }

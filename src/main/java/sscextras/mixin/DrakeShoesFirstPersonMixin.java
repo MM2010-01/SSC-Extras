@@ -10,13 +10,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import sscextras.drake.DrakeShoes;
+import sscextras.drake.DrakeFeralization;
 
 @Mixin(HeldItemRenderer.class)
 public abstract class DrakeShoesFirstPersonMixin {
     @Inject(method = "renderFirstPersonItem", at = @At("HEAD"), cancellable = true)
     private void sscExtras$mouthHeldItem(AbstractClientPlayerEntity player, float tickDelta, float pitch, Hand hand,
             float swing, ItemStack stack, float equip, MatrixStack matrices, VertexConsumerProvider vertices, int light, CallbackInfo ci) {
-        if (!stack.isEmpty() && DrakeShoes.hands(player)) ci.cancel();
+        if (!stack.isEmpty() && DrakeFeralization.carriesInMouth(player)) ci.cancel();
     }
 }

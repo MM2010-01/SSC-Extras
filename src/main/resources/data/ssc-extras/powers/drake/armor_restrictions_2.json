@@ -1,19 +1,19 @@
 {
   "type": "origins:restrict_armor",
   "head": {
-    "type": "origins:constant",
-    "value": true
+    "type": "shape-shifter-curse:is_morph_scale_item",
+    "inverted": true
   },
   "legs": {
-    "type": "origins:constant",
-    "value": true
+    "type": "shape-shifter-curse:is_morph_scale_item",
+    "inverted": true
   },
   "feet": {
-    "type": "origins:constant",
-    "value": true
+    "type": "shape-shifter-curse:is_morph_scale_item",
+    "inverted": true
   },
   "chest": {
-    "type": "origins:constant",
-    "value": true
+    "type": "shape-shifter-curse:is_morph_scale_item",
+    "inverted": true
   }
 }

@@ -28,7 +28,13 @@ public class DrakeAccessoryItem extends AccessoryItem {
     }
 
     public String curiosSlot() {
-        return switch (slot) { case "face" -> "head"; case "cape" -> "body"; case "glove" -> "hands"; case "shoes" -> "feet"; default -> slot; };
+        return switch (slot) {
+            case "face" -> sscextras.collar.CuriosCompat.usesAccessories() ? "face" : "head";
+            case "cape" -> "body";
+            case "glove" -> "hands";
+            case "shoes" -> "feet";
+            default -> slot;
+        };
     }
 
     @Override public boolean canEquip(ItemStack stack, LivingEntity entity, SlotData data) {

@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import sscextras.drake.DrakeShoes;
+import sscextras.drake.DrakeFeralization;
 import sscextras.drake.DrakeSoulbinding;
 
 @Mixin(HeldItemFeatureRenderer.class)
@@ -19,7 +19,7 @@ public abstract class DrakeShoesHeldItemMixin {
             at = @At("HEAD"), cancellable = true)
     private void sscExtras$hidePawItems(MatrixStack matrices, VertexConsumerProvider vertices, int light, LivingEntity entity,
             float limbAngle, float limbDistance, float tickDelta, float age, float yaw, float pitch, CallbackInfo ci) {
-        if (entity instanceof PlayerEntity player && DrakeShoes.hands(player)
+        if (entity instanceof PlayerEntity player && DrakeFeralization.carriesInMouth(player)
                 || entity instanceof PillagerEntity && DrakeSoulbinding.role(entity) == DrakeSoulbinding.HOLDING) ci.cancel();
     }
 }

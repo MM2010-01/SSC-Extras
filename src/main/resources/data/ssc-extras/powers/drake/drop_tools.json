@@ -9,37 +9,46 @@
         "weapon.mainhand"
       ],
       "item_condition": {
-        "type": "origins:or",
+        "type": "origins:and",
         "conditions": [
           {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "tag": "origins:tools"
-            }
+            "type": "origins:or",
+            "conditions": [
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "tag": "origins:tools"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "tag": "origins:melee_weapons"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "tag": "origins:ranged_weapons"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "item": "minecraft:shield"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "item": "minecraft:fishing_rod"
+                }
+              }
+            ]
           },
           {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "tag": "origins:melee_weapons"
-            }
-          },
-          {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "tag": "origins:ranged_weapons"
-            }
-          },
-          {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "item": "minecraft:shield"
-            }
-          },
-          {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "item": "minecraft:fishing_rod"
-            }
+            "type": "shape-shifter-curse:is_morph_scale_item",
+            "inverted": true
           }
         ]
       }
@@ -57,37 +66,46 @@
         "weapon.mainhand"
       ],
       "item_condition": {
-        "type": "origins:or",
+        "type": "origins:and",
         "conditions": [
           {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "tag": "origins:tools"
-            }
+            "type": "origins:or",
+            "conditions": [
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "tag": "origins:tools"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "tag": "origins:melee_weapons"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "tag": "origins:ranged_weapons"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "item": "minecraft:shield"
+                }
+              },
+              {
+                "type": "origins:ingredient",
+                "ingredient": {
+                  "item": "minecraft:fishing_rod"
+                }
+              }
+            ]
           },
           {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "tag": "origins:melee_weapons"
-            }
-          },
-          {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "tag": "origins:ranged_weapons"
-            }
-          },
-          {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "item": "minecraft:shield"
-            }
-          },
-          {
-            "type": "origins:ingredient",
-            "ingredient": {
-              "item": "minecraft:fishing_rod"
-            }
+            "type": "shape-shifter-curse:is_morph_scale_item",
+            "inverted": true
           }
         ]
       }

@@ -1,49 +1,58 @@
 {
   "type": "origins:prevent_item_use",
   "item_condition": {
-    "type": "origins:or",
+    "type": "origins:and",
     "conditions": [
       {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "tag": "origins:tools"
-        }
+        "type": "origins:or",
+        "conditions": [
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:tools"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:melee_weapons"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "tag": "origins:ranged_weapons"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:shield"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:fishing_rod"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:flint_and_steel"
+            }
+          },
+          {
+            "type": "origins:ingredient",
+            "ingredient": {
+              "item": "minecraft:shears"
+            }
+          }
+        ]
       },
       {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "tag": "origins:melee_weapons"
-        }
-      },
-      {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "tag": "origins:ranged_weapons"
-        }
-      },
-      {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "item": "minecraft:shield"
-        }
-      },
-      {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "item": "minecraft:fishing_rod"
-        }
-      },
-      {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "item": "minecraft:flint_and_steel"
-        }
-      },
-      {
-        "type": "origins:ingredient",
-        "ingredient": {
-          "item": "minecraft:shears"
-        }
+        "type": "shape-shifter-curse:is_morph_scale_item",
+        "inverted": true
       }
     ]
   }

@@ -20,6 +20,7 @@ import java.util.Optional;
 /** Optional Forge API bridge: SSC's Connector jar does not enable its Curios mixins. */
 public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
     public static CuriosCompat instance;
+    private final boolean accessories = FabricLoader.getInstance().isModLoaded("cclayer");
     private final Class<?> itemInterface, contextClass;
     private final Method register, inventory, resolve, getHandler, getStacks, getCount, getStack, setStack, renders;
     private final Method entity, identifier, index;
@@ -96,9 +97,20 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
         }
     }
 
+    public static boolean usesAccessories() { return instance != null && instance.accessories; }
+
     private Object handler(LivingEntity entity, String slot) {
         Optional<?> inventory = (Optional<?>) call(resolve, call(this.inventory, null, entity));
-        return inventory.isEmpty() ? null : ((Optional<?>) call(getHandler, inventory.get(), slot)).orElse(null);
+        String name = accessories ? switch (slot) {
+            case "head" -> "hat";
+            case "body" -> "cape";
+            case "hands" -> "hand";
+            case "feet" -> "shoes";
+            case "bracelet" -> "wrist";
+            case "curio" -> "any";
+            default -> slot;
+        } : slot;
+        return inventory.isEmpty() ? null : ((Optional<?>) call(getHandler, inventory.get(), name)).orElse(null);
     }
 
     public boolean visible(LivingEntity entity, String slot, int index) {

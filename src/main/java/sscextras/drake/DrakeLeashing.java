@@ -45,6 +45,14 @@ public final class DrakeLeashing {
     public static boolean attached(PlayerEntity player) {
         return player.getWorld().isClient ? ((State)player).sscExtras$leashHolderId() != 0 : ((State)player).sscExtras$leash().linked();
     }
+    public static float stepHeight(PlayerEntity player, float height) {
+        if (EarthenDrake.onAllFours(player)) return 1;
+        var holder = holder(player);
+        double distance = holder instanceof net.minecraft.entity.mob.PillagerEntity
+                ? player.squaredDistanceTo(holder.getRootVehicle()) : 0;
+        double taut = DrakeSoulbinding.role(player) == DrakeSoulbinding.ESCORT ? 2.25 : 9;
+        return distance > taut && distance <= 100 ? Math.max(1, height) : height;
+    }
     public static boolean attach(PlayerEntity player, Entity holder) {
         if (!eligible(player) || holder == player || !holder.isAlive() || holder.getWorld() != player.getWorld()) return false;
         var leash = ((State)player).sscExtras$leash();

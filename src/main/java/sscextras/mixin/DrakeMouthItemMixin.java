@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
+import sscextras.drake.DrakeFeralization;
 import sscextras.drake.EarthenDrake;
 
 @Mixin(value = MouthItemFeature.class, remap = false)
@@ -32,16 +33,16 @@ public abstract class DrakeMouthItemMixin {
 
     @ModifyExpressionValue(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/onixary/shapeShifterCurseFabric/player_form/PlayerFormBase;getBodyType()Lnet/onixary/shapeShifterCurseFabric/player_form/PlayerFormBodyType;"))
-    private PlayerFormBodyType sscExtras$shodMouth(PlayerFormBodyType type, MatrixStack matrices, VertexConsumerProvider vertices,
+    private PlayerFormBodyType sscExtras$feralMouth(PlayerFormBodyType type, MatrixStack matrices, VertexConsumerProvider vertices,
             int light, LivingEntity entity, float limbAngle, float limbDistance, float tickDelta, float age, float yaw, float pitch) {
-        return entity instanceof PlayerEntity player && sscextras.drake.DrakeShoes.hands(player) ? PlayerFormBodyType.FERAL : type;
+        return entity instanceof PlayerEntity player && DrakeFeralization.carriesInMouth(player) ? PlayerFormBodyType.FERAL : type;
     }
 
     @ModifyExpressionValue(method = "renderItemInMouth", at = @At(value = "INVOKE",
             target = "Lnet/onixary/shapeShifterCurseFabric/util/FeralRenderUtils;isFeralMouthItemBlackListed(Lnet/minecraft/item/ItemStack;)Z", remap = true))
     private boolean sscExtras$carryInMouth(boolean blacklisted, MatrixStack matrices, VertexConsumerProvider vertices,
             int light, LivingEntity entity, ItemStack stack, float yaw, float pitch) {
-        return blacklisted && !(entity instanceof PlayerEntity player && sscextras.drake.DrakeShoes.hands(player));
+        return blacklisted && !(entity instanceof PlayerEntity player && DrakeFeralization.carriesInMouth(player));
     }
     @ModifyArgs(method = "renderItemInMouth", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/util/math/MatrixStack;translate(FFF)V", ordinal = 0, remap = true))
@@ -61,7 +62,7 @@ public abstract class DrakeMouthItemMixin {
         if (!(entity instanceof PlayerEntity player)) return;
         int stage = EarthenDrake.stage(player);
         if (stage < 2) {
-            if (stage >= 0 && sscextras.drake.DrakeShoes.hands(player)) args.set(2, stage == 1 ? -.43 : -.37);
+            if (stage >= 0 && DrakeFeralization.carriesInMouth(player)) args.set(2, stage == 1 ? -.43 : -.37);
             return;
         }
         args.set(0, stage == 2 ? 0.0625 : 0.05);
@@ -76,7 +77,7 @@ public abstract class DrakeMouthItemMixin {
         if (!(entity instanceof PlayerEntity player)) return;
         int stage = EarthenDrake.stage(player);
         if (stage < 2) {
-            if (stage >= 0 && sscextras.drake.DrakeShoes.hands(player)) {
+            if (stage >= 0 && DrakeFeralization.carriesInMouth(player)) {
                 args.set(0, 1.0f); args.set(1, 1.0f); args.set(2, 1.0f);
             }
             return;

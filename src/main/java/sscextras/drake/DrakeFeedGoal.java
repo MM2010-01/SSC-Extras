@@ -11,6 +11,7 @@ import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.onixary.shapeShifterCurseFabric.items.RegCustomItem;
 import java.util.Comparator;
@@ -151,8 +152,15 @@ public final class DrakeFeedGoal extends Goal {
         if (!feedingClaim.stall().contains(pillager.getPos()) || pillager.squaredDistanceTo(player) > 4
                 || !pillager.getVisibilityCache().canSee(player)) {
             pauseFeeding();
-            if (pillager.getNavigation().isIdle() || (pillager.age - started) % 10 == 0)
-                pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(player.getBlockPos(), 0), .8);
+            if (pillager.getNavigation().isIdle() || (pillager.age - started) % 10 == 0) {
+                var positions = new java.util.HashSet<BlockPos>();
+                for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+                    var pos = player.getBlockPos().add(dx, 0, dz);
+                    var point = Vec3d.ofBottomCenter(pos);
+                    if (feedingClaim.stall().contains(point) && player.squaredDistanceTo(point) <= 4) positions.add(pos);
+                }
+                pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(positions, 0), .8);
+            }
             return;
         }
         pillager.getNavigation().stop();
