@@ -41,6 +41,7 @@ public final class BeastizationCatalyst extends Item {
     }
 
     static void apply(PlayerEntity player) {
+        DrakeFeralization.relapse(player);
         InstinctManager.applyImmediateEffect(player, "ssc-extras:full_beastization_catalyst", INSTINCT);
         player.addStatusEffect(new StatusEffectInstance(TOTAL_FERALIZED, DURATION));
         DrakeFeralization.sync(player, DrakeOutpostOwnership.claim(player));

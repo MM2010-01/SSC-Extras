@@ -32,6 +32,8 @@ public final class DrakeFeralization {
         Control sscExtras$feralRuntime();
         boolean sscExtras$feral();
         void sscExtras$feral(boolean value);
+        int sscExtras$sentience();
+        void sscExtras$sentience(int value);
         boolean sscExtras$feralControl();
         void sscExtras$feralControl(boolean value);
     }
@@ -41,7 +43,8 @@ public final class DrakeFeralization {
     public static boolean due(DrakeOutpostOwnership.Claim claim) { return claim.escapes >= ESCAPES && !claim.feral; }
     public static boolean rawFood(ItemStack stack) { return stack.isFood() && stack.isIn(RAW_FOOD); }
     public static boolean permanent(PlayerEntity player) {
-        if (player.getWorld().isClient) return ((State)player).sscExtras$feral();
+        if (((State)player).sscExtras$feral()) return true;
+        if (player.getWorld().isClient) return false;
         var claim = DrakeOutpostOwnership.claim(player);
         return claim != null && claim.feral;
     }
@@ -51,13 +54,71 @@ public final class DrakeFeralization {
     public static boolean restricted(PlayerEntity player) { return feral(player) && !player.isCreative() && !player.isSpectator(); }
     public static boolean controlled(PlayerEntity player) { return ((State)player).sscExtras$feralControl(); }
 
+    public static int recovery(PlayerEntity player) { return permanent(player) ? ((State)player).sscExtras$sentience() : 0; }
+    public static boolean blocksRestricted(PlayerEntity player) { return restricted(player) && (controlled(player) || recovery(player) < 1); }
+    public static boolean itemsRestricted(PlayerEntity player) { return restricted(player) && recovery(player) < 2; }
+    public static boolean mindRestricted(PlayerEntity player) { return restricted(player) && recovery(player) < 3; }
+    public static boolean canUse(PlayerEntity player, ItemStack stack) {
+        return !restricted(player) || !controlled(player) && (!itemsRestricted(player) || edible(stack)
+                || recovery(player) >= 1 && stack.getItem() instanceof net.minecraft.item.BlockItem);
+    }
+    public static boolean blocksAttack(PlayerEntity player) {
+        return restricted(player) && (controlled(player) || itemsRestricted(player) && !player.getMainHandStack().isEmpty());
+    }
+
+    public static void fullyFeralize(PlayerEntity player) {
+        var state = (State)player;
+        state.sscExtras$feral(true);
+        state.sscExtras$sentience(0);
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim != null) {
+            claim.feral = true;
+            DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        }
+    }
+
+    public static void copyMind(PlayerEntity oldPlayer, PlayerEntity newPlayer) {
+        ((State)newPlayer).sscExtras$feral(permanent(oldPlayer));
+        ((State)newPlayer).sscExtras$sentience(recovery(oldPlayer));
+    }
+
+    public static void afterRespawn(ServerPlayerEntity player, boolean alive) {
+        if (alive || !feral(player)) return;
+        var form = FormAbilityManager.getForm(player);
+        if (form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_SHIFTER
+                || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_BEFORE_ENABLE)
+            DrakeSoulbinding.clearFeralization(player);
+    }
+
+    static void recover(ServerPlayerEntity player) {
+        if (permanent(player)) {
+            var state = (State)player;
+            state.sscExtras$feral(true);
+            int recovered = recovery(player) + 1;
+            if (recovered >= 4) { DrakeSoulbinding.clearFeralization(player); return; }
+            state.sscExtras$sentience(recovered);
+        }
+        player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (!mindRestricted(player) && (claim == null || !claim.returning)) stop(player, claim);
+    }
+
+    static void relapse(PlayerEntity player) {
+        if (permanent(player)) ((State)player).sscExtras$sentience(Math.max(0, recovery(player) - 1));
+    }
+
     static void sync(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
-        ((State)player).sscExtras$feral(claim != null && claim.feral);
+        // Import existing saves; releasing a stable or reverting the body cannot cure the mind.
+        if (claim != null && claim.feral) ((State)player).sscExtras$feral(true);
+        if (claim != null && !claim.feral && permanent(player)) {
+            claim.feral = true;
+            DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        }
         if (!feral(player) && (claim == null || !claim.returning) && controlled(player)) stop(player, claim);
     }
 
     public static ActionResult useBlock(PlayerEntity player, net.minecraft.util.math.BlockPos pos) {
-        if (!restricted(player)) return ActionResult.PASS;
+        if (!blocksRestricted(player)) return ActionResult.PASS;
         if (!controlled(player) && player.getWorld().getBlockState(pos).isOf(Blocks.HAY_BLOCK)) {
             if (player instanceof ServerPlayerEntity serverPlayer) DrakeHaySleep.sleep(serverPlayer, pos);
             return ActionResult.SUCCESS;
@@ -67,7 +128,9 @@ public final class DrakeFeralization {
 
     public static boolean allowInventoryClick(PlayerEntity player, int slot, int button, SlotActionType action) {
         if (!restricted(player)) return true;
-        if (controlled(player) || player.currentScreenHandler != player.playerScreenHandler) return false;
+        if (controlled(player)) return false;
+        if (recovery(player) >= 2 || recovery(player) >= 1 && player.currentScreenHandler != player.playerScreenHandler) return true;
+        if (player.currentScreenHandler != player.playerScreenHandler) return false;
         if (slot == -999) return action == SlotActionType.PICKUP;
         if (slot < 9 || slot > 45) return false;
         var handler = player.playerScreenHandler;
@@ -76,14 +139,13 @@ public final class DrakeFeralization {
             return button == 40 || button >= 0 && button <= 8;
         }
         return action == SlotActionType.PICKUP || action == SlotActionType.THROW
-                || action == SlotActionType.QUICK_MOVE && edible(stack);
+                || action == SlotActionType.QUICK_MOVE && (edible(stack) || recovery(player) >= 1 && stack.getItem() instanceof net.minecraft.item.BlockItem);
     }
 
     private static boolean canTakeOver(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
-        return feral(player) && player.isAlive() && restricted(player) && (claim == null || !claim.awaitingRespawn)
+        return mindRestricted(player) && player.isAlive() && (claim == null || !claim.awaitingRespawn)
                 && !player.isSleeping() && !player.hasVehicle() && !player.hasPassengers()
-                && !DrakeSoulbinding.ritualActive(player) && !(DrakeLeashing.holder(player) instanceof net.minecraft.entity.LivingEntity)
-                && (temporary(player) || EarthenDrake.stage(player) == 3);
+                && !DrakeSoulbinding.ritualActive(player) && !(DrakeLeashing.holder(player) instanceof net.minecraft.entity.LivingEntity);
     }
 
     public static void begin(ServerPlayerEntity player, int ticks) {
@@ -180,13 +242,13 @@ public final class DrakeFeralization {
 
     public static void register() {
         BeastizationCatalyst.register();
+        SentientCatalyst.register();
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> restricted(player) && controlled(player) ? ActionResult.FAIL : ActionResult.PASS);
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> useBlock(player, hit.getBlockPos()));
-        UseItemCallback.EVENT.register((player, world, hand) -> restricted(player) && (controlled(player) || !edible(player.getStackInHand(hand)))
+        UseItemCallback.EVENT.register((player, world, hand) -> !canUse(player, player.getStackInHand(hand))
                 ? TypedActionResult.fail(player.getStackInHand(hand)) : TypedActionResult.pass(player.getStackInHand(hand)));
-        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> restricted(player) ? ActionResult.FAIL : ActionResult.PASS);
-        AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> restricted(player)
-                && (controlled(player) || !player.getMainHandStack().isEmpty()) ? ActionResult.FAIL : ActionResult.PASS);
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> useEntity(player, entity, hand));
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> blocksAttack(player) ? ActionResult.FAIL : ActionResult.PASS);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sync(handler.player, DrakeOutpostOwnership.claim(handler.player)));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             var claim = DrakeOutpostOwnership.claim(handler.player);
@@ -199,5 +261,17 @@ public final class DrakeFeralization {
                 player.getServerWorld().getChunkManager().updatePosition(player);
             }
         });
+    }
+
+    public static ActionResult useEntity(PlayerEntity player, net.minecraft.entity.Entity entity, net.minecraft.util.Hand hand) {
+        if (!restricted(player)) return ActionResult.PASS;
+        if (entity instanceof net.minecraft.entity.passive.VillagerEntity villager) {
+            if (!player.getWorld().isClient && hand == net.minecraft.util.Hand.MAIN_HAND && villager.isAlive()) {
+                villager.setHeadRollingTimeLeft(40);
+                villager.playSound(net.minecraft.sound.SoundEvents.ENTITY_VILLAGER_NO, 1, 1);
+            }
+            return ActionResult.success(player.getWorld().isClient);
+        }
+        return controlled(player) || itemsRestricted(player) ? ActionResult.FAIL : ActionResult.PASS;
     }
 }

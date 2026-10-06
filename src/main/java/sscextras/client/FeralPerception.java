@@ -37,7 +37,7 @@ public final class FeralPerception {
         var client = MinecraftClient.getInstance();
         if (!client.isOnThread()) return false;
         var player = client.player;
-        return player != null && DrakeFeralization.restricted(player);
+        return player != null && DrakeFeralization.mindRestricted(player);
     }
     public static OrderedText scramble(OrderedText text) {
         if (!active()) return text;

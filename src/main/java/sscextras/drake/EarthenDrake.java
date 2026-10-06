@@ -55,8 +55,8 @@ public final class EarthenDrake {
     public static Identifier id(String path) { return new Identifier("ssc-extras", path); }
 
     public static void register() {
-        DrakeShoes.register();
         DrakeFeralization.register();
+        DrakeShoes.register();
         DrakeInstinct.register();
         DrakeAttention.register();
         var body = DrakeBodyPower.factory();

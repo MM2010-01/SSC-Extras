@@ -17,6 +17,8 @@ public abstract class DrakeSoulboundRespawnMixin {
 
     @Inject(method = "respawnPlayer", at = @At("RETURN"))
     private void sscExtras$restoreSoul(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfoReturnable<ServerPlayerEntity> cir) {
+        sscextras.drake.DrakeFeralization.copyMind(oldPlayer, cir.getReturnValue());
         DrakeSoulbinding.afterRespawn(cir.getReturnValue(), alive);
+        sscextras.drake.DrakeFeralization.afterRespawn(cir.getReturnValue(), alive);
     }
 }

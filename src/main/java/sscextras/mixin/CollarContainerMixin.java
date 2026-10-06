@@ -13,7 +13,7 @@ import java.util.OptionalInt;
 public abstract class CollarContainerMixin {
     @Inject(method = "openHandledScreen", at = @At("HEAD"), cancellable = true)
     private void sscExtras$feralCannotOpenContainer(NamedScreenHandlerFactory factory, CallbackInfoReturnable<OptionalInt> cir) {
-        if (sscextras.drake.DrakeFeralization.restricted((ServerPlayerEntity)(Object)this)) cir.setReturnValue(OptionalInt.empty());
+        if (sscextras.drake.DrakeFeralization.blocksRestricted((ServerPlayerEntity)(Object)this)) cir.setReturnValue(OptionalInt.empty());
     }
     @Inject(method = "openHandledScreen", at = @At("RETURN"))
     private void sscExtras$equipFromContainer(NamedScreenHandlerFactory factory, CallbackInfoReturnable<OptionalInt> cir) {

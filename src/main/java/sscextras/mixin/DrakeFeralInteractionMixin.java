@@ -41,7 +41,7 @@ public abstract class DrakeFeralInteractionMixin {
     @Inject(method = "interactItem", at = @At("HEAD"), cancellable = true)
     private void sscExtras$foodOnly(ServerPlayerEntity player, World world, ItemStack stack, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         if (DrakeSoulbinding.restrained(player) || !DrakeShoes.canUse(player, hand)
-                || DrakeFeralization.restricted(player) && (DrakeFeralization.controlled(player) || !DrakeFeralization.edible(stack)))
+                || !DrakeFeralization.canUse(player, stack))
             cir.setReturnValue(ActionResult.FAIL);
     }
 }

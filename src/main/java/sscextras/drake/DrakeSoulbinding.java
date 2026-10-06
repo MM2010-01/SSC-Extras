@@ -545,7 +545,7 @@ public final class DrakeSoulbinding {
         }
         if (!punishment) claim.soulbound = true;
         if (punishment) {
-            claim.feral = true;
+            DrakeFeralization.fullyFeralize(player);
             player.clearActiveItem();
             player.closeHandledScreen();
             DrakeFeralization.sync(player, claim);
@@ -572,7 +572,7 @@ public final class DrakeSoulbinding {
         if (claim != null && (claim.soulbound || claim.feral) && !claim.awaitingRespawn && EarthenDrake.stage(player) >= 0 && form.getGroup() != EarthenDrake.GROUP) {
             clearCurse(player, claim);
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
-            hint(player, "soul_freed");
+            hint(player, claim.feral ? "body_reverted_feral" : "soul_freed");
         }
     }
 
@@ -601,6 +601,8 @@ public final class DrakeSoulbinding {
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
         }
         player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
+        ((DrakeFeralization.State)player).sscExtras$feral(false);
+        ((DrakeFeralization.State)player).sscExtras$sentience(0);
         if (claim == null || !claim.returning || !DrakeRoaming.mustReturn(player, claim)) DrakeFeralization.stop(player, claim);
         DrakeFeralization.sync(player, claim);
         syncSoul(player);
@@ -610,10 +612,8 @@ public final class DrakeSoulbinding {
         cancel(player, claim);
         claim.shoeingDue = false;
         claim.shoeingViolations = 0;
-        if (claim.feral || claim.soulbound) player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
-        claim.feral = false;
-        DrakeFeralization.stop(player, claim);
         DrakeFeralization.sync(player, claim);
+        DrakeFeralization.stop(player, claim);
         clearSoulbond(player, claim);
     }
 

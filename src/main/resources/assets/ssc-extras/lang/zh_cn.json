@@ -165,6 +165,7 @@
   "message.ssc-extras.drake.ritual_complete": "你的灵魂如今就是地龙。 你的地龙灵魂如今已忘却什么是直立行走。 你已成为兽栏的永久坐骑。 诅咒之月再也无法改变你的形态。 诅咒装备获得灵魂绑定；死亡后，你会重生至属于你的畜栏。 你如今没有骑手的情况下不会自行离开兽栏的周围了。",
   "message.ssc-extras.drake.soul_respawn": "你的地龙灵魂回到了属于你的畜栏。",
   "message.ssc-extras.drake.soul_freed": "地龙变身已被彻底解除。你的灵魂重获自由。",
+  "message.ssc-extras.drake.body_reverted_feral": "地龙变身已被解除，但你的心智仍处于野化状态。",
   "message.ssc-extras.drake.punishment_due": "你已在同一兽栏逃跑并被抓回六次。看守将举行彻底野化的惩罚仪式。",
   "message.ssc-extras.drake.punishment_gathering": "三名掠夺者正来把你牵回畜栏。这一次，他们要夺走你的人类心智。",
   "message.ssc-extras.drake.punishment_held": "两名看守将你牢牢按在干草上，领头的掠夺者开始准备兽化心智的吟唱。",
@@ -204,6 +205,8 @@
   "message.ssc-extras.drake.ritual_soul_returned": "完全化为地龙的灵魂回到你的体内。看守开始封缚这份契约。",
   "message.ssc-extras.drake.bound_return": "坐骑契约驱使你转身走回兽栏的活动范围。",
   "message.ssc-extras.drake.ritual_feed": "看守不断喂你催化剂，你的本能在猛涨。",
+  "item.ssc-extras.sentient_catalyst": "灵智催化剂",
+  "item.ssc-extras.sentient_catalyst.tooltip": "能够刺激动物大脑中的神经元生长。可能需要多次使用才能获得更好的效果。",
   "item.ssc-extras.full_beastization_catalyst": "完全兽化催化剂",
   "item.ssc-extras.full_beastization_catalyst.tooltip": "增加200点本能，并获得1分钟的「完全兽化！」效果。",
   "effect.ssc-extras.total_feralized": "完全兽化！"

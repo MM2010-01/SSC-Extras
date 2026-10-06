@@ -165,6 +165,7 @@
   "message.ssc-extras.drake.ritual_complete": "Your soul is a drake now. With a drake's soul, you've forgotten how to stand upright. You are the stable's permanent mount. The Cursed Moon can no longer change your form. Your cursed equipment is Soulbound, and death will return you to your stall. You can no longer leave the range without a rider.",
   "message.ssc-extras.drake.soul_respawn": "Your drake soul returns to its assigned stall.",
   "message.ssc-extras.drake.soul_freed": "The drake transformation is completely undone. Your soul is free.",
+  "message.ssc-extras.drake.body_reverted_feral": "The drake transformation is undone, but your mind remains feral.",
   "message.ssc-extras.drake.punishment_due": "Caught escaping this stable six times. The keepers will now perform the full feralization punishment ritual.",
   "message.ssc-extras.drake.punishment_gathering": "Three pillagers are coming to leash you to your stall. This time they intend to take away your human mind.",
   "message.ssc-extras.drake.punishment_held": "Two keepers hold you firmly on the hay while their leader prepares the feralization chant.",
@@ -204,6 +205,8 @@
   "message.ssc-extras.drake.ritual_soul_returned": "Your transformed drake soul returns to your body. The keepers begin sealing the bond.",
   "message.ssc-extras.drake.bound_return": "Your mount bond with this stable turns you back toward the stable's range.",
   "message.ssc-extras.drake.ritual_feed": "The keeper feeds you catalysts, your instincts surge.",
+  "item.ssc-extras.sentient_catalyst": "Sentient Catalyst",
+  "item.ssc-extras.sentient_catalyst.tooltip": "Able to stimulate neuron growth in an animal's brain. Might need multiple uses for a better effect.",
   "item.ssc-extras.full_beastization_catalyst": "Full Beastization Catalyst",
   "item.ssc-extras.full_beastization_catalyst.tooltip": "+200 instinct. Totally Feralized! for 1 minute.",
   "effect.ssc-extras.total_feralized": "Totally Feralized!"

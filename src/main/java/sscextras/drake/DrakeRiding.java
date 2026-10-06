@@ -89,7 +89,7 @@ public final class DrakeRiding {
             });
         });
         ServerPlayNetworking.registerGlobalReceiver(CHEST, (server, player, handler, buf, sender) -> server.execute(() -> {
-            if (DrakeFeralization.restricted(player)) return;
+            if (DrakeFeralization.controlled(player) || DrakeFeralization.itemsRestricted(player)) return;
             if (player.getVehicle() instanceof LivingEntity mount && DrakeEquipment.canRide(mount))
                 RiderChestInventory.open(player, mount);
             else RiderChestInventory.open(player, player);

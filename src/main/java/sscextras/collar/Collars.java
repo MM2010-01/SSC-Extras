@@ -70,6 +70,7 @@ public final class Collars {
             entries.add(sscextras.cuffs.MetalCuffs.ITEM);
             entries.add(CLEANSING_KEY);
             entries.add(sscextras.drake.BeastizationCatalyst.ITEM);
+            entries.add(sscextras.drake.SentientCatalyst.ITEM);
             entries.add(sscextras.effigy.FeralEffigy.ITEM);
             entries.add(sscextras.drake.DrakeEquipment.REINS);
             entries.add(sscextras.drake.DrakeEquipment.BLINDING_REIN);
