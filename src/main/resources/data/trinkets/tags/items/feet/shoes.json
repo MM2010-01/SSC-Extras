@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "ssc-extras:netherite_claw_tips",
     "ssc-extras:cursed_iron_drake_shoes"
   ]
 }

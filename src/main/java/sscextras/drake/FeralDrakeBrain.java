@@ -2,13 +2,16 @@ package sscextras.drake;
 
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.TargetPredicate;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
-import java.util.Comparator;
 import java.util.EnumSet;
 
 /** Unspawned navigator: native mob goals drive the existing player body. */
@@ -25,7 +28,9 @@ final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
         this.player = player;
         this.returning = returning;
         setPosition(player.getPos()); setYaw(player.getYaw());
-        calculateDimensions(); setStepHeight(player.getStepHeight());
+        ((FeralMobBrain.Bridge)(Object)this).sscExtras$bindFeralPlayer(player, false);
+        goalSelector.add(2, new FeralForageGoal(this, player));
+        FeralForageGoal.encourageRoaming(this);
         var claim = DrakeOutpostOwnership.claim(player);
         setPositionTarget(claim != null && claim.world.equals(player.getWorld().getRegistryKey()) ? claim.bed() : player.getBlockPos(), 24);
         ((net.minecraft.entity.ai.pathing.MobNavigation)getNavigation()).setCanSwim(true);
@@ -42,8 +47,8 @@ final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
     @Override protected void initGoals() {
         goalSelector.add(0, new SwimGoal(this));
         goalSelector.add(1, new ReturnGoal());
-        goalSelector.add(2, new ForageGoal());
         goalSelector.add(3, new SleepGoal());
+        goalSelector.add(4, new HuntGoal());
         goalSelector.add(5, new WanderAroundFarGoal(this, .65) {
             @Override protected Vec3d getWanderTarget() {
                 var target = super.getWanderTarget();
@@ -61,6 +66,8 @@ final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
         age++;
         setPosition(player.getPos()); setOnGround(player.isOnGround());
         setVelocity(player.getVelocity()); horizontalCollision = player.horizontalCollision;
+        getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(player.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE));
+        FeralForageGoal.eatHeldFood(this, player);
         getVisibilityCache().clear();
         goalSelector.tick();
         getNavigation().tick(); getMoveControl().tick(); getLookControl().tick(); getJumpControl().tick();
@@ -70,6 +77,13 @@ final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
     }
 
     public Vec3d movement() { return new Vec3d(0, 0, forwardSpeed == 0 ? 0 : Math.min(1, getMoveControl().getSpeed())); }
+
+    @Override public void stop() {
+        goalSelector.getRunningGoals().forEach(PrioritizedGoal::stop);
+        getNavigation().stop();
+        ((FeralMobBrain.Bridge)(Object)this).sscExtras$bindFeralPlayer(null, false);
+        discard();
+    }
 
     private final class ReturnGoal extends Goal {
         private int nextPath;
@@ -94,35 +108,37 @@ final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
         @Override public void stop() { getNavigation().stop(); }
     }
 
-    private final class ForageGoal extends Goal {
-        private ItemEntity food;
-        private int nextSearch, nextPath;
-        ForageGoal() { setControls(EnumSet.of(Control.MOVE, Control.LOOK)); }
-        @Override public boolean canStart() {
-            if (age < nextSearch || player == null || !player.canConsume(false)) return false;
-            nextSearch = age + 20;
+    private final class HuntGoal extends MeleeAttackGoal {
+        private int nextSearch;
+        HuntGoal() { super(FeralDrakeBrain.this, 1, true); }
+        private boolean hungry() { return player != null && player.canConsume(false) && !player.isUsingItem(); }
+        private boolean prey(LivingEntity entity) {
+            var type = entity.getType();
             var holder = DrakeLeashing.holder(player);
-            food = getWorld().getEntitiesByClass(ItemEntity.class, player.getBoundingBox().expand(8), item -> item.isAlive()
-                    && DrakeFeralization.rawFood(item.getStack()) && (holder == null || holder.squaredDistanceTo(item) <= 25)).stream()
-                    .min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
-            return food != null;
+            return !entity.hasCustomName() && isInWalkTargetRange(entity.getBlockPos())
+                    && (holder == null || holder.squaredDistanceTo(entity) <= 25)
+                    && (type == EntityType.COW || type == EntityType.PIG || type == EntityType.SHEEP
+                    || type == EntityType.CHICKEN || type == EntityType.RABBIT || type == EntityType.COD
+                    || type == EntityType.SALMON);
         }
-        @Override public boolean shouldContinue() { return food != null && food.isAlive() && player.canConsume(false) && player.squaredDistanceTo(food) < 100; }
-        @Override public void tick() {
-            getLookControl().lookAt(food);
-            if (player.squaredDistanceTo(food) < 2.25) {
-                getNavigation().stop();
-                if (player.isUsingItem()) return;
-                var bite = food.getStack().copyWithCount(1);
-                bite.finishUsing(player.getWorld(), player);
-                food.getStack().decrement(1);
-                if (food.getStack().isEmpty()) food.discard();
-                food = null; nextSearch = age + 32;
-            } else if (age >= nextPath) {
-                nextPath = age + 10; getNavigation().startMovingTo(food, .8);
-            }
+        @Override public boolean canStart() {
+            if (age < nextSearch || !hungry()) return false;
+            nextSearch = age + 20;
+            var predicate = TargetPredicate.createAttackable().setBaseMaxDistance(12).setPredicate(this::prey);
+            var target = getWorld().getClosestEntity(getWorld().getEntitiesByClass(LivingEntity.class,
+                    player.getBoundingBox().expand(12, 4, 12), entity -> entity.isAlive()), predicate,
+                    FeralDrakeBrain.this, getX(), getEyeY(), getZ());
+            setTarget(target);
+            if (super.canStart()) return true;
+            setTarget(null);
+            return false;
         }
-        @Override public void stop() { food = null; getNavigation().stop(); }
+        @Override public boolean shouldContinue() { return hungry() && getTarget() != null && prey(getTarget()) && super.shouldContinue(); }
+        @Override protected void attack(LivingEntity target, double distance) {
+            if (distance <= getSquaredMaxAttackDistance(target) && isCooledDown()) player.swingHand(Hand.MAIN_HAND);
+            super.attack(target, distance);
+        }
+        @Override public void stop() { super.stop(); setTarget(null); }
     }
 
     private final class SleepGoal extends Goal {

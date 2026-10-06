@@ -72,6 +72,9 @@ public final class EarthenDrake {
                 (data, entity) -> entity instanceof PlayerEntity player
                         && !DrakeEquipment.equipped(player, DrakeEquipment.CLAW_TIPS).isEmpty());
         Registry.register(ApoliRegistries.ENTITY_CONDITION, clawTips.getSerializerId(), clawTips);
+        var pawTips = new ConditionFactory<Entity>(id("netherite_paws"), new SerializableData(),
+                (data, entity) -> entity instanceof PlayerEntity player && !DrakeEquipment.footClaws(player).isEmpty());
+        Registry.register(ApoliRegistries.ENTITY_CONDITION, pawTips.getSerializerId(), pawTips);
         LootTableEvents.MODIFY.register((resources, manager, id, builder, source) -> {
             if (id.equals(new Identifier("minecraft", "chests/pillager_outpost"))) {
                 builder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))

@@ -55,6 +55,7 @@ public final class SoulboundEquipment {
         for (var item : new DrakeAccessoryItem[]{DrakeEquipment.REINS, DrakeEquipment.SADDLE,
                 DrakeEquipment.RIDERS_CHEST, DrakeEquipment.CLAW_TIPS, DrakeEquipment.SHOES})
             for (var stack : DrakeEquipment.stacks(player, item)) action.accept(stack);
+        for (var stack : DrakeShoes.stacks(player, true)) if (stack.isOf(DrakeEquipment.CLAW_TIPS)) action.accept(stack);
         player.currentScreenHandler.sendContentUpdates();
     }
 

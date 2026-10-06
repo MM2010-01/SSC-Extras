@@ -19,6 +19,7 @@
     "DrakeSoulboundRespawnMixin",
     "DrakeSoulboundSpawnMixin",
     "DrakeSoulboundMoonMixin",
+    "PermanentFormSleepMixin",
     "DrakeRitualStateMixin",
     "DrakeAttentionMixin",
     "TamingCollarPlacementMixin",

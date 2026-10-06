@@ -1,0 +1,19 @@
+{
+  "type": "origins:conditioned_attribute",
+  "tick_rate": 1,
+  "condition": {
+    "type": "ssc-extras:netherite_paws"
+  },
+  "modifiers": [
+    {
+      "attribute": "minecraft:generic.knockback_resistance",
+      "operation": "addition",
+      "value": 0.5
+    },
+    {
+      "attribute": "minecraft:generic.movement_speed",
+      "operation": "multiply_total",
+      "value": 0.2
+    }
+  ]
+}

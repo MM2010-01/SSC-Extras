@@ -33,7 +33,9 @@ public class DrakeAccessoryItem extends AccessoryItem {
 
     @Override public boolean canEquip(ItemStack stack, LivingEntity entity, SlotData data) {
         return entity instanceof PlayerEntity player && CollarSlots.isActive(data)
-                && data.slot().getPath().equals(data.slot().getNamespace().equals("curios") ? curiosSlot() : group + "/" + slot)
+                && (data.slot().getPath().equals(data.slot().getNamespace().equals("curios") ? curiosSlot() : group + "/" + slot)
+                    || this == DrakeEquipment.CLAW_TIPS && data.slot().getPath().equals(
+                            data.slot().getNamespace().equals("curios") ? "feet" : "feet/shoes"))
                 && (!stack.isOf(Items.SADDLE) || EarthenDrake.stage(player) >= 0)
                 && (!permanentOnly || EarthenDrake.stage(player) == 3);
     }
@@ -68,6 +70,8 @@ public class DrakeAccessoryItem extends AccessoryItem {
 
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
         tooltip.add(Text.translatable("tooltip.ssc-extras." + description).formatted(Formatting.GRAY));
+        if (this == DrakeEquipment.CLAW_TIPS)
+            tooltip.add(Text.translatable("tooltip.ssc-extras.netherite_claw_tips_feet").formatted(Formatting.GRAY));
         if (this == DrakeEquipment.BLINDING_REIN) tooltip.add(Text.translatable(BlindingRein.closed(stack)
                 ? "tooltip.ssc-extras.blinkers_closed" : "tooltip.ssc-extras.blinkers_open").formatted(Formatting.DARK_PURPLE));
         if (!permanentOnly) tooltip.add(Text.translatable("tooltip.ssc-extras.collar.gain",

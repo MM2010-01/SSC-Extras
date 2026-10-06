@@ -63,6 +63,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
         boolean returning;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
+        boolean escapeHinted;
+        long escapeOutsideSince = -1;
         long nextOutsideHint, seenSince = -1, recallUntil, nextEscortSearch;
         int witness, escort;
         Claim(RegistryKey<World> world, BlockBox stable, String name) {

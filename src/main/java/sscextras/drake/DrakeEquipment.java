@@ -79,14 +79,19 @@ public final class DrakeEquipment {
     public static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume) {
         if (source.isOf(SHOES)) return DrakeShoes.tryEquip(player, source, false, consume)
                 || DrakeShoes.tryEquip(player, source, true, consume);
+        return tryEquip(player, source, consume, false)
+                || source.isOf(CLAW_TIPS) && tryEquip(player, source, consume, true);
+    }
+
+    private static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume, boolean feet) {
         DrakeAccessoryItem item = source.isOf(Items.SADDLE) ? SADDLE
                 : source.getItem() instanceof DrakeAccessoryItem accessory ? accessory : null;
         if (!player.isAlive() || player.isSpectator() || source.isEmpty() || item == null) return false;
         var io = slots();
         if (io == null) return false;
-        String group = CuriosCompat.instance == null ? item.group : "";
-        String name = CuriosCompat.instance == null ? item.slot : item.curiosSlot();
-        var stacks = stacks(player, item);
+        String group = CuriosCompat.instance == null ? feet ? "feet" : item.group : "";
+        String name = CuriosCompat.instance == null ? feet ? "shoes" : item.slot : feet ? "feet" : item.curiosSlot();
+        var stacks = feet ? DrakeShoes.stacks(player, true) : stacks(player, item);
         for (int index = 0; index < stacks.size(); index++) {
             if (!stacks.get(index).isEmpty()) continue;
             var data = new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
@@ -124,6 +129,12 @@ public final class DrakeEquipment {
     public static ItemStack equipped(PlayerEntity player, DrakeAccessoryItem item) {
         if (player.isSpectator() || item.permanentOnly && EarthenDrake.stage(player) != 3) return ItemStack.EMPTY;
         for (ItemStack stack : stacks(player, item)) if (matches(stack, item)) return stack;
+        return ItemStack.EMPTY;
+    }
+
+    public static ItemStack footClaws(PlayerEntity player) {
+        if (!player.isSpectator() && EarthenDrake.stage(player) == 3)
+            for (var stack : DrakeShoes.stacks(player, true)) if (stack.isOf(CLAW_TIPS)) return stack;
         return ItemStack.EMPTY;
     }
 

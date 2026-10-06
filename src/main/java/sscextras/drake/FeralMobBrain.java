@@ -4,6 +4,8 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.GoalSelector;
+import net.minecraft.entity.ai.brain.MemoryModuleState;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.passive.BatEntity;
@@ -41,6 +43,10 @@ public final class FeralMobBrain implements FeralBrain {
             fox.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, net.minecraft.item.ItemStack.EMPTY);
         }
         ((Bridge)mob).sscExtras$bindFeralPlayer(player, form.familiar());
+        FeralForageGoal.encourageRoaming(mob);
+        if (mob instanceof PathAwareEntity && !mob.getBrain().isMemoryInState(MemoryModuleType.WALK_TARGET, MemoryModuleState.REGISTERED)) {
+            ((Bridge)mob).sscExtras$feralGoals().add(4, new FeralForageGoal(mob, player));
+        }
         if (form.familiar() && mob instanceof PathAwareEntity fox) {
             ((Bridge)mob).sscExtras$feralGoals().add(3, new FollowWitchGoal(fox));
         }
@@ -50,7 +56,10 @@ public final class FeralMobBrain implements FeralBrain {
     @Override public World world() { return mob.getWorld(); }
 
     @Override public void think() {
+        // Vanilla despawn checks normally reset this near players; the unspawned proxy skips them.
+        mob.setDespawnCounter(0);
         ((Bridge)mob).sscExtras$thinkForPlayer();
+        FeralForageGoal.eatHeldFood(mob, player);
         player.setNoGravity(originalNoGravity || mob.hasNoGravity() || mob instanceof BatEntity);
         player.setVelocity(mob.getVelocity());
     }

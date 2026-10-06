@@ -173,7 +173,7 @@ public final class DrakeRiding {
 
     public static Vec3d movement(LivingEntity mount, Vec3d own) {
         Input input = input(mount);
-        if (mount.getFirstPassenger() instanceof PillagerEntity)
+        if (mount.getFirstPassenger() instanceof PillagerEntity && (input != null || !(mount instanceof PlayerEntity)))
             mount.setSprinting(input != null && input.sprint());
         if (input == null) return own;
         mount.setYaw(input.yaw());

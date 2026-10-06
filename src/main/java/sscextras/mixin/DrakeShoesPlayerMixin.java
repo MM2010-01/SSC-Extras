@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import sscextras.drake.DrakeShoes;
+import sscextras.drake.DrakeEquipment;
 import sscextras.drake.DrakeSoulbinding;
 
 @Mixin(PlayerEntity.class)
@@ -30,12 +31,13 @@ public abstract class DrakeShoesPlayerMixin {
             target = "Lnet/minecraft/entity/player/PlayerEntity;addExhaustion(F)V", ordinal = 3), index = 0)
     private float sscExtras$efficientSprint(float exhaustion) {
         var player = (PlayerEntity)(Object)this;
-        return DrakeShoes.feet(player) ? exhaustion * .7f : exhaustion;
+        return DrakeShoes.feet(player) || !DrakeEquipment.footClaws(player).isEmpty() ? exhaustion * .7f : exhaustion;
     }
 
     @ModifyArg(method = "jump", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;addExhaustion(F)V"), index = 0)
     private float sscExtras$efficientSprintJump(float exhaustion) {
         var player = (PlayerEntity)(Object)this;
-        return player.isSprinting() && DrakeShoes.feet(player) ? exhaustion * .7f : exhaustion;
+        return player.isSprinting() && (DrakeShoes.feet(player) || !DrakeEquipment.footClaws(player).isEmpty())
+                ? exhaustion * .7f : exhaustion;
     }
 }
