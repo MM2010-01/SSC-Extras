@@ -77,7 +77,8 @@ public final class LeashEscortEvent extends NpcEvent {
             }
         } else if (guide.age >= nextPath || lastDestination == null || lastDestination.squaredDistanceTo(waypoint) > 1) {
             nextPath = guide.age + template.pathInterval(); lastDestination = waypoint;
-            if (!DrakeBattleGoal.of(guide).movePursuit(target, waypoint, speed, false)) navigation.startMovingTo(waypoint.x, waypoint.y, waypoint.z, speed);
+            if (!DrakeBattleGoal.of(guide).movePursuit(target, waypoint, speed, false))
+                navigation.startMovingAlong(navigation.findPathTo(waypoint.x, waypoint.y, waypoint.z, 0), speed);
         }
         return true;
     }

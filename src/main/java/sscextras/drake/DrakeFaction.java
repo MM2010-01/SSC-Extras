@@ -218,7 +218,9 @@ public final class DrakeFaction {
         private static boolean inRange(PillagerEntity pillager, PlayerEntity player) {
             if (pillager.squaredDistanceTo(player) > (DrakeCaptureGoal.RANGE * 2 + 24) * (DrakeCaptureGoal.RANGE * 2 + 24)) return false;
             var stable = ((DrakeStableNavigation)pillager.getNavigation()).stable();
-            return stable != null ? DrakeCaptureGoal.near(stable, player.getPos()) : pillager.squaredDistanceTo(player) <= 144;
+            return stable != null ? DrakeCaptureGoal.near(stable, player.getPos())
+                    && DrakeOutpostOwnership.availableStall((net.minecraft.server.world.ServerWorld)pillager.getWorld(), stable, player) >= 0
+                    : pillager.squaredDistanceTo(player) <= 144;
         }
 
         private boolean isNearest(PlayerEntity player) {

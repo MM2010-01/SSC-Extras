@@ -14,6 +14,7 @@ public final class SscExtras implements ModInitializer {
         sscextras.cuffs.MetalCuffs.register();
         sscextras.drake.DrakeEquipment.register();
         sscextras.drake.DrakeStable.register();
+        sscextras.drake.MountMerchants.register();
         sscextras.drake.DrakeOutpostOwnership.register();
         sscextras.drake.DrakeHaySleep.register();
         sscextras.drake.DrakeRitualCommands.register();

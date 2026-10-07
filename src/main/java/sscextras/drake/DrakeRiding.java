@@ -131,10 +131,11 @@ public final class DrakeRiding {
         var enemy = pillager.getTarget();
         var path = pillager.getNavigation().getCurrentPath();
         var battle = DrakeBattleGoal.of(pillager);
-        Vec3d direct = battle != null && battle.mount() == mount ? battle.directDestination() : null;
+        var buyer = pillager instanceof MountBuyerEntity visitor ? visitor : null;
+        Vec3d direct = buyer != null ? buyer.directDestination() : battle != null && battle.mount() == mount ? battle.directDestination() : null;
         float forward = 0, yaw = mount.getYaw();
         boolean jump = false, sprint = false;
-        boolean moving = direct != null || battle != null && battle.mount() == mount && battle.pathing()
+        boolean moving = direct != null || buyer != null && buyer.travelling() || battle != null && battle.mount() == mount && battle.pathing()
                 || enemy != null && enemy.isAlive() && enemy != mount && !pillager.isTeammate(enemy);
         if (canControl(mount, pillager) && moving && (direct != null || path != null && !path.isFinished())) {
             if (direct == null) advancePath(path, mount);

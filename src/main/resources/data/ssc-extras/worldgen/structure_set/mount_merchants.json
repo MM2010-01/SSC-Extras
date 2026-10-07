@@ -1,0 +1,4 @@
+{
+  "structures": [{ "structure": "ssc-extras:mount_merchant", "weight": 1 }],
+  "placement": { "type": "ssc-extras:near_illagers" }
+}

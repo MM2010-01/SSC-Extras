@@ -41,6 +41,7 @@
     "DrakeClawEnchantmentMixin",
     "DrakeClawEnchantingTableMixin",
     "DrakeStableStructureMixin",
+    "MountMerchantLocateMixin",
     "DrakeViewMixin",
     "DrakeEatingMixin",
     "CursePotionMixin",

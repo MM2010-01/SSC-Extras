@@ -30,6 +30,7 @@ public final class DrakeRoaming {
     }
 
     static void tick(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        if (MountMarket.get(player.getServer()).busy(player)) return;
         if (escapeHint(player, claim)) return;
         if (!player.isAlive() || player.isCreative() || player.isSpectator() || EarthenDrake.stage(player) < 0
                 || !claim.world.equals(player.getWorld().getRegistryKey()) || player.hasPassengers()) {
@@ -170,6 +171,7 @@ public final class DrakeRoaming {
 
     public static PlayerEntity following(PillagerEntity pillager) {
         for (var player : pillager.getWorld().getPlayers()) {
+            if (MountMarket.get(player.getServer()).busy(player)) continue;
             var claim = DrakeOutpostOwnership.claim(player);
             if (claim == null) continue;
             if (claim.escort == pillager.getId() && roaming(player, claim) && escortAvailable(pillager, player, claim, true)) return player;

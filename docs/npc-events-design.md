@@ -6,6 +6,12 @@ Reviewed 7 October 2026 against the local source, version 1.23.32.
 
 The original review follows the ritual, feeding, capture, roaming, riding, stable, persistence, and presentation paths; the other feature packages were sampled for architectural boundaries rather than exhaustively audited. Its source links and findings below describe the 1.23.32 baseline. The delivery sections describe the implemented ritual, escort, movement, and progression foundations; the remaining architecture sections are the longer-term design.
 
+## Implemented in 1.26.0
+
+- Mount Merchants use a separate 13-by-11 structure with placement tied to outpost/mansion candidates 16 chunks away. Keeping the market's own chunk references avoids expanding the original structure's bounds across that distance.
+- Merchant conversion uses `NpcEvent`, `RitualStageRunner`, and `LeashEscortEvent` with native equipment, catalysts, instinct attacks, and transformation completion. Its saved checkpoint belongs to the merchant because an unsold player has no stable claim.
+- Server-side trade actions recheck price, stock, confirmation, and eligibility. Buyers select a ready player first, reserve only vacant stalls, and reuse native ownership and leash delivery. `MountMarket` persists offers, active buyers, and NPC stall reservations; transient movement reservations are released on unload.
+
 ## Implemented in 1.25.0
 
 - `QuadrupedMovement.STEP_HEIGHT` is 1.125 blocks for quadrupedal player drakes and resident drakes. This admits a full block with carpet or a thin covering, while remaining below the 1.5-block fence/closed-gate collision height. The existing final collision-height compatibility hook uses the same value; posture and ordinary upright movement retain their native paths.

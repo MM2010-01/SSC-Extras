@@ -11,7 +11,7 @@ public final class DrakeDialogue {
     public static void say(LivingEntity mount, String line) {
         if (!(mount instanceof PlayerEntity player) || player.getWorld().isClient) return;
         var claim = DrakeOutpostOwnership.claim(player);
-        String name = claim == null ? player.getName().getString() : claim.name;
+        String name = claim == null ? MountMerchantForms.name(player) : claim.name;
         String key = "message.ssc-extras.drake.pillager." + line;
         var text = line.equals("stable_rules") ? Text.translatable(key, name,
                 claim == null ? DrakeRoaming.RANGE : DrakeStableLayout.roamRange(claim.stable)) : Text.translatable(key, name);

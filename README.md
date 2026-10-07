@@ -117,6 +117,16 @@ Metal Cuffs have glowing cyan engravings that turn **orange below 25% durability
 
 ## Some Other Changes
 
+### Mount Merchants
+
+Small merchant pens can generate roughly 256 blocks from new pillager outposts and woodland mansions, where the terrain is suitable. A neutral, hooded pillager keeps one or two drakes tied to the pen post. Each has a name and price on a sign and an individual listing with a 3D preview and Buy button. Ordinary drakes cost **128 emeralds**; player mounts receive a saved random price of **141–256 emeralds**, and other players can purchase them too. Sold listings and signs clear immediately.
+
+Humans and drakes can offer themselves regardless of their emerald balance. The merchant greets each form differently and gives an introduction before asking **“Are you sure?”**, with **Yes**, **No**, and **No, but actually yes** choices. The last choice briefly pretends to refuse before accepting. Acceptance equips Cursed Reins and a Cursed Saddle, leads you into the pen, and begins the merchant's mount conversion. The merchant feeds ordinary catalysts while the surrounding drakes give harmless instinct attacks, stopping once you finish reaching stage 2 or higher.
+
+The merchant also brings nearby permanent or fully feral drakes, harnessed humans or drakes, and wearers of drake-infused cursed collars or taming collars into the pen. They are listed on arrival and converted as needed, with separate dialogue for captured mounts. The merchant returns to the counter afterward and sprints after escaped mounts to bring them back. On the third recapture, a taming collar is equipped; taming-collared player mounts sell for half price, rounded up to whole emeralds. Other cursed species are refused conversion, and other feral forms cannot trade. Player-owned mounts are protected from automatic recruitment.
+
+When the nearest stable has vacancies, a pillager buyer may arrive, discuss named mounts with the merchant at the counter, and buy ready players first. The buyer enters the pen to collect the purchases, rides one mount home at a sprint, and leads the others alongside. Each mount is delivered through its stall gate and tied inside before ownership is assigned or stable range restrictions apply. NPC purchases leave the last free stall available for a player. Merchant pens require newly generated chunks.
+
 ### Drake Stables and Leads
 
 New outposts have three-stall stables with two natural drakes and one empty player stall. Newly generated woodland mansions have larger six-stall stables with five natural drakes and one empty player stall. Each resident has its own saved stall and unique mount name. Existing structures keep their original layout.

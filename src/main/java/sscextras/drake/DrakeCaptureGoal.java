@@ -37,7 +37,8 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     public static boolean eligible(PlayerEntity player) {
-        return DrakeLeashing.eligible(player) && !player.isCreative() && !BondOfTheBeastCompat.hasOwner(player)
+        return DrakeLeashing.eligible(player) && !player.isCreative() && !BondOfTheBeastCompat.hasOwner(player) && !MountMarket.playerOwned(player)
+                && !MountMarket.get(player.getServer()).busy(player)
                 && (DrakeOutpostOwnership.claim(player) != null || cursedHarness(player));
     }
 
@@ -78,18 +79,27 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     public static DrakeStablePiece findStable(ServerWorld world, BlockPos pos) {
+        return findStable(world, pos, RANGE, true);
+    }
+
+    public static DrakeStablePiece findStable(ServerWorld world, BlockPos pos, int range) {
+        return findStable(world, pos, range, false);
+    }
+
+    private static DrakeStablePiece findStable(ServerWorld world, BlockPos pos, int range, boolean useStableRange) {
         var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
         var mansion = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "mansion"));
         var checked = new HashSet<net.minecraft.structure.StructureStart>();
         var chunk = new ChunkPos(pos);
         DrakeStablePiece closest = null;
         double distance = Double.MAX_VALUE;
-        int chunks = RANGE / 16 + 1;
+        int chunks = range / 16 + 1;
         for (int x = chunk.x - chunks; x <= chunk.x + chunks; x++) for (int z = chunk.z - chunks; z <= chunk.z + chunks; z++) {
             if (!world.isChunkLoaded(x, z)) continue;
             for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(x, z), structure -> structure == outpost || structure == mansion)) {
                 if (!checked.add(start)) continue;
-                for (var piece : start.getChildren()) if (piece instanceof DrakeStablePiece candidate && near(candidate, Vec3d.ofCenter(pos))) {
+                for (var piece : start.getChildren()) if (piece instanceof DrakeStablePiece candidate
+                        && (useStableRange ? near(candidate, Vec3d.ofCenter(pos)) : near(candidate.getBoundingBox(), Vec3d.ofCenter(pos), range))) {
                     double next = candidate.getBoundingBox().getCenter().getSquaredDistance(pos);
                     if (next < distance) { closest = candidate; distance = next; }
                 }
@@ -131,7 +141,8 @@ public final class DrakeCaptureGoal extends Goal {
             if (targetStall < 0 || !pillager.getWorld().getBlockState(stable.tie(targetStall)).isIn(BlockTags.FENCES)) continue;
             if (DrakeLeashing.holder(player) != pillager && DrakeOutpostOwnership.owns(player, stable)
                     && stable.stall(targetStall).contains(player.getPos())) continue;
-            if (!occupied() && (DrakeRiding.inInteractionReach(pillager, player) && pillager.getVisibilityCache().canSee(player)
+            if (!occupied() && (DrakeBattleGoal.of(pillager).pursuing(player)
+                    || DrakeRiding.inInteractionReach(pillager, player) && pillager.getVisibilityCache().canSee(player)
                     || navigation().reaches(player.getRootVehicle().getBlockPos()))) return true;
         }
         DrakeBattleGoal.of(pillager).stopPursuit();

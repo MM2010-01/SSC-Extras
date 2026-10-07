@@ -3,16 +3,19 @@ package sscextras.mixin;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.drake.DrakeLeashing;
 
 @Mixin(PlayerEntity.class)
@@ -21,6 +24,11 @@ public abstract class DrakeLeashPlayerMixin extends LivingEntity implements Drak
 
     @Override public float getStepHeight() {
         return DrakeLeashing.stepHeight((PlayerEntity)(Object)this, super.getStepHeight());
+    }
+
+    @Inject(method = "adjustMovementForSneaking", at = @At("HEAD"), cancellable = true)
+    private void sscExtras$pullOverLedge(Vec3d movement, MovementType type, CallbackInfoReturnable<Vec3d> cir) {
+        if (DrakeLeashing.tautPillagerLead((PlayerEntity)(Object)this)) cir.setReturnValue(movement);
     }
 
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_LEASH = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
