@@ -19,8 +19,8 @@ public final class DrakeRitualCommands {
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registries, environment) -> {
             var rituals = CommandManager.literal("ritual");
-            for (var ritual : DrakeSoulbinding.Ritual.values()) {
-                rituals.then(withPlayer(ritual.command, (source, player) -> {
+            for (var ritual : DrakeRituals.values()) {
+                rituals.then(withPlayer(ritual.command(), (source, player) -> {
                     var error = DrakeSoulbinding.startRitual(player, ritual);
                     if (error != null) {
                         source.sendError(Text.empty().append(player.getDisplayName()).append(": ")
@@ -28,7 +28,7 @@ public final class DrakeRitualCommands {
                         return 0;
                     }
                     source.sendFeedback(() -> Text.translatable("message.ssc-extras.ritual_command.started",
-                            Text.translatable("ritual.ssc-extras." + ritual.command), player.getDisplayName()), false);
+                            Text.translatable("ritual.ssc-extras." + ritual.command()), player.getDisplayName()), false);
                     return 1;
                 }));
             }

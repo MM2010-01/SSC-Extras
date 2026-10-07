@@ -17,6 +17,7 @@ import sscextras.drake.DrakeSoulbinding;
 public abstract class DrakeRitualStateMixin implements DrakeSoulbinding.State {
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_RITUAL_ROLE = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_SOUL_TICKS = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    @Unique private static final TrackedData<String> SSC_EXTRAS_SOUL_ANIMATION = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.STRING);
     @Unique private static final TrackedData<Boolean> SSC_EXTRAS_DRAKE_SOUL = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
@@ -24,10 +25,13 @@ public abstract class DrakeRitualStateMixin implements DrakeSoulbinding.State {
         var tracker = ((LivingEntity)(Object)this).getDataTracker();
         tracker.startTracking(SSC_EXTRAS_RITUAL_ROLE, 0);
         tracker.startTracking(SSC_EXTRAS_SOUL_TICKS, 0);
+        tracker.startTracking(SSC_EXTRAS_SOUL_ANIMATION, sscextras.drake.DrakeSoulAnimations.TRANSFORMATION_ID);
         tracker.startTracking(SSC_EXTRAS_DRAKE_SOUL, false);
     }
     public int sscExtras$soulTicks() { return ((LivingEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_SOUL_TICKS); }
     public void sscExtras$soulTicks(int ticks) { ((LivingEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_SOUL_TICKS, ticks); }
+    public String sscExtras$soulAnimation() { return ((LivingEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_SOUL_ANIMATION); }
+    public void sscExtras$soulAnimation(String animation) { ((LivingEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_SOUL_ANIMATION, animation); }
     public boolean sscExtras$drakeSoul() { return ((LivingEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_DRAKE_SOUL); }
     public void sscExtras$drakeSoul(boolean bound) { ((LivingEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_DRAKE_SOUL, bound); }
     public int sscExtras$ritualRole() { return ((LivingEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_RITUAL_ROLE) & 255; }

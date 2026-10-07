@@ -78,10 +78,11 @@ public final class DrakeFeedGoal extends Goal {
     static int catalystDelay(PlayerEntity player) { return 1200 + player.getRandom().nextInt(2401); }
 
     @Override public boolean canStart() {
-        if (pillager.hasVehicle() || pillager.age < nextSearch || DrakeFaction.fighting(pillager)) return false;
+        if (pillager.hasVehicle() || pillager.age < nextSearch || DrakeFaction.fighting(pillager)
+                || DrakeSoulbinding.attendee(pillager) != null) return false;
         nextSearch = pillager.age + 40;
         player = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12), candidate ->
-                inStall(candidate) && !candidate.isUsingItem()
+                inStall(candidate) && !candidate.isUsingItem() && !DrakeSoulbinding.ritualActive(candidate)
                 && (candidate.getHungerManager().getFoodLevel() < 10 || canFeedCatalyst(candidate)
                     && (DrakeOutpostOwnership.claim(candidate).escapeCatalystDue
                         || DrakeOutpostOwnership.claim(candidate).nextCatalyst <= pillager.getWorld().getTime()))
@@ -111,7 +112,8 @@ public final class DrakeFeedGoal extends Goal {
 
     @Override public boolean shouldContinue() {
         if (thrown || player == null || !inStall(player) || DrakeOutpostOwnership.claim(player) != feedingClaim
-                || pillager.hasVehicle() || DrakeFaction.fighting(pillager)) return false;
+                || pillager.hasVehicle() || DrakeFaction.fighting(pillager)
+                || DrakeSoulbinding.attendee(pillager) != null || DrakeSoulbinding.ritualActive(player)) return false;
         if (catalyst) return canFeedCatalyst(player) && pillager.age - started < 600;
         return handFeeding ? earlyStage(player) && player.canConsume(false) && !player.isCreative() && !player.isSleeping()
                 && !player.hasVehicle() && !player.hasPassengers() && pillager.age - started < 600

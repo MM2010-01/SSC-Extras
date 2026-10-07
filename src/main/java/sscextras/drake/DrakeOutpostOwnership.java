@@ -53,13 +53,17 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public boolean shoeingDue;
         public int shoeingViolations;
         boolean shoeingRitual;
-        DrakeSoulbinding.Ritual commandRitual;
-        int shoeingTicks, shoeingStage;
+        DrakeRituals.Type commandRitual;
+        int shoeingStage;
+        public DrakeRitualCheckpoint ritualCheckpoint;
+        AbstractRitual ritualRun;
+        boolean ritualUnavailable;
         public int soulboundStage = 3;
         public NbtCompound previousSpawn = new NbtCompound();
         long lastServiceTime = Long.MIN_VALUE;
         long lastAttendanceNight = Long.MIN_VALUE;
-        int ritualTicks, feedingTicks, catalystsFed;
+        public int ritualTicks() { return ritualRun == null ? 0 : ritualRun.ticks(); }
+        public int catalystsFed() { return ritualCheckpoint == null ? 0 : ritualCheckpoint.catalystsFed; }
         boolean returning;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
@@ -82,6 +86,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     private final Map<UUID, Claim> mounts = new LinkedHashMap<>();
+    private final sscextras.events.EventAssignments assignments = new sscextras.events.EventAssignments();
+    sscextras.events.EventAssignments assignments() { return assignments; }
     private final Map<GlobalPos, String> pendingSigns = new LinkedHashMap<>();
     private final java.util.Set<GlobalPos> vacantResidents = new java.util.LinkedHashSet<>();
     private final Map<UUID, java.util.Set<GlobalPos>> introductions = new LinkedHashMap<>();
@@ -420,6 +426,22 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.shoeingDue = tag.contains("ShoeingViolations") && tag.getBoolean("ShoeingDue");
             claim.awaitingRespawn = tag.getBoolean("AwaitingRespawn");
             claim.previousSpawn = tag.getCompound("PreviousSpawn").copy();
+            if (tag.contains("Ritual", NbtElement.COMPOUND_TYPE)) {
+                var checkpoint = DrakeRitualCheckpoint.read(tag.getCompound("Ritual"));
+                claim.ritualCheckpoint = checkpoint;
+                claim.ritualUnavailable = true;
+                var type = DrakeRituals.get(checkpoint.type);
+                if (type != null && checkpoint.supported()) {
+                    try {
+                        claim.ritualRun = type.create(checkpoint);
+                        claim.ritualUnavailable = false;
+                        claim.commandRitual = checkpoint.commanded ? type : null;
+                    } catch (IllegalArgumentException invalidStage) {
+                        org.slf4j.LoggerFactory.getLogger("ssc-extras").warn("Keeping unavailable ritual checkpoint {}: {}",
+                                checkpoint.type, invalidStage.getMessage());
+                    }
+                }
+            }
             data.mounts.put(tag.getUuid("Player"), claim);
         }
         for (var element : nbt.getList("Signs", NbtElement.COMPOUND_TYPE)) {
@@ -448,6 +470,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putBoolean("Feral", claim.feral);
             tag.putBoolean("ShoeingDue", claim.shoeingDue);
             tag.putInt("ShoeingViolations", claim.shoeingViolations);
+            if (claim.ritualCheckpoint != null) tag.put("Ritual", claim.ritualCheckpoint.write());
             tag.put("PreviousSpawn", claim.previousSpawn.copy()); mounts.add(tag);
         });
         var signs = new NbtList();
