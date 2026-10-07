@@ -2,7 +2,6 @@ package sscextras.drake;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.decoration.LeashKnotEntity;
@@ -18,7 +17,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.SpawnHelper;
 import net.minecraft.world.World;
 import sscextras.events.NpcEvent;
 import java.util.ArrayList;
@@ -58,22 +56,16 @@ public final class MountBuyerEntity extends PillagerEntity {
         var buyer = MountMerchants.BUYER.create(world); buyer.visit(merchant);
         for (int attempt = 0; attempt < 24; attempt++) {
             double angle = world.random.nextDouble() * Math.PI * 2;
-            double distance = 32 + world.random.nextInt(65);
-            var column = BlockPos.ofFloored(merchant.customerPosition().add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance));
+            var column = BlockPos.ofFloored(merchant.customerPosition().add(Math.cos(angle) * 32, 0, Math.sin(angle) * 32));
             if (!world.isChunkLoaded(column) || !world.shouldTick(column)) continue;
             var pos = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, column);
-            var point = Vec3d.ofBottomCenter(pos);
-            var nearest = world.getClosestPlayer(point.x, point.y, point.z, 128, false);
-            if (nearest == null || nearest.squaredDistanceTo(point) <= 24 * 24
-                    || world.getSpawnPos().isWithinDistance(point, 24)
-                    || !SpawnHelper.canSpawn(SpawnRestriction.Location.ON_GROUND, world, pos, MountMerchants.BUYER)) continue;
+            if (world.getBlockState(pos.down()).getCollisionShape(world, pos.down()).isEmpty()
+                    || !world.getFluidState(pos.down()).isEmpty() || !world.getFluidState(pos).isEmpty()) continue;
             buyer.refreshPositionAndAngles(pos, 0, 0);
             buyer.setOnGround(true);
             if (!world.isSpaceEmpty(buyer) || !world.getOtherEntities(buyer, buyer.getBoundingBox()).isEmpty()) continue;
-            var path = buyer.getNavigation().findPathTo(BlockPos.ofFloored(merchant.customerPosition()), 0, 128);
-            if (path == null || !path.reachesTarget()) continue;
             if (world.spawnEntity(buyer)) {
-                buyer.setSprinting(true); buyer.getNavigation().startMovingAlong(path, 1.2);
+                buyer.visitCounter(merchant);
                 MountMarket.get(world.getServer()).buyer(merchant.getUuid(), buyer.getUuid()); return buyer;
             }
         }

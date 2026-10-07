@@ -30,7 +30,7 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
                     matrices.translate(0, .7125, .340625);
                     matrices.scale(1, -1, -1);
                     matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(35));
-                    matrices.scale(.78f, .65f, .88f);
+                    matrices.scale(.66f, .65f, .64f);
                     collar.render(matrices, buffers, light, true);
                     matrices.pop();
                 }

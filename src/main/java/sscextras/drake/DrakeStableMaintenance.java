@@ -94,14 +94,19 @@ public final class DrakeStableMaintenance {
     }
 
     public static boolean repair(ServerWorld world, DrakeStablePiece stable, BlockPos pos, PillagerEntity guard) {
-        if (!world.isChunkLoaded(pos)) return false;
         var expected = expected(stable.getBoundingBox(), pos);
+        if (!repair(world, pos, expected, guard)) return false;
+        if (expected.isOf(Blocks.DARK_OAK_SIGN)) DrakeOutpostOwnership.restoreSign(world, stable, pos);
+        return true;
+    }
+
+    static boolean repair(ServerWorld world, BlockPos pos, BlockState expected, PillagerEntity guard) {
+        if (!world.isChunkLoaded(pos)) return false;
         if (expected == null || matches(world.getBlockState(pos), expected)) return false;
         if (!expected.isAir() && !world.canPlace(expected, pos, ShapeContext.absent())) return false;
         if (!world.getBlockState(pos).isAir() && !world.breakBlock(pos, true, guard)) return false;
         if (!expected.isAir()) {
             world.setBlockState(pos, Block.postProcessState(expected, world, pos), Block.NOTIFY_ALL);
-            if (expected.isOf(Blocks.DARK_OAK_SIGN)) DrakeOutpostOwnership.restoreSign(world, stable, pos);
         }
         return true;
     }

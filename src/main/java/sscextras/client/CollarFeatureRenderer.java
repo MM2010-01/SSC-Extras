@@ -36,9 +36,8 @@ public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientP
                 drakeStage == 2 ? 0.09 : drakeStage == 3 ? 0.07 : 0);
         if (drakeStage == 3) matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(35));
         float scale = drakeStage == 2 ? 0.72f : drakeStage == 3 ? 0.65f : 0.8f;
-        matrices.scale(drakeStage == 3 ? 0.78f : scale, scale, drakeStage == 3 ? 0.88f : scale);
+        matrices.scale(drakeStage == 3 ? 0.66f : scale, scale, drakeStage == 3 ? 0.64f : scale);
         if (collar.isOf(Collars.TAMING)) {
-            if (drakeStage == 3) matrices.scale(0.9f, 1, 0.87f);
             taming.render(matrices, vertices, light, false);
             matrices.pop();
             return;
