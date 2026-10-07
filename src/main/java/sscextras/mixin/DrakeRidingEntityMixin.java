@@ -28,6 +28,9 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
     @Unique private boolean sscExtras$syncPassengers;
     @Unique private net.minecraft.entity.mob.PillagerEntity sscExtras$battleRider;
     @Unique private long sscExtras$nextPatrol;
+    @Unique private MountRideSession sscExtras$rideSession;
+    public MountRideSession sscExtras$rideSession() { return sscExtras$rideSession; }
+    public void sscExtras$rideSession(MountRideSession session) { sscExtras$rideSession = session; }
     public long sscExtras$nextPatrol() { return sscExtras$nextPatrol; }
     public void sscExtras$nextPatrol(long tick) { sscExtras$nextPatrol = tick; }
     public DrakeRiding.Input sscExtras$getRiderInput() { return sscExtras$riderInput; }
@@ -40,6 +43,7 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
 
     @Inject(method = {"addPassenger", "removePassenger"}, at = @At("TAIL"))
     private void sscExtras$syncOwnerPassenger(Entity passenger, CallbackInfo ci) {
+        if ((Object)this instanceof ServerPlayerEntity player) MountRideSession.sample(player);
         if (passenger instanceof net.minecraft.entity.mob.PillagerEntity && (Object)this instanceof net.minecraft.entity.LivingEntity living
                 && !living.hasPassenger(passenger)) living.setSprinting(false);
         if ((Object)this instanceof ServerPlayerEntity owner && (sscExtras$syncPassengers || DrakeEquipment.canRide(owner)

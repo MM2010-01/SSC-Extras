@@ -38,6 +38,8 @@ public final class DrakeRiding {
         void sscExtras$battleRider(PillagerEntity rider);
         long sscExtras$nextPatrol();
         void sscExtras$nextPatrol(long tick);
+        MountRideSession sscExtras$rideSession();
+        void sscExtras$rideSession(MountRideSession session);
     }
 
     private DrakeRiding() { }
@@ -76,6 +78,7 @@ public final class DrakeRiding {
     }
 
     public static void register() {
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> MountRideSession.flush(handler.player));
         ServerPlayNetworking.registerGlobalReceiver(INPUT, (server, rider, handler, buf, sender) -> {
             float sideways = buf.readFloat(), forward = buf.readFloat(), yaw = buf.readFloat();
             boolean jump = buf.readBoolean();

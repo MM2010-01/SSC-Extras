@@ -58,6 +58,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public DrakeRitualCheckpoint ritualCheckpoint;
         AbstractRitual ritualRun;
         boolean ritualUnavailable;
+        long nextRitualAttempt;
         public int soulboundStage = 3;
         public NbtCompound previousSpawn = new NbtCompound();
         long lastServiceTime = Long.MIN_VALUE;

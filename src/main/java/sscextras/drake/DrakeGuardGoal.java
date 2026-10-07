@@ -19,6 +19,7 @@ public final class DrakeGuardGoal extends Goal {
     private Path patrol;
     private int nextPatrol, nextPath;
     private boolean correcting;
+    private LeashEscortEvent escort;
 
     public DrakeGuardGoal(PillagerEntity pillager) {
         this(pillager, false);
@@ -77,6 +78,9 @@ public final class DrakeGuardGoal extends Goal {
 
     @Override public void tick() {
         if (following == null) return;
+        if (escort != null && !escort.valid()) {
+            escort.finish(); escort = null; correcting = false;
+        }
         var claim = DrakeOutpostOwnership.claim(following);
         if (claim == null) return;
         pillager.setSprinting(claim.tryingToEscape);
@@ -92,18 +96,18 @@ public final class DrakeGuardGoal extends Goal {
         if (correcting && DrakeLeashing.holder(following) == pillager) {
             if (inside) {
                 DrakeLeashing.detach(following, false); correcting = false; nextPath = 0;
+                if (escort != null) { escort.finish(); escort = null; }
                 navigation().autoOpenGates(false);
             } else {
-                if (pillager.squaredDistanceTo(following) > 49) navigation().stop();
-                else if (pillager.age >= nextPath) {
-                    nextPath = pillager.age + 10;
+                if (escort == null) {
                     var nearest = new Vec3d(MathHelper.clamp(following.getX(), claim.stable.getMinX(), claim.stable.getMaxX() + 1),
                             following.getY(), MathHelper.clamp(following.getZ(), claim.stable.getMinZ(), claim.stable.getMaxZ() + 1));
                     var point = nearest.add(following.getPos().subtract(nearest).normalize()
                             .multiply(DrakeStableLayout.roamRange(claim.stable) - 8));
                     var destination = pillager.getWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, BlockPos.ofFloored(point));
-                    navigation().startMovingTo(destination.getX() + .5, destination.getY(), destination.getZ() + .5, .8);
+                    escort = LeashEscortEvent.start(pillager, following, Vec3d.ofBottomCenter(destination), null);
                 }
+                if (escort != null && !escort.move(escort.route().to(), .8, false)) { escort = null; correcting = false; }
                 return;
             }
         }
@@ -118,6 +122,9 @@ public final class DrakeGuardGoal extends Goal {
 
     @Override public void stop() {
         var claim = following == null ? null : DrakeOutpostOwnership.claim(following);
+        boolean handingOff = following != null && (claim != null && claim.tryingToEscape && DrakeCaptureGoal.eligible(following)
+                || ((DrakeCaptureGoal.Captor)pillager).sscExtras$captureGoal().quarry() == following);
+        if (escort != null) { if (handingOff) escort.handoff(); else escort.finish(); escort = null; }
         if (correcting && following != null && DrakeLeashing.holder(following) == pillager
                 && !(claim != null && claim.tryingToEscape && DrakeCaptureGoal.eligible(following))
                 && ((DrakeCaptureGoal.Captor)pillager).sscExtras$captureGoal().quarry() != following)

@@ -224,6 +224,7 @@ public final class DrakeSoulbinding {
         }
         var type = claim.ritualCheckpoint != null ? DrakeRituals.get(claim.ritualCheckpoint.type) : DrakeRituals.due(player, claim);
         if (type == null) return;
+        if (claim.attendants.isEmpty() && player.getServer().getOverworld().getTime() < claim.nextRitualAttempt) return;
         boolean serving = claim.world.equals(player.getWorld().getRegistryKey()) &&
                 (DrakeCaptureGoal.near(claim.stable, player.getPos(), DrakeStableLayout.roamRange(claim.stable)) || DrakeBattleGoal.riding(player));
         if (!serving || claim.tryingToEscape) { cancel(player, claim); return; }
@@ -443,6 +444,13 @@ public final class DrakeSoulbinding {
     private static void cancel(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (!claim.attendants.isEmpty() && (restrained(player) || claim.ritualTicks() > 0)) hint(player, "ritual_interrupted");
         releaseAttendance(player, claim);
+    }
+
+    static void interruptEscort(ServerPlayerEntity player, AbstractRitual run) {
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim == null || claim.ritualRun != run) return;
+        claim.nextRitualAttempt = player.getServer().getOverworld().getTime() + 100;
+        cancel(player, claim);
     }
 
     private static void releaseAttendance(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {

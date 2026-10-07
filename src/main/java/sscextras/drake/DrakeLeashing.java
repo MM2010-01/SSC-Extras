@@ -46,7 +46,7 @@ public final class DrakeLeashing {
         return player.getWorld().isClient ? ((State)player).sscExtras$leashHolderId() != 0 : ((State)player).sscExtras$leash().linked();
     }
     public static float stepHeight(PlayerEntity player, float height) {
-        if (EarthenDrake.onAllFours(player)) return 1;
+        if (QuadrupedMovement.quadrupedal(player)) return QuadrupedMovement.STEP_HEIGHT;
         var holder = holder(player);
         double distance = holder instanceof net.minecraft.entity.mob.PillagerEntity
                 ? player.squaredDistanceTo(holder.getRootVehicle()) : 0;
@@ -60,6 +60,7 @@ public final class DrakeLeashing {
         leash.pillagerTied = holder instanceof net.minecraft.entity.mob.PillagerEntity || leash.linked() && leash.pillagerTied;
         leash.holder = holder; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
         leash.leadPath = null; leash.nextPath = 0;
+        leash.recovery.reset();
         ((State)player).sscExtras$leashHolderId(holder.getId());
         if (previous != holder) removeEmptyKnot(previous);
         if (player.isSleeping()) player.wakeUp();
@@ -68,6 +69,8 @@ public final class DrakeLeashing {
         return true;
     }
     public static boolean attachPillager(PlayerEntity player, Entity holder) {
+        var leash = ((State)player).sscExtras$leash();
+        if (holder.getUuid().equals(leash.failedGuide) && player.getWorld().getTime() < leash.retryAfter) return false;
         if (!attach(player, holder)) return false;
         ((State)player).sscExtras$leash().pillagerTied = true;
         return true;
@@ -78,10 +81,17 @@ public final class DrakeLeashing {
         if (drop && leash.linked() && !leash.pillagerTied && !player.getWorld().isClient) player.dropItem(Items.LEAD);
         leash.holder = null; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
         leash.leadPath = null;
+        leash.recovery.reset();
         leash.pillagerTied = false;
         ((State)player).sscExtras$leashHolderId(0);
         removeEmptyKnot(previous);
         refreshPosture(player);
+    }
+
+    public static Vec3d recoveryDestination(PlayerEntity player, Entity guide) {
+        if (player.getWorld().isClient || holder(player) != guide) return null;
+        var leash = ((State)player).sscExtras$leash();
+        return leash.recovery.phase() == sscextras.events.LeashRecovery.Phase.REGROUPING ? player.getPos() : null;
     }
 
     private static void removeEmptyKnot(Entity previous) {
@@ -148,6 +158,9 @@ public final class DrakeLeashing {
         private boolean pillagerTied, legacy;
         private net.minecraft.entity.ai.pathing.Path leadPath;
         private long nextPath;
+        private final sscextras.events.LeashRecovery recovery = new sscextras.events.LeashRecovery();
+        private UUID failedGuide;
+        private long retryAfter;
         private boolean linked() { return holder != null || uuid != null || fence != null; }
 
         public void tick(PlayerEntity player) {
@@ -173,7 +186,18 @@ public final class DrakeLeashing {
             double distance = delta.length();
             if (distance > 10) { detach(player, true); return; }
             boolean pillagerLead = holder instanceof net.minecraft.entity.mob.PillagerEntity;
-            if (distance > (pillagerLead ? DrakeSoulbinding.role(player) == DrakeSoulbinding.ESCORT ? 1.5 : 3 : 6)) {
+            double slack = pillagerLead ? DrakeSoulbinding.role(player) == DrakeSoulbinding.ESCORT ? 1.5 : 3 : 6;
+            if (pillagerLead && !DrakeSoulbinding.restrained(player)) {
+                var phase = recovery.sample(player.age, player.getPos(), anchor.getPos(), distance > slack,
+                        player.horizontalCollision || anchor.getY() > player.getY() + QuadrupedMovement.STEP_HEIGHT,
+                        player.isOnGround() || player.isTouchingWater());
+                if (phase == sscextras.events.LeashRecovery.Phase.FAILED) {
+                    failedGuide = holder.getUuid(); retryAfter = player.getWorld().getTime() + 100;
+                    detach(player, false); return;
+                }
+                if (phase == sscextras.events.LeashRecovery.Phase.REGROUPING) { leadPath = null; return; }
+            }
+            if (distance > slack) {
                 Vec3d pull = delta;
                 if (holder instanceof net.minecraft.entity.mob.PillagerEntity pillager
                         && (leadPath != null || player.horizontalCollision || anchor.getY() > player.getY() + .5)) {
@@ -208,6 +232,7 @@ public final class DrakeLeashing {
         public void read(NbtCompound nbt) {
             holder = null; uuid = null; fence = null; waitTicks = 0;
             leadPath = null; nextPath = 0;
+            recovery.reset(); failedGuide = null; retryAfter = 0;
             var data = nbt.getCompound("DrakeLeash");
             pillagerTied = data.getBoolean("PillagerTied"); legacy = !data.contains("PillagerTied");
             if (data.contains("Fence")) fence = NbtHelper.toBlockPos(data.getCompound("Fence"));

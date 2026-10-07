@@ -29,6 +29,7 @@ public final class DrakeCaptureGoal extends Goal {
     private int nextSearch, started, nextDisplay;
     private int targetStall = -1;
     private boolean atGate, leaving, complete;
+    private LeashEscortEvent escort;
 
     public DrakeCaptureGoal(PillagerEntity pillager) {
         this.pillager = pillager;
@@ -148,6 +149,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public void start() {
+        if (escort != null) { escort.handoff(); escort = null; }
         atGate = false; leaving = false; complete = false; sourceGate = null; started = pillager.age;
         gates(true);
         pillager.clearActiveItem(); pillager.setCharging(false); pillager.setTarget(null);
@@ -187,6 +189,9 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public void tick() {
+        if (escort != null && !escort.valid()) {
+            escort.finish(); escort = null; complete = true; move(null, false); return;
+        }
         if (!leaving && DrakeLeashing.attached(player) && DrakeLeashing.holder(player) != pillager) return;
         pillager.getLookControl().lookAt(player, 30, 30);
         var body = pillager.getRootVehicle();
@@ -231,6 +236,9 @@ public final class DrakeCaptureGoal extends Goal {
             }
             return;
         }
+        if (escort == null) escort = LeashEscortEvent.start(pillager, player, Vec3d.ofBottomCenter(stable.keeperPosition(targetStall)), null);
+        if (escort == null || !escort.valid()) { complete = true; return; }
+        if (DrakeLeashing.recoveryDestination(player, pillager) != null) { move(null, false); return; }
         gates(true);
         if (sourceGate != null) {
             navigation().open(sourceGate);
@@ -250,6 +258,7 @@ public final class DrakeCaptureGoal extends Goal {
                 && player.squaredDistanceTo(Vec3d.ofCenter(stable.tie(targetStall))) <= 81) {
             DrakeOutpostOwnership.capture(player, stable, targetStall);
             DrakeLeashing.attach(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), stable.tie(targetStall)));
+            escort.finish(); escort = null;
             DrakeDialogue.say(player, "stable_arrived");
             leaving = true; started = pillager.age;
             ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
@@ -264,6 +273,7 @@ public final class DrakeCaptureGoal extends Goal {
 
     private void move(Vec3d destination, boolean direct) {
         double speed = pillager.isSprinting() ? 1 : .8;
+        if (escort != null && !leaving) { if (!escort.move(destination, speed, direct)) complete = true; return; }
         if (DrakeBattleGoal.of(pillager).movePursuit(player, destination, speed, direct)) return;
         if (destination == null || direct) navigation().stop();
         if (destination == null) return;
@@ -272,6 +282,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public void stop() {
+        if (escort != null) { escort.finish(); escort = null; }
         DrakeBattleGoal.of(pillager).stopPursuit();
         if (player != null && DrakeLeashing.holder(player) == pillager) DrakeLeashing.detach(player, true);
         player = null; stable = null; sourceGate = null; targetStall = -1; nextSearch = pillager.age + 100;
