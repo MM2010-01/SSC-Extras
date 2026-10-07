@@ -44,5 +44,11 @@ public abstract class DrakeRidingPlayerMixin {
                 sscExtras$ejectReady = false;
             }
         } else sscExtras$ejectReady = false;
+        if (self instanceof net.minecraft.server.network.ServerPlayerEntity player) MountRideSession.sample(player);
+    }
+
+    @Inject(method = "writeCustomDataToNbt", at = @At("HEAD"))
+    private void sscExtras$flushRideProgress(net.minecraft.nbt.NbtCompound nbt, CallbackInfo ci) {
+        if ((Object)this instanceof net.minecraft.server.network.ServerPlayerEntity player) MountRideSession.flush(player);
     }
 }

@@ -50,7 +50,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     public StableDrakeEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
         setPersistent();
-        setStepHeight(1);
+        setStepHeight(QuadrupedMovement.STEP_HEIGHT);
         saddle = new ItemStack(DrakeEquipment.SADDLE);
         reins = new ItemStack(DrakeEquipment.REINS);
         dataTracker.set(SADDLED, true);
