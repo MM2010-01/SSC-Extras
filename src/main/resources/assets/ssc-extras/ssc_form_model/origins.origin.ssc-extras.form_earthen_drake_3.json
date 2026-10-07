@@ -23,15 +23,50 @@
   "animation_system": "ssc-extras:earthen_drake",
   "animation_system_config": {
     "stage": 3,
+    "part_extra_pos": {
+      "head": {
+        "pos_x": 0,
+        "pos_y": 10.56,
+        "pos_z": -7.253333
+      },
+      "body": {
+        "pos_x": 0,
+        "pos_y": 15.893333,
+        "pos_z": -6.4,
+        "rot_x": -1.5707963267948966,
+        "rot_y": 0,
+        "rot_z": 0
+      },
+      "left_arm": {
+        "pos_x": -1.586667,
+        "pos_y": 12.442667,
+        "pos_z": -3.413333
+      },
+      "right_arm": {
+        "pos_x": 1.586667,
+        "pos_y": 12.442667,
+        "pos_z": -3.413333
+      },
+      "left_leg": {
+        "pos_x": 1.157333,
+        "pos_y": 3.893333,
+        "pos_z": 5.119999999999999
+      },
+      "right_leg": {
+        "pos_x": -1.157333,
+        "pos_y": 3.893333,
+        "pos_z": 5.119999999999999
+      }
+    },
     "extra_parts_map": {
-      "left_forearm": "left_forearm",
-      "right_forearm": "right_forearm",
-      "left_front_paw": "left_front_paw",
-      "right_front_paw": "right_front_paw",
-      "left_hind_shin": "left_hind_shin",
-      "right_hind_shin": "right_hind_shin",
-      "left_hind_paw": "left_hind_paw",
-      "right_hind_paw": "right_hind_paw"
+      "left_forearm": "leftForearm",
+      "@left@_forearm": "rightForearm",
+      "left_front_paw": "leftFrontPaw",
+      "@left@_front_paw": "rightFrontPaw",
+      "left_hind_shin": "leftHindShin",
+      "@left@_hind_shin": "rightHindShin",
+      "left_hind_paw": "leftHindPaw",
+      "@left@_hind_paw": "rightHindPaw"
     }
   },
   "builtin_controller_data": {

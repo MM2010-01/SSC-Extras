@@ -27,7 +27,9 @@ public final class CollarFeatureRenderer extends FeatureRenderer<AbstractClientP
         matrices.push();
         int drakeStage = EarthenDrake.stage(player);
         if (drakeStage == 3) {
-            getContextModel().body.rotate(matrices);
+            var body = getContextModel().body;
+            matrices.translate(body.pivotX / 16, (body.pivotY - 15.893333f) / 16, (body.pivotZ + 6.4f) / 16);
+            matrices.multiply(new org.joml.Quaternionf().rotationZYX(body.roll, body.yaw, body.pitch - (float)Math.PI / 2));
             matrices.translate(0, 0.6475, -0.410625);
         } else getContextModel().head.rotate(matrices);
         matrices.translate(0, drakeStage == 2 ? 0.18 : drakeStage == 3 ? 0.14 : 1.0 / 16,

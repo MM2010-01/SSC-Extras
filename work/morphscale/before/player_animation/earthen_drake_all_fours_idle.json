@@ -1,0 +1,109 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "earthen_drake_all_fours_idle": {
+      "loop": true,
+      "animation_length": 1,
+      "bones": {
+        "body": {
+          "position": {
+            "vector": [
+              0,
+              -13,
+              -6
+            ]
+          }
+        },
+        "torso": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              90,
+              0,
+              0
+            ]
+          }
+        },
+        "head": {
+          "position": {
+            "vector": [
+              0,
+              2,
+              0
+            ]
+          }
+        },
+        "leftArm": {
+          "position": {
+            "vector": [
+              -1.2,
+              2,
+              1
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "rightArm": {
+          "position": {
+            "vector": [
+              1.2,
+              2,
+              1
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "leftLeg": {
+          "position": {
+            "vector": [
+              1,
+              13,
+              15
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "rightLeg": {
+          "position": {
+            "vector": [
+              -1,
+              13,
+              15
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

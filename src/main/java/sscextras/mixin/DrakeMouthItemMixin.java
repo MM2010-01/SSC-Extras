@@ -45,17 +45,6 @@ public abstract class DrakeMouthItemMixin {
         return blacklisted && !(entity instanceof PlayerEntity player && DrakeFeralization.carriesInMouth(player));
     }
     @ModifyArgs(method = "renderItemInMouth", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/util/math/MatrixStack;translate(FFF)V", ordinal = 0, remap = true))
-    private void sscExtras$headPivot(Args args, MatrixStack matrices, VertexConsumerProvider vertices,
-            int light, LivingEntity entity, ItemStack stack, float yaw, float pitch) {
-        if (!(entity instanceof PlayerEntity player)) return;
-        int stage = EarthenDrake.stage(player);
-        if (stage != 3) return;
-        args.set(1, (float)args.get(1) + 0.66f);
-        args.set(2, (float)args.get(2) - 0.453333f);
-    }
-
-    @ModifyArgs(method = "renderItemInMouth", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/util/math/MatrixStack;translate(DDD)V", ordinal = 0, remap = true))
     private void sscExtras$snoutPosition(Args args, MatrixStack matrices, VertexConsumerProvider vertices,
             int light, LivingEntity entity, ItemStack stack, float yaw, float pitch) {

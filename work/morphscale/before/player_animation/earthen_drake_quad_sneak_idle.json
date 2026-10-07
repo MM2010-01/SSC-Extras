@@ -1,0 +1,244 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "earthen_drake_quad_sneak_idle": {
+      "loop": true,
+      "animation_length": 1,
+      "bones": {
+        "body": {
+          "position": {
+            "vector": [
+              0,
+              -1.5,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "torso": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "head": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "leftArm": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              -10,
+              0,
+              -4
+            ]
+          }
+        },
+        "rightArm": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              -10,
+              0,
+              4
+            ]
+          }
+        },
+        "leftLeg": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              12,
+              0,
+              -5
+            ]
+          }
+        },
+        "rightLeg": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              12,
+              0,
+              5
+            ]
+          }
+        },
+        "left_forearm": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_forearm": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_front_paw": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_front_paw": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_hind_shin": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_hind_shin": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_hind_paw": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_hind_paw": {
+          "position": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rotation": {
+            "vector": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

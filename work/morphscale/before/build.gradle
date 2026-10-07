@@ -1,0 +1,73 @@
+plugins {
+    id 'fabric-loom' version '1.10.5'
+}
+
+version = '1.23.29'
+group = 'sscextras'
+
+repositories { mavenCentral() }
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.20.1'
+    mappings 'net.fabricmc:yarn:1.20.1+build.10:v2'
+    modImplementation 'net.fabricmc:fabric-loader:0.16.14'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.92.9+1.20.1'
+    modImplementation files(providers.gradleProperty('sscJar').getOrElse('.work/deps/ssc.jar'))
+    modImplementation fileTree('.work/deps') {
+        include 'cardinal-components-base-5.2.*.jar', 'cardinal-components-entity-5.2.*.jar',
+                'apoli-*.jar', 'calio-*.jar', 'Pehkui-*.jar', 'trinkets-*.jar'
+    }
+    modRuntimeOnly fileTree('.work/runtime') { include '*.jar' }
+    modCompileOnly fileTree('.work/runtime') { include 'azurelib-*.jar', 'player-animation-lib-*.jar' }
+    modCompileOnly files('.work/compat/bondofthebeast.jar')
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach { options.release = 17 }
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand version: project.version }
+}
+
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+loom {
+    mods {
+        'ssc-extras' { sourceSet sourceSets.main }
+        'ssc-extras-tests' { sourceSet sourceSets.gametest }
+    }
+    runs {
+        gametest {
+            server()
+            name 'SSC Extras integration tests'
+            source sourceSets.gametest
+            runDir 'build/gametest'
+            vmArg '-Dfabric-api.gametest'
+            vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory.get()}/gametest-results.xml"
+        }
+    }
+}
+
+tasks.register('gametestJar', Jar) {
+    dependsOn gametestClasses
+    archiveClassifier = 'gametest-dev'
+    from sourceSets.gametest.output
+}
+
+tasks.register('remapGametestJar', net.fabricmc.loom.task.RemapJarTask) {
+    dependsOn gametestJar
+    inputFile = tasks.gametestJar.archiveFile
+    archiveClassifier = 'gametest'
+    addNestedDependencies = false
+    classpath.from(sourceSets.main.output)
+}

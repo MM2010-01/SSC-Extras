@@ -1,0 +1,48 @@
+{
+  "name": "ssc-extras.earthen_drake_3.model_name",
+  "layer": "origins:origin",
+  "form": "ssc-extras:form_earthen_drake_3",
+  "wide_only": true,
+  "model": "ssc-extras:geo/form/earthen_drake_3.geo.json",
+  "texture": "ssc-extras:textures/form/earthen_drake.png",
+  "hidden": [
+    "leftSleeve",
+    "rightSleeve",
+    "leftPants",
+    "rightPants",
+    "leftArm",
+    "rightArm",
+    "leftLeg",
+    "rightLeg",
+    "body",
+    "jacket",
+    "head",
+    "hat"
+  ],
+  "texture_mask": "ssc-extras:textures/form/earthen_drake_mask.png",
+  "animation_system": "ssc-extras:earthen_drake",
+  "animation_system_config": {
+    "stage": 3,
+    "extra_parts_map": {
+      "left_forearm": "left_forearm",
+      "right_forearm": "right_forearm",
+      "left_front_paw": "left_front_paw",
+      "right_front_paw": "right_front_paw",
+      "left_hind_shin": "left_hind_shin",
+      "right_hind_shin": "right_hind_shin",
+      "left_hind_paw": "left_hind_paw",
+      "right_hind_paw": "right_hind_paw"
+    }
+  },
+  "builtin_controller_data": {
+    "tail_chain": {
+      "tail": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  }
+}
