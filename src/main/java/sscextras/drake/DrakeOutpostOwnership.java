@@ -123,12 +123,21 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     public static boolean available(ServerWorld world, DrakeStablePiece stable, int stall, PlayerEntity player) {
+        return availableFor(world, stable, stall, player.getUuid(), player);
+    }
+
+    public static boolean availableFor(ServerWorld world, DrakeStablePiece stable, int stall, UUID mount) {
+        return availableFor(world, stable, stall, mount, world.getPlayerByUuid(mount));
+    }
+
+    private static boolean availableFor(ServerWorld world, DrakeStablePiece stable, int stall, UUID mount, PlayerEntity player) {
         if (stall < 0 || stall >= stable.stallCount()) return false;
         var data = get(world.getServer());
-        var owned = claim(player);
+        var owned = data.mounts.get(mount);
         if (owned != null && owned.soulbound && (!owned.matches(world, stable) || owned.stallIndex != stall)) return false;
+        if (MountMarket.get(world.getServer()).reserved(world, stable, stall, mount)) return false;
         if (stall < stable.residentCount() && !data.vacantResidents.contains(GlobalPos.create(world.getRegistryKey(), stable.sign(stall)))) return false;
-        if (data.mounts.entrySet().stream().anyMatch(entry -> !entry.getKey().equals(player.getUuid())
+        if (data.mounts.entrySet().stream().anyMatch(entry -> !entry.getKey().equals(mount)
                 && entry.getValue().matches(world, stable) && entry.getValue().stallIndex == stall)) return false;
         return world.getEntitiesByClass(net.minecraft.entity.mob.PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE), guard -> {
             var capture = ((DrakeCaptureGoal.Captor)guard).sscExtras$captureGoal();
@@ -152,7 +161,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     public static void capture(PlayerEntity player, DrakeStablePiece stable, int stall) {
-        if (BondOfTheBeastCompat.hasOwner(player)) return;
+        if (BondOfTheBeastCompat.hasOwner(player) || MountMarket.playerOwned(player)
+                || MountMarket.get(player.getServer()).busy(player)) return;
         if (!available((ServerWorld)player.getWorld(), stable, stall, player)) return;
         BlindingRein.setClosed(player, false);
         if (owns(player, stable)) {
@@ -192,6 +202,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     static void registerLeashed(PlayerEntity player) {
         if (!(player.getWorld() instanceof ServerWorld world) || claim(player) != null || player.isCreative()
+                || MountMarket.playerOwned(player) || MountMarket.get(player.getServer()).busy(player)
                 || !DrakeLeashing.eligible(player) || !DrakeLeashing.attached(player)
                 || DrakeEquipment.equipped(player, DrakeEquipment.REINS).isEmpty()) return;
         var holder = DrakeLeashing.holder(player);
@@ -207,10 +218,10 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     private static void registerCollared(PlayerEntity player) {
         if (!(player.getWorld() instanceof ServerWorld world) || !player.isAlive() || player.isCreative()
-                || player.isSpectator() || BondOfTheBeastCompat.hasOwner(player)
+                || player.isSpectator() || MountMarket.playerOwned(player) || BondOfTheBeastCompat.hasOwner(player)
                 || sscextras.collar.Collars.mountName(sscextras.collar.CollarSlots.visibleCollar(player)).isEmpty()) return;
         for (var guard : world.getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(64),
-                keeper -> !(keeper instanceof DrakeVisitorEntity) && DrakeRoaming.canSee(keeper, player))) {
+                keeper -> !(keeper instanceof DrakeVisitorEntity) && !MountMerchants.trader(keeper) && DrakeRoaming.canSee(keeper, player))) {
             var stable = ((DrakeStableNavigation)guard.getNavigation()).stable();
             if (stable == null || !DrakeCaptureGoal.near(stable, player.getPos())) continue;
             int stall = availableStall(world, stable, player);
@@ -253,6 +264,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     public static void tick(PlayerEntity player) {
+        if (MountMarket.get(player.getServer()).busy(player) || MountMarket.playerOwned(player)) return;
         var claim = claim(player);
         if (claim == null) { registerLeashed(player); claim = claim(player); }
         if (claim == null) { registerCollared(player); claim = claim(player); }
@@ -384,7 +396,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
         }
         for (int stall = 0; stall < stable.stallCount(); stall++) if (stable.sign(stall).equals(pos)) {
             boolean vacant = data.vacantResidents.contains(GlobalPos.create(world.getRegistryKey(), pos));
-            writeSign(world, pos, !vacant && stall < stable.residentCount() ? stable.name(stall) : "", false);
+            String purchased = MountMarket.get(world.getServer()).name(world, stable, stall);
+            writeSign(world, pos, !purchased.isEmpty() ? purchased : !vacant && stall < stable.residentCount() ? stable.name(stall) : "", false);
             return;
         }
     }

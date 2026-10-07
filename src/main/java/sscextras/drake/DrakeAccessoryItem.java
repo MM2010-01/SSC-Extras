@@ -20,7 +20,12 @@ public class DrakeAccessoryItem extends AccessoryItem {
     public final boolean permanentOnly;
 
     public DrakeAccessoryItem(String group, String slot, String description, boolean permanentOnly, boolean fireproof) {
-        super(fireproof ? new Settings().maxCount(1).fireproof() : new Settings().maxCount(1));
+        this(group, slot, description, permanentOnly,
+                fireproof ? new Settings().maxCount(1).fireproof() : new Settings().maxCount(1));
+    }
+
+    protected DrakeAccessoryItem(String group, String slot, String description, boolean permanentOnly, Settings settings) {
+        super(settings);
         this.group = group;
         this.slot = slot;
         this.description = description;

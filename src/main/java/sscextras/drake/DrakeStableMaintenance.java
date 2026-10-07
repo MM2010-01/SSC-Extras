@@ -49,7 +49,7 @@ public final class DrakeStableMaintenance {
     public static boolean matches(BlockState state, BlockState expected) {
         if (expected.isOf(Blocks.WATER_CAULDRON)) return state.getBlock() instanceof AbstractCauldronBlock;
         if (expected.isOf(Blocks.CHEST)) return state.getBlock() instanceof ChestBlock;
-        return expected.isAir() ? state.isAir() : state.isOf(expected.getBlock());
+        return expected.isAir() ? state.isAir() || state.isOf(Blocks.SNOW) : state.isOf(expected.getBlock());
     }
 
     public static void caughtBreaking(PlayerEntity player, BlockPos pos) {

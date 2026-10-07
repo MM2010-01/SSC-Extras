@@ -36,6 +36,7 @@ public final class DrakeStableNavigation extends MobNavigation {
 
     public DrakeStablePiece stable() {
         if (!(world instanceof ServerWorld server)) return null;
+        if (MountMerchants.trader(entity)) return null;
         if (entity instanceof DrakeVisitorEntity visitor) return stable = visitor.stable();
         if (entity.age >= nextStableSearch) {
             nextStableSearch = entity.age + 100;
@@ -45,7 +46,7 @@ public final class DrakeStableNavigation extends MobNavigation {
         return stable;
     }
 
-    public void home(DrakeStablePiece home) { stable = home; guardHome = home.getBoundingBox().getCenter(); }
+    public void home(DrakeStablePiece home) { stable = home; guardHome = home == null ? null : home.getBoundingBox().getCenter(); }
     public boolean managedGuard() { return managedGuard; }
     public boolean legacyGuard() { return legacyGuard; }
     public void managedGuard(boolean managed) { managedGuard = managed; legacyGuard = false; }
@@ -189,6 +190,8 @@ public final class DrakeStableNavigation extends MobNavigation {
         openedGates.entrySet().removeIf(entry -> {
             var gate = entry.getKey();
             if (entity.age - entry.getValue() < 20) return false;
+            if (entity instanceof MountMerchantEntity merchant && merchant.holdsOpen(gate)
+                    || entity instanceof MountBuyerEntity buyer && buyer.holdsOpen(gate)) return false;
             var capture = entity instanceof DrakeCaptureGoal.Captor captor ? captor.sscExtras$captureGoal() : null;
             if (capture != null && capture.holdsOpen(gate)) return false;
             var battle = entity instanceof DrakeBattleGoal.Rider rider ? rider.sscExtras$battleGoal() : null;

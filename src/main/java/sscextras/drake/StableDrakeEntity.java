@@ -46,6 +46,9 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     private net.minecraft.util.math.BlockBox homeStable;
     private int homeStall;
     private String homeWorld = "";
+    private java.util.UUID merchant, customer;
+    private boolean marketLead;
+    private net.minecraft.util.math.BlockPos marketTie;
 
     public StableDrakeEntity(EntityType<? extends PathAwareEntity> type, World world) {
         super(type, world);
@@ -81,6 +84,32 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     }
 
     public int homeStall() { return homeStall; }
+    public void clearStableHome() {
+        if (homeStable != null && getWorld() instanceof net.minecraft.server.world.ServerWorld world) {
+            var stable = new DrakeStablePiece(homeStable.getMinX(), homeStable.getMinY(), homeStable.getMinZ(),
+                    DrakeStableLayout.stallCount(homeStable), DrakeStableLayout.facingRows(homeStable));
+            MountMarket.get(world.getServer()).vacate(world, stable, homeStall, getUuid());
+            DrakeOutpostOwnership.restoreSign(world, stable, stable.sign(homeStall));
+        }
+        homeStable = null; homeWorld = ""; clearPositionTarget(); ((DrakeStableNavigation)getNavigation()).home(null);
+    }
+    @Override public void detachLeash(boolean sendPacket, boolean dropItem) { super.detachLeash(sendPacket, dropItem && !marketLead); }
+
+    public java.util.UUID merchant() { return merchant; }
+    public java.util.UUID customer() { return customer; }
+    public void setCustomer(java.util.UUID owner) { customer = owner; if (owner != null) marketLead = false; setTarget(null); }
+    public void setMerchant(java.util.UUID owner, net.minecraft.util.math.BlockPos tie) {
+        merchant = owner; marketTie = tie; if (owner != null) marketLead = true; setTarget(null);
+        if (tie != null) setPositionTarget(tie, 5); else if (homeStable == null) clearPositionTarget();
+    }
+    private boolean mayCurse(PlayerEntity player) {
+        if (player.getUuid().equals(customer)) return false;
+        if (merchant == null) return true;
+        return getWorld() instanceof net.minecraft.server.world.ServerWorld world
+                && world.getEntity(merchant) instanceof MountMerchantEntity keeper && keeper.isAlive()
+                && player.getUuid().equals(keeper.sellerId()) && !keeper.ready() && EarthenDrake.stage(player) < 2
+                && keeper.pen().contains(player.getPos());
+    }
 
     public boolean belongsTo(DrakeStablePiece stable) {
         if (homeStable == null && stable.getBoundingBox().contains(getBlockPos()) && hasCustomName()) {
@@ -120,6 +149,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
             @Override public boolean canStart() { return !riderControls() && !DrakeAttention.beingPetted(StableDrakeEntity.this) && super.canStart(); }
             @Override public boolean shouldContinue() { return !riderControls() && !DrakeAttention.beingPetted(StableDrakeEntity.this) && super.shouldContinue(); }
             @Override protected Vec3d getWanderTarget() {
+                if (marketTie != null) return Vec3d.ofBottomCenter(marketTie).add(random.nextDouble() * 6 - 3, 0, random.nextDouble() * 3 - 1);
                 if (homeStable == null || !homeWorld.equals(getWorld().getRegistryKey().getValue().toString())) return super.getWanderTarget();
                 var area = DrakeStableLayout.stall(homeStable, homeStall);
                 return new Vec3d(area.minX + 1 + random.nextDouble() * 3, area.minY, area.minZ + 1 + random.nextDouble() * 5);
@@ -129,7 +159,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         goalSelector.add(7, new LookAroundGoal(this));
         targetSelector.add(1, new RevengeGoal(this));
         targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, 20, true, false,
-                entity -> entity instanceof PlayerEntity player && eligible(player) && !isTeammate(player) && !hasPassenger(player)));
+                entity -> entity instanceof PlayerEntity player && eligible(player) && mayCurse(player) && !isTeammate(player) && !hasPassenger(player)));
     }
 
     public static boolean eligible(PlayerEntity player) {
@@ -139,6 +169,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     }
 
     @Override public boolean tryAttack(Entity target) {
+        if (target instanceof PlayerEntity player && !mayCurse(player)) return false;
         if (target instanceof PlayerEntity player && eligible(player)) {
             if (!getWorld().isClient && contactCooldown <= 0) {
                 if (FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_BEFORE_ENABLE) {
@@ -160,7 +191,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
             if (!(getFirstPassenger() instanceof net.minecraft.entity.mob.PillagerEntity)) getNavigation().stop();
             setTarget(null);
         }
-        if (getTarget() instanceof PlayerEntity player && (!eligible(player)
+        if (getTarget() instanceof PlayerEntity player && (!eligible(player) || !mayCurse(player)
                 || homeStable != null && !DrakeCaptureGoal.near(homeStable, player.getPos(), 8))) setTarget(null);
         super.tickMovement();
     }
@@ -179,10 +210,10 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     public boolean hasChest() { return dataTracker.get(CHESTED); }
     public ItemStack chest() { return chest; }
 
-    @Override public boolean canBeLeashedBy(PlayerEntity player) { return !isLeashed(); }
+    @Override public boolean canBeLeashedBy(PlayerEntity player) { return merchant == null && (customer == null || player.getUuid().equals(customer)) && !isLeashed(); }
 
     @Override protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (player.isSpectator()) return ActionResult.PASS;
+        if (player.isSpectator() || merchant != null || customer != null && !player.getUuid().equals(customer)) return ActionResult.PASS;
         ItemStack stack = player.getStackInHand(hand);
         if (stack.isOf(DrakeEquipment.RIDERS_CHEST) && !hasChest()) {
             if (!getWorld().isClient) {
@@ -234,6 +265,14 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     @Override protected SoundEvent getDeathSound() { return SoundEvents.ENTITY_RAVAGER_DEATH; }
 
     @Override public void onDeath(DamageSource source) {
+        if (getWorld() instanceof net.minecraft.server.world.ServerWorld world) {
+            if (merchant != null && world.getEntity(merchant) instanceof MountMerchantEntity keeper) keeper.removeStock(this);
+            if (homeStable != null) {
+                var stable = new DrakeStablePiece(homeStable.getMinX(), homeStable.getMinY(), homeStable.getMinZ(),
+                        DrakeStableLayout.stallCount(homeStable), DrakeStableLayout.facingRows(homeStable));
+                MountMarket.get(getServer()).vacate(world, stable, homeStall, getUuid());
+            }
+        }
         if (!getWorld().isClient && homeStable == null) {
             var stable = DrakeCaptureGoal.findStable((net.minecraft.server.world.ServerWorld)getWorld(), getBlockPos());
             if (stable != null) belongsTo(stable);
@@ -251,6 +290,10 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         nbt.putInt("CurseContactCooldown", contactCooldown);
         nbt.putBoolean("DrakeNaturalSaddle", naturalSaddle);
         nbt.putBoolean("DrakeNaturalReins", naturalReins);
+        if (merchant != null) nbt.putUuid("MarketMerchant", merchant);
+        if (customer != null) nbt.putUuid("MarketCustomer", customer);
+        if (marketTie != null) nbt.putLong("MarketTie", marketTie.asLong());
+        nbt.putBoolean("MarketLead", marketLead);
         if (homeStable != null) {
             nbt.putIntArray("StableHome", new int[]{homeStable.getMinX(), homeStable.getMinY(), homeStable.getMinZ(),
                     homeStable.getMaxX(), homeStable.getMaxY(), homeStable.getMaxZ()});
@@ -282,6 +325,11 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
         dataTracker.set(BLINKERED, reins.isOf(DrakeEquipment.BLINDING_REIN));
         dataTracker.set(BLINKERS_CLOSED, BlindingRein.closed(reins));
         contactCooldown = nbt.getInt("CurseContactCooldown");
+        merchant = nbt.containsUuid("MarketMerchant") ? nbt.getUuid("MarketMerchant") : null;
+        customer = nbt.containsUuid("MarketCustomer") ? nbt.getUuid("MarketCustomer") : null;
+        marketTie = nbt.contains("MarketTie") ? net.minecraft.util.math.BlockPos.fromLong(nbt.getLong("MarketTie")) : null;
+        if (marketTie != null) setPositionTarget(marketTie, 5);
+        marketLead = nbt.getBoolean("MarketLead") || merchant != null;
         int[] box = nbt.getIntArray("StableHome");
         if (box.length == 6) {
             homeStable = new net.minecraft.util.math.BlockBox(box[0], box[1], box[2], box[3], box[4], box[5]);

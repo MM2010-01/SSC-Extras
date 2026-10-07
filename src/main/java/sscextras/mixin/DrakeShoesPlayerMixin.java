@@ -2,6 +2,7 @@ package sscextras.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,6 +15,11 @@ import sscextras.drake.DrakeSoulbinding;
 
 @Mixin(PlayerEntity.class)
 public abstract class DrakeShoesPlayerMixin {
+    @Inject(method = "damageArmor", at = @At("TAIL"))
+    private void sscExtras$wearShoes(DamageSource source, float amount, CallbackInfo ci) {
+        DrakeShoes.damage((PlayerEntity)(Object)this, amount);
+    }
+
     @ModifyExpressionValue(method = "attack", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/entity/player/PlayerEntity;getAttributeValue(Lnet/minecraft/entity/attribute/EntityAttribute;)D", ordinal = 0))
     private double sscExtras$ironClaws(double damage) {

@@ -61,7 +61,7 @@ public final class DrakeStableGuards {
         int minimum = MINIMUM * multiplier, maximum = MAXIMUM * multiplier;
         int count = 0, nearby = 0, outer = 0;
         var guards = world.getEntitiesByClass(PillagerEntity.class, Box.from(stable.getBoundingBox()).expand(DrakeCaptureGoal.RANGE),
-                entity -> entity.isAlive() && !(entity instanceof DrakeVisitorEntity));
+                entity -> entity.isAlive() && !(entity instanceof DrakeVisitorEntity) && !MountMerchants.trader(entity));
         guards.sort(java.util.Comparator.comparing(guard -> !((DrakeStableNavigation)guard.getNavigation()).managedGuard()));
         for (var guard : guards) {
             if (!DrakeCaptureGoal.near(stable, guard.getPos())) continue;

@@ -47,11 +47,14 @@ public final class DrakeLeashing {
     }
     public static float stepHeight(PlayerEntity player, float height) {
         if (QuadrupedMovement.quadrupedal(player)) return QuadrupedMovement.STEP_HEIGHT;
+        return tautPillagerLead(player) ? Math.max(1, height) : height;
+    }
+    public static boolean tautPillagerLead(PlayerEntity player) {
         var holder = holder(player);
-        double distance = holder instanceof net.minecraft.entity.mob.PillagerEntity
-                ? player.squaredDistanceTo(holder.getRootVehicle()) : 0;
+        if (!(holder instanceof net.minecraft.entity.mob.PillagerEntity) || !holder.isAlive()) return false;
+        double distance = player.squaredDistanceTo(holder.getRootVehicle());
         double taut = DrakeSoulbinding.role(player) == DrakeSoulbinding.ESCORT ? 2.25 : 9;
-        return distance > taut && distance <= 100 ? Math.max(1, height) : height;
+        return distance > taut && distance <= 100;
     }
     public static boolean attach(PlayerEntity player, Entity holder) {
         if (!eligible(player) || holder == player || !holder.isAlive() || holder.getWorld() != player.getWorld()) return false;
@@ -78,7 +81,8 @@ public final class DrakeLeashing {
     public static void detach(PlayerEntity player, boolean drop) {
         var leash = ((State)player).sscExtras$leash();
         var previous = leash.holder;
-        if (drop && leash.linked() && !leash.pillagerTied && !player.getWorld().isClient) player.dropItem(Items.LEAD);
+        if (drop && leash.linked() && !leash.pillagerTied && !player.getWorld().isClient
+                && !MountMarket.get(player.getServer()).busy(player)) player.dropItem(Items.LEAD);
         leash.holder = null; leash.uuid = null; leash.fence = null; leash.waitTicks = 0;
         leash.leadPath = null;
         leash.recovery.reset();

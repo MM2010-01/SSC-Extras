@@ -25,6 +25,9 @@ public final class SscExtrasClient implements ClientModInitializer {
         net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderUtils.register_MAS(
                 sscextras.drake.EarthenDrake.id("earthen_drake"), EarthenDrakeAnimation::new);
         HandledScreens.register(FeralEffigy.SCREEN, EffigyScreen::new);
+        HandledScreens.register(sscextras.drake.MountMerchants.SCREEN, MountMerchantScreen::new);
+        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(sscextras.drake.MountMerchants.MERCHANT, MountMerchantRenderer::new);
+        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(sscextras.drake.MountMerchants.BUYER, net.minecraft.client.render.entity.PillagerEntityRenderer::new);
         ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
             if (!(stack.getItem() instanceof CollarItem)) return;
             var player = MinecraftClient.getInstance().player;

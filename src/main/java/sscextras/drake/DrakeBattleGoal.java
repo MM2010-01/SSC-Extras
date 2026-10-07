@@ -184,6 +184,7 @@ public final class DrakeBattleGoal extends Goal {
             int choice = pillager.getRandom().nextInt(total), index = 0;
             while ((choice -= DrakeAttention.called(candidates.get(index)) ? 3 : 1) >= 0) index++;
             var candidate = candidates.remove(index);
+            if (purpose == Purpose.PURSUIT && pillager.squaredDistanceTo(candidate) >= pillager.squaredDistanceTo(enemy)) continue;
             if ((purpose == Purpose.PATROL || purpose == Purpose.RECALL && !DrakeCaptureGoal.recallTime(pillager.getWorld())) && (!pillager.getVisibilityCache().canSee(candidate)
                     || pillager.squaredDistanceTo(candidate) > 32 * 32)) continue;
             if (purpose == Purpose.RECALL && (!(candidate instanceof StableDrakeEntity drake)
@@ -207,6 +208,10 @@ public final class DrakeBattleGoal extends Goal {
     // The owning goal equips or leashes its target without giving up the borrowed mount.
     public boolean pursue(PlayerEntity target) {
         if (pursuing(target)) {
+            if (phase == Phase.APPROACH && (pillager.squaredDistanceTo(target) <= 64
+                    || pillager.squaredDistanceTo(target) <= pillager.squaredDistanceTo(mount))) {
+                stopPursuit(); return false;
+            }
             if (!shouldContinue() || !target.isAlive() || target.getWorld() != pillager.getWorld()
                     || phase != Phase.APPROACH && !DrakeRiding.canControl(mount, pillager)) {
                 stopPursuit(); return false;

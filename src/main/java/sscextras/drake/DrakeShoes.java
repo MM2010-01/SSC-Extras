@@ -5,6 +5,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
@@ -96,6 +97,12 @@ public final class DrakeShoes {
     }
 
     static void tick(PlayerEntity player, ItemStack stack) {
+        if (!player.isCreative() && !player.isSpectator() && player.isInLava()) {
+            breakSound(player);
+            player.incrementStat(Stats.BROKEN.getOrCreateStat(stack.getItem()));
+            stack.decrement(1);
+            return;
+        }
         DrakeShoesItem.bind(stack);
         if (DrakeSoulbinding.bound(player)) SoulboundEquipment.enchant(stack);
         if (hands(player) && !player.getOffHandStack().isEmpty()) {
@@ -103,6 +110,19 @@ public final class DrakeShoes {
             player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
             player.getInventory().offerOrDrop(offhand);
         }
+    }
+
+    public static void damage(PlayerEntity player, float amount) {
+        if (player.getWorld().isClient || player.isCreative() || player.isSpectator() || amount <= 0) return;
+        int wear = Math.max(1, (int)(amount / 4));
+        for (var stack : DrakeEquipment.stacks(player, DrakeEquipment.SHOES)) {
+            if (stack.isOf(DrakeEquipment.SHOES)) stack.damage(wear, player, DrakeShoes::breakSound);
+        }
+    }
+
+    private static void breakSound(PlayerEntity player) {
+        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1, 1);
     }
 
     public static void register() {

@@ -420,7 +420,7 @@ public final class DrakeSoulbinding {
     static boolean available(PillagerEntity guard, boolean defending) {
         var battle = DrakeBattleGoal.of(guard);
         boolean collecting = battle != null && battle.pursuing(attendee(guard));
-        return !(guard instanceof DrakeVisitorEntity) && guard.isAlive() && !guard.isRemoved() && !guard.isAiDisabled() && !guard.hasActiveRaid()
+        return !(guard instanceof DrakeVisitorEntity) && !MountMerchants.trader(guard) && guard.isAlive() && !guard.isRemoved() && !guard.isAiDisabled() && !guard.hasActiveRaid()
                 && (!guard.hasVehicle() || collecting && guard.getVehicle() == battle.mount())
                 && !guard.hasPassengers() && (defending || !DrakeFaction.fighting(guard))
                 && (battle == null || battle.mount() == null || collecting)
