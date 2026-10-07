@@ -185,6 +185,14 @@ public final class DrakeLeashing {
                 if (holder == null) { if (++waitTicks > 100) detach(player, true); return; }
             }
             if (!holder.isAlive() || holder.getWorld() != player.getWorld()) { detach(player, true); return; }
+            if (holder instanceof LeashKnotEntity knot) {
+                var sale = MountMarket.get(player.getServer()).seller(player.getUuid());
+                if (sale != null && !sale.sold() && sale.world().equals(player.getWorld().getRegistryKey())
+                        && knot.getDecorationBlockPos().equals(sale.pen().add(6, 1, 7))
+                        && !MountMerchantEntity.pen(sale.pen()).contains(player.getPos())) {
+                    detach(player, false); return;
+                }
+            }
             var anchor = holder instanceof net.minecraft.entity.mob.PillagerEntity ? holder.getRootVehicle() : holder;
             Vec3d delta = anchor.getPos().subtract(player.getPos());
             double distance = delta.length();

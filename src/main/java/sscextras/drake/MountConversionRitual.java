@@ -39,10 +39,10 @@ public final class MountConversionRitual extends NpcEvent {
     private boolean harness() {
         for (var item : List.of(DrakeEquipment.REINS, DrakeEquipment.SADDLE))
             if (DrakeEquipment.equipped(player, item).isEmpty() && !DrakeEquipment.tryEquip(player, item.getDefaultStack(), false)) return false;
-        if (sscextras.collar.CollarSlots.includingLegacy(player).stream().noneMatch(slot -> slot.stack().getItem() instanceof sscextras.collar.CollarItem)
-                && sscextras.collar.Collars.equipOwnedDrake(player, DrakeMountNames.choose(player.getRandom())))
+        if (sscextras.collar.CollarSlots.includingLegacy(player).stream().noneMatch(slot -> slot.stack().getItem() instanceof sscextras.collar.CollarItem)) {
+            if (!sscextras.collar.Collars.equipNamedDrake(player, DrakeMountNames.choose(player.getRandom()))) return false;
             MountMerchantEntity.say(player, "collar");
-        merchant.setSprinting(false);
+        }
         MountMerchantEntity.say(player, merchant.capturedSeller() ? "captured_enter" : "enter");
         if (!DrakeLeashing.attachPillager(player, merchant)) return false;
         DrakeOutpostOwnership.release(player);
@@ -60,9 +60,8 @@ public final class MountConversionRitual extends NpcEvent {
         if (status() == Status.PAUSED) { resume(); stages.resume(); }
         String stage = stages.current().id();
         if (stage.equals("answer") && merchant.squaredDistanceTo(player) > 4) {
-            merchant.setSprinting(merchant.capturedSeller());
             if (merchant.age % 10 == 0 || merchant.getNavigation().isIdle())
-                merchant.getNavigation().startMovingTo(player, merchant.capturedSeller() ? 1.2 : .7);
+                merchant.getNavigation().startMovingTo(player, MountMerchantEntity.MOVE_SPEED);
         }
         if (stage.equals("pen")) {
             if (DrakeLeashing.holder(player) != merchant && !DrakeLeashing.attachPillager(player, merchant)) return false;
@@ -71,10 +70,13 @@ public final class MountConversionRitual extends NpcEvent {
             var approach = Vec3d.ofBottomCenter(merchant.gate()).add(.5, 0, -.5);
             if (Math.abs(merchant.getX() - approach.x) < .2 && Math.abs(merchant.getZ() - approach.z) < .45 && merchant.squaredDistanceTo(player) < 16
                     || merchant.pen().contains(merchant.getPos()) && merchant.pen().contains(player.getPos())) atGate = true;
-            if (escort == null || !escort.move(atGate ? merchant.inside() : approach, .65, atGate || merchant.squaredDistanceTo(approach) < 2.25)) return false;
+            if (escort == null || !escort.move(atGate ? merchant.inside() : approach, MountMerchantEntity.MOVE_SPEED, atGate || merchant.squaredDistanceTo(approach) < 2.25)) return false;
         }
         if (stage.equals("convert")) {
-            if (!merchant.pen().contains(player.getPos()) || !DrakeLeashing.attached(player)) return false;
+            if (!merchant.pen().contains(player.getPos())) return false;
+            if (!DrakeLeashing.attached(player)) {
+                clearFeeding(); merchant.getNavigation().stop(); return true;
+            }
             ((DrakeStableNavigation)merchant.getNavigation()).close(merchant.gate());
             if (EarthenDrake.stage(player) < 2 && !transforming()) convert();
             else clearFeeding();
@@ -99,7 +101,7 @@ public final class MountConversionRitual extends NpcEvent {
                     var point = Vec3d.ofBottomCenter(pos);
                     if (merchant.pen().contains(point) && player.squaredDistanceTo(point) <= 1.25 * 1.25) positions.add(pos);
                 }
-                merchant.getNavigation().startMovingAlong(merchant.getNavigation().findPathTo(positions, 0), .6);
+                merchant.getNavigation().startMovingAlong(merchant.getNavigation().findPathTo(positions, 0), MountMerchantEntity.MOVE_SPEED);
             }
             clearFeeding(); return;
         }
@@ -120,7 +122,7 @@ public final class MountConversionRitual extends NpcEvent {
     }
     @Override protected void release() {
         if (escort != null) { escort.handoff(); escort = null; }
-        clearFeeding(); assignments.release(this); merchant.setSprinting(false); merchant.getNavigation().stop();
+        clearFeeding(); assignments.release(this); merchant.getNavigation().stop();
         for (var drake : merchant.stock()) { drake.setTarget(null); drake.getNavigation().stop(); }
     }
 }

@@ -8,11 +8,13 @@ import net.minecraft.screen.ArrayPropertyDelegate;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class MountMerchantScreenHandler extends ScreenHandler {
     public static final int OFFER = 1, YES = 2, NO = 3, PRETEND = 4, CONTINUE = 5, BUY = 10;
+    private static final int MERCHANDISE_DIALOGUE = 5;
     private final MountMerchantEntity merchant;
     private final PlayerEntity customer;
     private final PropertyDelegate state;
@@ -43,13 +45,19 @@ public final class MountMerchantScreenHandler extends ScreenHandler {
     public int phase() { return state.get(2); }
     public boolean confirming() { return phase() == 2; }
     public int dialogue() { return state.get(3); }
+    public boolean merchandise() { return dialogue() == MERCHANDISE_DIALOGUE; }
+    public Text greeting() {
+        return merchandise() ? Text.translatable("message.ssc-extras.merchant.greeting.waiting", MountMerchantForms.name(customer))
+                : Text.translatable("message.ssc-extras.merchant.greeting." + new String[]{"human", "other", "drake", "drake", "feral"}[dialogue()]);
+    }
     public boolean present(int row) { return state.get(4 + row) != 0; }
     public int price(int row) { return state.get(4 + listings.size() + row); }
     public boolean canBuy(int row) { return state.get(4 + row) == 2 && emeralds() >= price(row); }
     private void refresh() {
         if (merchant == null) return;
         state.set(0, MountMerchantEntity.emeralds(customer)); state.set(1, merchant.canOffer(customer) ? 1 : 0);
-        state.set(3, MountMerchantForms.dialogue(customer));
+        state.set(3, merchant.isMerchandise(customer) ? MERCHANDISE_DIALOGUE : MountMerchantForms.dialogue(customer));
+        if (merchandise()) state.set(2, 0);
         var available = merchant.listings();
         for (int i = 0; i < listings.size(); i++) {
             var id = listings.get(i).id();
@@ -60,6 +68,7 @@ public final class MountMerchantScreenHandler extends ScreenHandler {
     @Override public void sendContentUpdates() { refresh(); super.sendContentUpdates(); }
     @Override public boolean onButtonClick(PlayerEntity player, int id) {
         if (player != customer || !(player instanceof ServerPlayerEntity serverPlayer) || !canUse(player) || merchant == null) return false;
+        if (merchant.isMerchandise(player)) { refresh(); return false; }
         if (id >= BUY && id < BUY + listings.size() && phase() == 0) {
             boolean bought = merchant.buy(serverPlayer, listings.get(id - BUY).id()); refresh(); return bought;
         }

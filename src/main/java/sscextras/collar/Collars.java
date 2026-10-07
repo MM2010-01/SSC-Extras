@@ -138,7 +138,11 @@ public final class Collars {
     }
 
     public static boolean equipOwnedDrake(PlayerEntity player, String name) {
-        if (player.getWorld().isClient || player.isCreative() || player.isSpectator()) return false;
+        return !player.isCreative() && equipNamedDrake(player, name);
+    }
+
+    public static boolean equipNamedDrake(PlayerEntity player, String name) {
+        if (player.getWorld().isClient || player.isSpectator()) return false;
         if (TamingCollar.worn(player)) return true;
         var slots = CollarSlots.get(player);
         if (slots.isEmpty()) return false;

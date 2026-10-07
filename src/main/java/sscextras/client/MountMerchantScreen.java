@@ -20,13 +20,10 @@ public final class MountMerchantScreen extends HandledScreen<MountMerchantScreen
         super(handler, inventory, title); backgroundWidth = 370; backgroundHeight = 296;
     }
     private static Text text(String key, Object... args) { return Text.translatable("screen.ssc-extras.merchant." + key, args); }
-    private Text greeting() {
-        return Text.translatable("message.ssc-extras.merchant.greeting." + new String[]{"human", "other", "drake", "drake", "feral"}[handler.dialogue()]);
-    }
     @Override protected void init() {
         backgroundWidth = Math.min(370, width - 12); backgroundHeight = Math.min(296, height - 12);
         super.init(); buy.clear(); confirm.clear();
-        rowTop = 43 + textRenderer.getWrappedLinesHeight(greeting(), backgroundWidth - 36) + 9;
+        rowTop = 43 + textRenderer.getWrappedLinesHeight(handler.greeting(), backgroundWidth - 36) + 9;
         visibleRows = Math.max(1, Math.min(3, (backgroundHeight - rowTop - 54) / 45));
         rowHeight = (backgroundHeight - rowTop - 54) / visibleRows;
         for (int i = 0; i < handler.listings().size(); i++) {
@@ -59,7 +56,7 @@ public final class MountMerchantScreen extends HandledScreen<MountMerchantScreen
             button.visible = handler.phase() == 0; button.active = handler.canBuy(index);
             button.setY(y + rowTop + (i - scroll) * rowHeight + (rowHeight - 20) / 2);
         }
-        offer.visible = handler.phase() == 0; offer.active = handler.canOffer();
+        offer.visible = handler.phase() == 0 && !handler.merchandise(); offer.active = handler.canOffer();
         next.visible = handler.phase() == 1; back.visible = handler.phase() == 1 || handler.phase() == 3 || handler.phase() == 4;
         confirm.forEach(button -> button.visible = handler.confirming());
     }
@@ -108,7 +105,7 @@ public final class MountMerchantScreen extends HandledScreen<MountMerchantScreen
             var dialogue = Text.translatable("message.ssc-extras.merchant.offer." + line);
             context.drawTextWrapped(textRenderer, dialogue, 18, 46, backgroundWidth - 36, 0xFF423522);
         } else {
-            context.drawTextWrapped(textRenderer, greeting(), 18, 43, backgroundWidth - 36, 0xFF423522);
+            context.drawTextWrapped(textRenderer, handler.greeting(), 18, 43, backgroundWidth - 36, 0xFF423522);
             var rows = rows();
             if (rows.isEmpty()) context.drawText(textRenderer, text("sold_out"),
                     (backgroundWidth - textRenderer.getWidth(text("sold_out"))) / 2, rowTop + 20, 0xFF423522, false);
