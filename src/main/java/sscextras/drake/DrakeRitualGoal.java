@@ -39,38 +39,31 @@ public final class DrakeRitualGoal extends Goal {
 
     @Override public void tick() {
         var claim = DrakeOutpostOwnership.claim(player);
-        if (claim == null) return;
+        if (claim == null || claim.ritualRun == null) return;
+        var run = claim.ritualRun;
         int index = claim.attendants.indexOf(pillager.getUuid());
         if (index < 0) return;
         var navigation = (DrakeStableNavigation)pillager.getNavigation();
         var body = pillager.getRootVehicle();
         navigation.open(claim.gate());
         pillager.getLookControl().lookAt(player, 30, 30);
-        boolean shoeing = claim.shoeingRitual;
-        boolean punishment = !shoeing && DrakeSoulbinding.punishment(claim);
-        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(shoeing && index == 2 && DrakeSoulbinding.restrained(player)
-                ? DrakeEquipment.SHOES.getDefaultStack()
-                : shoeing && DrakeSoulbinding.restrained(player) ? ItemStack.EMPTY
-                : DrakeSoulbinding.role(pillager) == DrakeSoulbinding.FEEDING
-                ? DrakeSoulbinding.catalyst(claim)
-                : (punishment ? index != 0 : index < 2) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
+        var context = new AbstractRitual.Context(player, claim);
+        ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(DrakeSoulbinding.restrained(player)
+                ? run.displayedItem(context, index) : run.holds(index) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         if (DrakeSoulbinding.restrained(player)) {
             DrakeBattleGoal.of(pillager).stopPursuit();
-            if (shoeing && index == 2) {
-                DrakeSoulbinding.role(pillager, pillager.squaredDistanceTo(DrakeSoulbinding.attendancePosition(claim, index)) <= 1.44
-                        ? DrakeSoulbinding.SHOEING : 0);
-                if (DrakeSoulbinding.role(pillager) == DrakeSoulbinding.SHOEING)
-                    DrakeSoulbinding.shoeingPaw(pillager, Math.min(3, claim.shoeingTicks / DrakeShoes.PAW_TICKS));
-            }
-            else if (punishment ? index != 0 : index < 2) DrakeSoulbinding.role(pillager, DrakeSoulbinding.HOLDING);
+            DrakeSoulbinding.role(pillager, pillager.squaredDistanceTo(run.position(claim, index)) <= 1.44
+                    ? run.actorRole(context, index) : 0);
+            if (run.paw() >= 0) DrakeSoulbinding.shoeingPaw(pillager, run.paw());
             takePosition(claim, index);
             return;
         }
         DrakeSoulbinding.role(pillager, 0);
-        var guide = player.getServerWorld().getEntity(claim.attendants.get(0));
+        int guideIndex = run.composition().index("guide");
+        var guide = player.getServerWorld().getEntity(claim.attendants.get(guideIndex));
         boolean leashed = DrakeLeashing.holder(player) == guide;
         if (!leashed && DrakeBattleGoal.of(pillager).pursue(player)) return;
-        if (index != 0) {
+        if (index != guideIndex) {
             if (leashed || DrakeRiding.inInteractionReach(pillager, player)) DrakeBattleGoal.of(pillager).stopPursuit();
             move(leashed ? DrakeSoulbinding.attendancePosition(claim, index) : player.getPos().add(index == 1 ? 1.5 : -1.5, 0, 0));
             return;
@@ -95,7 +88,7 @@ public final class DrakeRitualGoal extends Goal {
         }
         if (claim.stall().contains(player.getPos()) && player.squaredDistanceTo(DrakeSoulbinding.hayPosition(claim)) <= 2.25) {
             DrakeBattleGoal.of(pillager).stopPursuit();
-            takePosition(claim, 0); return;
+            takePosition(claim, guideIndex); return;
         }
         var gate = DrakeStableLayout.gatePoint(claim.stable, claim.gate(), -1.5);
         if (Math.abs(body.getX() - gate.x) < .3 && Math.abs(body.getZ() - gate.z) < .5
@@ -114,7 +107,7 @@ public final class DrakeRitualGoal extends Goal {
     private void takePosition(DrakeOutpostOwnership.Claim claim, int index) {
         var target = DrakeSoulbinding.attendancePosition(claim, index);
         var bed = DrakeSoulbinding.hayPosition(claim);
-        if (index < 2 && Math.abs(pillager.getX() - target.x) > .6
+        if (claim.ritualRun.composition().participants().get(index).escortRequired() && Math.abs(pillager.getX() - target.x) > .6
                 && (pillager.getZ() - bed.z) * DrakeStableLayout.inward(claim.stable, claim.gate()) > .6)
             target = new Vec3d(target.x, target.y, bed.z + 2.2 * DrakeStableLayout.inward(claim.stable, claim.gate()));
         move(target);

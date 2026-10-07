@@ -16,7 +16,7 @@ public final class DrakeRitualTransform {
 
     public static void recover(ServerPlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
-        if (claim != null && (claim.soulbound || claim.feral) && claim.attendants.isEmpty()
+        if (claim != null && (claim.soulbound || claim.feral || claim.ritualCheckpoint != null) && claim.attendants.isEmpty()
                 && !TransformManager.getPlayerTransformData(player).isTransforming) finish(player);
     }
 

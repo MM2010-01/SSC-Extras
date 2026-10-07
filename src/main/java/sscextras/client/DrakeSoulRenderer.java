@@ -45,38 +45,38 @@ public final class DrakeSoulRenderer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.world == null) SOULS.clear();
             else SOULS.values().removeIf(soul -> soul.owner.getWorld() != client.world || soul.owner.isRemoved()
-                    || DrakeSoulbinding.soulTicks(soul.owner) == 0 || DrakeSoulbinding.soulTicks(soul.owner) > DrakeSoulbinding.SOUL_RETURN_TICKS);
+                    || soul.animation != animation(soul.owner)
+                    || DrakeSoulbinding.soulTicks(soul.owner) == 0 || DrakeSoulbinding.soulTicks(soul.owner) > soul.animation.duration());
         });
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             if (renderer == null || context.consumers() == null) return;
             for (var player : context.world().getPlayers()) {
                 int ticks = DrakeSoulbinding.soulTicks(player);
-                if (ticks == 0 || ticks > DrakeSoulbinding.SOUL_RETURN_TICKS || !player.isAlive()
+                var animation = animation(player);
+                if (animation == null || ticks == 0 || ticks > animation.duration() || !player.isAlive()
                         || player.squaredDistanceTo(context.camera().getPos()) > 4096) continue;
-                var soul = SOULS.computeIfAbsent(player.getUuid(), id -> new Soul(player));
+                var soul = SOULS.get(player.getUuid());
+                if (soul == null || soul.owner != player || soul.animation != animation) {
+                    soul = new Soul(player, animation); SOULS.put(player.getUuid(), soul);
+                }
                 float time = soul.time(ticks, context.tickDelta());
-                float rise = smooth(time / 60), returning = smooth((time - DrakeSoulbinding.SOUL_TRANSFORM_TICKS) / 60);
-                float alpha = .38f * Math.min(1, time / 18) * (1 - returning);
+                var frame = animation.sample(time);
                 var position = player.getLerpedPos(context.tickDelta()).subtract(context.camera().getPos());
                 var matrices = context.matrixStack();
                 matrices.push();
-                matrices.translate(position.x, position.y + (2.2 + .045 * MathHelper.sin(time * .07f)) * rise * (1 - returning), position.z);
+                matrices.translate(position.x, position.y + frame.height(), position.z);
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 - MathHelper.lerpAngleDegrees(context.tickDelta(), player.prevBodyYaw, player.bodyYaw)));
-                float shrink = 1 - .65f * returning;
+                float shrink = frame.scale();
                 matrices.scale(shrink, shrink, shrink);
-                float changing = MathHelper.clamp((time - 60) / 60, 0, 4);
-                int step = Math.min(4, (int)changing);
-                float blend = smooth((changing - step) * 2);
-                render(soul, step - 1, alpha * (1 - blend), context.tickDelta(), matrices, context.consumers());
-                if (step < 4 && blend > 0) render(soul, step, alpha * blend, context.tickDelta(), matrices, context.consumers());
+                render(soul, frame.fromForm(), frame.opacity() * (1 - frame.blend()), context.tickDelta(), matrices, context.consumers());
+                if (frame.blend() > 0) render(soul, frame.toForm(), frame.opacity() * frame.blend(), context.tickDelta(), matrices, context.consumers());
                 matrices.pop();
             }
         });
     }
 
-    private static float smooth(float value) {
-        value = MathHelper.clamp(value, 0, 1);
-        return value * value * (3 - 2 * value);
+    private static sscextras.rituals.SoulAnimation animation(AbstractClientPlayerEntity player) {
+        return sscextras.drake.DrakeSoulAnimations.get(((DrakeSoulbinding.State)player).sscExtras$soulAnimation());
     }
 
     private static void render(Soul soul, int stage, float alpha, float tickDelta, MatrixStack matrices, VertexConsumerProvider buffers) {
@@ -142,10 +142,12 @@ public final class DrakeSoulRenderer {
     private static final class Soul {
         final AbstractClientPlayerEntity owner;
         final OtherClientPlayerEntity ghost;
+        final sscextras.rituals.SoulAnimation animation;
         int ticks;
         long changedAt;
-        Soul(AbstractClientPlayerEntity owner) {
+        Soul(AbstractClientPlayerEntity owner, sscextras.rituals.SoulAnimation animation) {
             this.owner = owner;
+            this.animation = animation;
             UUID id = UUID.nameUUIDFromBytes(("ssc-extras:soul:" + owner.getUuid()).getBytes(StandardCharsets.UTF_8));
             ghost = new OtherClientPlayerEntity(MinecraftClient.getInstance().world, new GameProfile(id, owner.getGameProfile().getName())) {
                 @Override public net.minecraft.util.Identifier getSkinTexture() { return owner.getSkinTexture(); }
