@@ -99,8 +99,18 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
     }
 
     public static void poseShoeingBody(PlayerEntityModel<?> model, PlayerEntity player) {
-        if (!sscextras.drake.DrakeSoulbinding.shoeing(player) || EarthenDrake.stage(player) >= 3) return;
+        if (!sscextras.drake.DrakeSoulbinding.shoeing(player)) return;
         int paw = sscextras.drake.DrakeSoulbinding.shoeingPaw(player);
+        if (EarthenDrake.stage(player) == 3) {
+            posePermanentRestBody(model);
+            model.leftArm.roll = paw == 0 ? .08f : .28f;
+            model.rightArm.roll = paw == 1 ? -.08f : -.28f;
+            model.leftLeg.roll = paw == 2 ? .08f : .28f;
+            model.rightLeg.roll = paw == 3 ? -.08f : -.28f;
+            model.leftSleeve.copyTransform(model.leftArm); model.rightSleeve.copyTransform(model.rightArm);
+            model.leftPants.copyTransform(model.leftLeg); model.rightPants.copyTransform(model.rightLeg);
+            return;
+        }
         model.head.setPivot(0, 0, 0); model.body.setPivot(0, 0, 0);
         model.leftArm.setPivot(5, 2, 0); model.rightArm.setPivot(-5, 2, 0);
         model.leftLeg.setPivot(1.9f, 12, 0); model.rightLeg.setPivot(-1.9f, 12, 0);
@@ -114,6 +124,23 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
         model.rightLeg.pitch = -.3f - (paw == 3 ? .55f : 0);
         model.leftLeg.yaw = .12f; model.rightLeg.yaw = -.12f;
         model.leftLeg.roll = model.rightLeg.roll = 0;
+        model.leftSleeve.copyTransform(model.leftArm); model.rightSleeve.copyTransform(model.rightArm);
+        model.leftPants.copyTransform(model.leftLeg); model.rightPants.copyTransform(model.rightLeg);
+        model.hat.copyTransform(model.head); model.jacket.copyTransform(model.body);
+    }
+
+    // Ritual preview actors have no ticking animation controller. Give them the
+    // same rest skeleton used by the permanent form's native animation tracks.
+    public static void posePermanentRestBody(PlayerEntityModel<?> model) {
+        model.head.setPivot(0, 10.56f, -7.253333f);
+        model.body.setPivot(0, 15.893333f, -6.4f);
+        model.leftArm.setPivot(3.413333f, 14.442667f, -3.413333f);
+        model.rightArm.setPivot(-3.413333f, 14.442667f, -3.413333f);
+        model.leftLeg.setPivot(3.157333f, 15.893333f, 5.12f);
+        model.rightLeg.setPivot(-3.157333f, 15.893333f, 5.12f);
+        for (var part : new ModelPart[]{model.head, model.body, model.leftArm, model.rightArm, model.leftLeg, model.rightLeg})
+            part.pitch = part.yaw = part.roll = 0;
+        model.body.pitch = MathHelper.HALF_PI;
         model.leftSleeve.copyTransform(model.leftArm); model.rightSleeve.copyTransform(model.rightArm);
         model.leftPants.copyTransform(model.leftLeg); model.rightPants.copyTransform(model.rightLeg);
         model.hat.copyTransform(model.head); model.jacket.copyTransform(model.body);
@@ -175,8 +202,8 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
             boolean right = arm == renderer.getModel().rightArm;
             model.translatePositionForBone(right ? rightArmGeoBoneID : leftArmGeoBoneID,
                     new Vec3d(right ? -1.586667 : 1.586667, 12.442667, -3.413333));
-            for (String part : new String[]{right ? "right_forearm" : "left_forearm",
-                    right ? "right_front_paw" : "left_front_paw"}) {
+            for (String part : new String[]{right ? "@left@_forearm" : "left_forearm",
+                    right ? "@left@_front_paw" : "left_front_paw"}) {
                 model.setPositionForBone(part, Vec3d.ZERO);
                 model.setRotationForBone(part, Vec3d.ZERO);
             }

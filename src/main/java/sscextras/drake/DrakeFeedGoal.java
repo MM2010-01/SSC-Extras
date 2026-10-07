@@ -49,8 +49,10 @@ public final class DrakeFeedGoal extends Goal {
 
     private boolean inStall(PlayerEntity player) {
         var claim = DrakeOutpostOwnership.claim(player);
+        // Fence posts leave 3/8 of their block clear on the inside.
         return player.isAlive() && !player.isSpectator() && player.getWorld() == pillager.getWorld()
-                && claim != null && claim.world.equals(pillager.getWorld().getRegistryKey()) && claim.stall().contains(player.getPos())
+                && claim != null && claim.world.equals(pillager.getWorld().getRegistryKey())
+                && claim.stall().expand(3.0 / 8, 0, 3.0 / 8).contains(player.getPos())
                 && !BondOfTheBeastCompat.hasOwner(player);
     }
 
@@ -157,7 +159,8 @@ public final class DrakeFeedGoal extends Goal {
                 for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                     var pos = player.getBlockPos().add(dx, 0, dz);
                     var point = Vec3d.ofBottomCenter(pos);
-                    if (feedingClaim.stall().contains(point) && player.squaredDistanceTo(point) <= 4) positions.add(pos);
+                    // Navigation may stop short of the node, so leave room inside the two-block feeding reach.
+                    if (feedingClaim.stall().contains(point) && player.squaredDistanceTo(point) <= 1.25 * 1.25) positions.add(pos);
                 }
                 pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(positions, 0), .8);
             }

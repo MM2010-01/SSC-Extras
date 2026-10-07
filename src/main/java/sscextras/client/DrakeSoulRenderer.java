@@ -91,6 +91,7 @@ public final class DrakeSoulRenderer {
         body.setVisible(true); body.child = false; body.sneaking = false; body.riding = false; body.handSwingProgress = 0;
         body.setAngles(ghost, 0, 0, ghost.age + tickDelta, 0, 0);
         if (stage == 2) EarthenDrakeAnimation.poseAllFours(body, 0, 0, ghost.age + tickDelta, 0, 0);
+        if (stage == 3) EarthenDrakeAnimation.posePermanentRestBody(body);
         var formRenderer = stage < 0 ? null : FormRenderUtils.getFormRenderer(form.getFormOriginLayerID(), form.getFormOriginID());
         FormModel model = formRenderer == null ? null : (FormModel)formRenderer.getGeoModel();
         if (model != null) hideParts(body, model);

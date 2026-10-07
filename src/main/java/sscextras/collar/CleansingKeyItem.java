@@ -24,9 +24,18 @@ public final class CleansingKeyItem extends Item {
         ItemStack key = player.getStackInHand(hand);
         if (!player.isAlive() || player.isSpectator()) return TypedActionResult.pass(key);
         if (world.isClient) return TypedActionResult.success(key);
-        boolean removed = false;
+        return cleanse((ServerPlayerEntity) player, key, hand) == 0
+                ? TypedActionResult.pass(key) : TypedActionResult.success(key);
+    }
+
+    public static int purgeCursedEquipment(ServerPlayerEntity player) {
+        return cleanse(player, null, null);
+    }
+
+    private static int cleanse(ServerPlayerEntity player, ItemStack key, Hand hand) {
+        int removed = 0;
         for (var slot : CollarSlots.includingLegacy(player)) {
-            removed |= release((ServerPlayerEntity) player, key, hand, slot.io(), slot.group(), "necklace", slot.index());
+            if (release(player, key, hand, slot.io(), slot.group(), "necklace", slot.index())) removed++;
         }
         var io = DrakeEquipment.slots();
         if (io != null) for (DrakeAccessoryItem item : new DrakeAccessoryItem[]{DrakeEquipment.REINS, DrakeEquipment.SADDLE}) {
@@ -34,7 +43,7 @@ public final class CleansingKeyItem extends Item {
             String name = CuriosCompat.instance == null ? item.slot : item.curiosSlot();
             var stacks = io.getEntitySlot(player, group, name);
             if (stacks != null) for (int i = 0; i < stacks.size(); i++) {
-                removed |= release((ServerPlayerEntity) player, key, hand, io, group, name, i);
+                if (release(player, key, hand, io, group, name, i)) removed++;
             }
         }
         if (io != null) for (boolean feet : new boolean[]{false, true}) {
@@ -42,20 +51,20 @@ public final class CleansingKeyItem extends Item {
             String name = CuriosCompat.instance == null ? feet ? "shoes" : "glove" : feet ? "feet" : "hands";
             var stacks = sscextras.drake.DrakeShoes.stacks(player, feet);
             for (int i = 0; i < stacks.size(); i++) if (stacks.get(i).isOf(DrakeEquipment.SHOES))
-                removed |= release((ServerPlayerEntity)player, key, hand, io, group, name, i);
+                if (release(player, key, hand, io, group, name, i)) removed++;
         }
-        if (!removed) return TypedActionResult.pass(key);
+        if (removed == 0) return 0;
         player.addStatusEffect(new StatusEffectInstance(Collars.CURSE_CLEANSED, 600, 0, false, false, true));
         player.getInventory().markDirty();
         player.currentScreenHandler.sendContentUpdates();
-        world.playSound(null, player.getX(), player.getY(), player.getZ(),
+        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN, player.getSoundCategory(), .6f, 1.4f);
-        return TypedActionResult.success(key);
+        return removed;
     }
 
     private static boolean release(ServerPlayerEntity player, ItemStack key, Hand hand,
             AccessoryUtils.AccessoryIO io, String group, String name, int index) {
-        if (key.isEmpty() || key.getDamage() >= key.getMaxDamage()) return false;
+        if (key != null && (key.isEmpty() || key.getDamage() >= key.getMaxDamage())) return false;
         ItemStack stack = io.getEntitySlot(player, group, name, index);
         if (stack == null || !(stack.isOf(Collars.CURSED) || stack.isOf(Collars.TAMING) || DrakeEquipment.isReins(stack)
                 || stack.isOf(DrakeEquipment.SADDLE) || stack.isOf(DrakeEquipment.SHOES))) return false;
@@ -65,10 +74,12 @@ public final class CleansingKeyItem extends Item {
         DrakeEquipment.clearSetBinding(dropped);
         DrakeEquipment.refreshBinding(player);
         player.dropItem(dropped, false);
-        key.setDamage(key.getDamage() + 1);
-        if (key.getDamage() >= key.getMaxDamage()) {
-            player.sendToolBreakStatus(hand);
-            key.decrement(1);
+        if (key != null) {
+            key.setDamage(key.getDamage() + 1);
+            if (key.getDamage() >= key.getMaxDamage()) {
+                player.sendToolBreakStatus(hand);
+                key.decrement(1);
+            }
         }
         return true;
     }
