@@ -50,13 +50,11 @@ public final class MountBuyerEntity extends PillagerEntity {
     }
     public static MountBuyerEntity spawn(MountMerchantEntity merchant) {
         var world = (ServerWorld)merchant.getWorld();
-        merchant.refreshDestination();
-        if (!world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) || merchant.destination() == null
+        if (!world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)
                 || merchant.sellerId() != null && (!merchant.ready() || merchant.seller() == null)
                 || merchant.readySellers().isEmpty() && merchant.stock().isEmpty()) return null;
         UUID first = !merchant.readySellers().isEmpty() ? merchant.readySellers().get(0).getUuid() : merchant.stock().get(0).getUuid();
-        var stalls = freeStalls(world, merchant.destination(), first);
-        if (stalls.isEmpty() || stalls.size() == 1 && merchant.readySellers().isEmpty()) return null;
+        if (!merchant.refreshDestination(first, merchant.readySellers().isEmpty() ? 2 : 1)) return null;
         var buyer = MountMerchants.BUYER.create(world); buyer.visit(merchant);
         for (int attempt = 0; attempt < 24; attempt++) {
             double angle = world.random.nextDouble() * Math.PI * 2;

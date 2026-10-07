@@ -60,7 +60,7 @@ public final class MountMerchantScreen extends HandledScreen<MountMerchantScreen
             button.setY(y + rowTop + (i - scroll) * rowHeight + (rowHeight - 20) / 2);
         }
         offer.visible = handler.phase() == 0; offer.active = handler.canOffer();
-        next.visible = handler.phase() == 1; back.visible = handler.phase() == 1 || handler.phase() == 3;
+        next.visible = handler.phase() == 1; back.visible = handler.phase() == 1 || handler.phase() == 3 || handler.phase() == 4;
         confirm.forEach(button -> button.visible = handler.confirming());
     }
     @Override protected void handledScreenTick() { super.handledScreenTick(); updateButtons(); }
@@ -103,7 +103,8 @@ public final class MountMerchantScreen extends HandledScreen<MountMerchantScreen
             context.drawTextWrapped(textRenderer, text("sure"), 18, 44, backgroundWidth - 36, 0xFF423522);
             context.drawTextWrapped(textRenderer, text("consequence"), 18, 66, backgroundWidth - 36, 0xFF423522);
         } else if (handler.phase() != 0) {
-            String line = handler.phase() == 3 ? "other" : new String[]{"human", "other", "drake", "ready", "other"}[handler.dialogue()];
+            String line = handler.phase() == 4 ? "no_demand" : handler.phase() == 3 ? "other"
+                    : new String[]{"human", "other", "drake", "ready", "other"}[handler.dialogue()];
             var dialogue = Text.translatable("message.ssc-extras.merchant.offer." + line);
             context.drawTextWrapped(textRenderer, dialogue, 18, 46, backgroundWidth - 36, 0xFF423522);
         } else {

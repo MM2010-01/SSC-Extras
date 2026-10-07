@@ -87,6 +87,15 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     private static DrakeStablePiece findStable(ServerWorld world, BlockPos pos, int range, boolean useStableRange) {
+        return findStable(world, pos, range, useStableRange, stable -> true);
+    }
+
+    public static DrakeStablePiece findStable(ServerWorld world, BlockPos pos, int range, java.util.function.Predicate<DrakeStablePiece> available) {
+        return findStable(world, pos, range, false, available);
+    }
+
+    private static DrakeStablePiece findStable(ServerWorld world, BlockPos pos, int range, boolean useStableRange,
+                                               java.util.function.Predicate<DrakeStablePiece> available) {
         var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
         var mansion = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "mansion"));
         var checked = new HashSet<net.minecraft.structure.StructureStart>();
@@ -101,7 +110,7 @@ public final class DrakeCaptureGoal extends Goal {
                 for (var piece : start.getChildren()) if (piece instanceof DrakeStablePiece candidate
                         && (useStableRange ? near(candidate, Vec3d.ofCenter(pos)) : near(candidate.getBoundingBox(), Vec3d.ofCenter(pos), range))) {
                     double next = candidate.getBoundingBox().getCenter().getSquaredDistance(pos);
-                    if (next < distance) { closest = candidate; distance = next; }
+                    if (next < distance && available.test(candidate)) { closest = candidate; distance = next; }
                 }
             }
         }
