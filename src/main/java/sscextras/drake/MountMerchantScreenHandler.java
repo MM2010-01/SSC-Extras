@@ -64,12 +64,13 @@ public final class MountMerchantScreenHandler extends ScreenHandler {
             boolean bought = merchant.buy(serverPlayer, listings.get(id - BUY).id()); refresh(); return bought;
         }
         if (id == OFFER && merchant.canOffer(player)) {
-            state.set(2, MountMerchantForms.convertible(player) ? 1 : 3);
+            state.set(2, !MountMerchantForms.convertible(player) ? 3 : merchant.hasDemand(player) ? 1 : 4);
             return true;
         }
         if (id == CONTINUE && phase() == 1) { state.set(2, 2); return true; }
         if (id == NO && phase() != 0) { state.set(2, 0); return true; }
         if ((id == YES || id == PRETEND) && confirming()) {
+            if (!merchant.hasDemand(player)) { state.set(2, 4); return true; }
             if (!merchant.offer(serverPlayer, id == PRETEND)) { MountMerchantEntity.say(player, "unavailable"); state.set(2, 0); refresh(); return false; }
             serverPlayer.closeHandledScreen(); return true;
         }

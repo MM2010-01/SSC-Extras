@@ -103,12 +103,16 @@ public final class MountMerchantEntity extends PillagerEntity {
     public void setSite(BlockPos site, DrakeStablePiece destination) { this.site = site.toImmutable(); this.destination = destination; }
     public BlockPos site() { return site; }
     public DrakeStablePiece destination() { return destination; }
-    public void refreshDestination() {
-        if (!(getWorld() instanceof ServerWorld world) || site == null) return;
-        var nearest = DrakeCaptureGoal.findStable(world, site, 384);
-        if (nearest != null && (destination == null || nearest.getBoundingBox().getCenter().getSquaredDistance(site)
+    public boolean refreshDestination(UUID mount, int requiredStalls) {
+        if (!(getWorld() instanceof ServerWorld world) || site == null) return false;
+        java.util.function.Predicate<DrakeStablePiece> available = stable -> MountBuyerEntity.freeStalls(world, stable, mount).size() >= requiredStalls;
+        var nearest = DrakeCaptureGoal.findStable(world, site, 384, available);
+        boolean currentAvailable = destination != null && available.test(destination);
+        if (nearest != null && (!currentAvailable || nearest.getBoundingBox().getCenter().getSquaredDistance(site)
                 < destination.getBoundingBox().getCenter().getSquaredDistance(site))) destination = nearest;
+        return nearest != null || currentAvailable;
     }
+    public boolean hasDemand(PlayerEntity player) { return refreshDestination(player.getUuid(), 1); }
     public boolean holdsOpen(BlockPos gate) {
         return site != null && gate.equals(gate()) && (seller != null && !pen().contains(seller() == null ? Vec3d.ZERO : seller().getPos())
                 || (seller == null || ready()) && pen().contains(getPos())
@@ -174,6 +178,7 @@ public final class MountMerchantEntity extends PillagerEntity {
     }
     public boolean offer(ServerPlayerEntity player, boolean pretend) {
         if (!canAccept(player) || squaredDistanceTo(player) > 64 || !getVisibilityCache().canSee(player)) return false;
+        if (!hasDemand(player)) { say(player, "offer.no_demand"); return false; }
         beginOffer(player, pretend);
         if (EarthenDrake.stage(player) < 2 && stock().isEmpty()) restock();
         MountMarket.get(getServer()).offer(player, getUuid(), site, false);
@@ -223,7 +228,7 @@ public final class MountMerchantEntity extends PillagerEntity {
         for (var player : ((ServerWorld)getWorld()).getPlayers(player -> squaredDistanceTo(player) <= 256
                 && !player.isCreative() && canAccept(player) && getVisibilityCache().canSee(player))) {
             var line = MountMerchantForms.recruit(player);
-            if (line == null) continue;
+            if (line == null || !hasDemand(player)) continue;
             beginOffer(player, false);
             captured = true;
             MountMarket.get(getServer()).offer(player, getUuid(), site, false);

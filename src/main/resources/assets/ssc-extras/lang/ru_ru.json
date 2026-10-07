@@ -223,6 +223,7 @@
   "message.ssc-extras.merchant.offer.human": "Ого, правда? Твоим тонким ногам потребуется доработка для такой работы. Всё нужное у меня есть.",
   "message.ssc-extras.merchant.offer.other": "Извини, с твоим проклятием я мало что могу сделать. Приходи, когда снова станешь человеком.",
   "message.ssc-extras.merchant.offer.drake": "Отлично, осталось лишь кое-что доработать.",
+  "message.ssc-extras.merchant.offer.no_demand": "Извини, приятель, сейчас спроса не хватает. Не хочу держать лишний товар у себя.",
   "message.ssc-extras.merchant.offer.ready": "Прекрасно, ты уже в нужной форме!",
   "message.ssc-extras.merchant.return": "Эй, %s, кто тебя выпустил? Возвращайся в загон.",
   "message.ssc-extras.merchant.lost": "%s, похоже, ты потерялся. Давай в загон.",

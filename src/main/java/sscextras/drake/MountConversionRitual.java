@@ -44,7 +44,9 @@ public final class MountConversionRitual extends NpcEvent {
             MountMerchantEntity.say(player, "collar");
         merchant.setSprinting(false);
         MountMerchantEntity.say(player, merchant.capturedSeller() ? "captured_enter" : "enter");
-        return DrakeLeashing.attachPillager(player, merchant);
+        if (!DrakeLeashing.attachPillager(player, merchant)) return false;
+        DrakeOutpostOwnership.release(player);
+        return true;
     }
     private boolean tie() {
         if (!player.getWorld().getBlockState(merchant.tie()).isIn(net.minecraft.registry.tag.BlockTags.FENCES)) return false;
