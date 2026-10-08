@@ -18,9 +18,8 @@ public final class DrakeRoaming {
                 && !player.isSleeping() && !player.hasVehicle() && !player.hasPassengers()
                 && !claim.awaitingRespawn && EarthenDrake.stage(player) >= 0
                 && claim.world.equals(player.getWorld().getRegistryKey()) && !DrakeSoulbinding.ritualActive(player)
-                && (claim.returnToStall
-                    || !DrakeCaptureGoal.near(claim.stable, player.getPos(),
-                        DrakeStableLayout.roamRange(claim.stable) - (claim.returning || claim.returnGuide != 0 ? 2 : 0)));
+                && !DrakeCaptureGoal.near(claim.stable, player.getPos(),
+                        DrakeStableLayout.roamRange(claim.stable) - (claim.returning ? 2 : 0));
     }
 
     public static boolean canSee(PillagerEntity pillager, PlayerEntity player) {
@@ -138,7 +137,7 @@ public final class DrakeRoaming {
         return player.isAlive() && !player.isCreative() && !player.isSpectator() && !player.isSleeping()
                 && EarthenDrake.stage(player) >= 2 && claim.world.equals(player.getWorld().getRegistryKey())
                 && !DrakeCaptureGoal.recallTime(player.getWorld()) && !player.hasVehicle() && !player.hasPassengers()
-                && !claim.returning && claim.returnGuide == 0 && !DrakeBattleGoal.assigned(player) && !DrakeSoulbinding.ritualActive(player)
+                && !mustReturn(player, claim) && !claim.returning && !DrakeBattleGoal.assigned(player) && !DrakeSoulbinding.ritualActive(player)
                 && !BondOfTheBeastCompat.hasOwner(player)
                 && (!DrakeLeashing.attached(player) || !claim.tryingToEscape
                     && DrakeLeashing.holder(player) instanceof PillagerEntity holder && belongs(holder, claim));

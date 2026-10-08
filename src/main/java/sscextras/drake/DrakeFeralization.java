@@ -234,11 +234,8 @@ public final class DrakeFeralization {
         var claim = DrakeOutpostOwnership.claim(player);
         sync(player, claim);
         var control = ((State)player).sscExtras$feralRuntime();
-        if (claim != null && DrakeRoaming.mustReturn(player, claim)) {
-            if (DrakeBoundReturn.tick(player, claim)) {
-                if (controlled(player) || claim.returning) stop(player, claim);
-                return;
-            }
+        boolean outside = claim != null && DrakeRoaming.mustReturn(player, claim);
+        if (outside && DrakeBoundReturn.ready(player, claim)) {
             if (!claim.returning || control.brain == null || control.brain.world() != player.getWorld()) {
                 claim.returning = true;
                 if (control.brain != null) control.brain.stop();
@@ -247,10 +244,11 @@ public final class DrakeFeralization {
                 ((State)player).sscExtras$feralControl(true);
                 player.sendMessage(Text.translatable("message.ssc-extras.drake.bound_return"), true);
             }
+            if (DrakeBoundReturn.tick(player, claim)) return;
             control.brain.think();
             return;
         }
-        if (claim != null) DrakeBoundReturn.clear(claim);
+        if (claim != null && !outside) DrakeBoundReturn.clear(claim);
         if (claim != null && claim.returning) { stop(player, claim); return; }
         if (!canTakeOver(player, claim)) {
             if (controlled(player)) stop(player, claim);

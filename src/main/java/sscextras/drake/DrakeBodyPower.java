@@ -50,14 +50,14 @@ public final class DrakeBodyPower extends Power {
                 && !player.isSprinting() && !player.isSneaking() && !player.hasPassengers() && !DrakeLeashing.attached(player)
                 && !sscextras.collar.TamingCollar.worn(player) && !feralPosture)
             player.sendMessage(Text.translatable("message.ssc-extras.drake.hunger_collapse").formatted(Formatting.YELLOW), false);
-        float scale = switch (stage) { case 1 -> 2.0f / 1.8f; case 2 -> 2.2f / 1.8f; case 3 -> 1.5f; default -> 1.0f; };
-        float height = stage == 3 ? 1.65f : allFours ? (stage == 2 ? 1.4f : 1.25f * scale) : 1.8f * scale;
-        float width = switch (stage) { case 1 -> 0.7f; case 2 -> 0.95f; case 3 -> 1.6f; default -> 0.6f; };
+        float scale = switch (stage) { case 1 -> 2.0f / 1.8f; case 2 -> 2.2f / 1.8f; case 3 -> 1.8f; default -> 1.0f; };
+        float height = stage == 3 ? 1.98f : allFours ? (stage == 2 ? 1.4f : 1.25f * scale) : 1.8f * scale;
+        float width = switch (stage) { case 1 -> 0.7f; case 2 -> 0.95f; case 3 -> 1.92f; default -> 0.6f; };
         set(ScaleTypes.WIDTH, scale);
         set(ScaleTypes.HEIGHT, scale);
         set(ScaleTypes.HITBOX_WIDTH, width / (0.6f * scale));
         set(ScaleTypes.HITBOX_HEIGHT, height / (1.8f * scale));
-        set(ScaleTypes.EYE_HEIGHT, (stage == 3 ? 1.364f : allFours ? height * 0.8f : height * 0.9f) / (1.62f * scale));
+        set(ScaleTypes.EYE_HEIGHT, (stage == 3 ? 1.6368f : allFours ? height * 0.8f : height * 0.9f) / (1.62f * scale));
         // Origin changes synchronize the whole component after adding its powers.
         if (sync && changed) PowerHolderComponent.syncPower(player, getType());
     }

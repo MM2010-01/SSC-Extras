@@ -102,7 +102,6 @@ final class FeralDrakeBrain extends PathAwareEntity implements FeralBrain {
             var inward = new Vec3d(x - player.getX(), 0, z - player.getZ());
             double distance = inward.length() - DrakeStableLayout.roamRange(box) + 3;
             var target = player.getPos().add(inward.normalize().multiply(Math.min(12, Math.max(1, distance))));
-            if (claim.returnToStall) target = Vec3d.ofBottomCenter(claim.bed());
             getLookControl().lookAt(target.x, player.getEyeY(), target.z);
             getNavigation().startMovingTo(target.x, target.y, target.z, .8);
         }

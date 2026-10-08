@@ -72,14 +72,11 @@ public final class DrakeLeashing {
         return true;
     }
     public static boolean attachPillager(PlayerEntity player, Entity holder) {
-        if (!canGuide(player, holder)) return false;
+        var leash = ((State)player).sscExtras$leash();
+        if (holder.getUuid().equals(leash.failedGuide) && player.getWorld().getTime() < leash.retryAfter) return false;
         if (!attach(player, holder)) return false;
         ((State)player).sscExtras$leash().pillagerTied = true;
         return true;
-    }
-    static boolean canGuide(PlayerEntity player, Entity holder) {
-        var leash = ((State)player).sscExtras$leash();
-        return !holder.getUuid().equals(leash.failedGuide) || player.getWorld().getTime() >= leash.retryAfter;
     }
     public static void detach(PlayerEntity player, boolean drop) {
         var leash = ((State)player).sscExtras$leash();

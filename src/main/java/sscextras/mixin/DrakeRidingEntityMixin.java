@@ -44,8 +44,6 @@ public abstract class DrakeRidingEntityMixin implements DrakeRiding.State {
     @Inject(method = {"addPassenger", "removePassenger"}, at = @At("TAIL"))
     private void sscExtras$syncOwnerPassenger(Entity passenger, CallbackInfo ci) {
         if ((Object)this instanceof ServerPlayerEntity player) MountRideSession.sample(player);
-        if ((Object)this instanceof ServerPlayerEntity player && passenger instanceof net.minecraft.entity.mob.PillagerEntity guard
-                && !player.hasPassenger(guard)) DrakeBoundReturn.dismounted(player, guard);
         if (passenger instanceof net.minecraft.entity.mob.PillagerEntity && (Object)this instanceof net.minecraft.entity.LivingEntity living
                 && !living.hasPassenger(passenger)) living.setSprinting(false);
         if ((Object)this instanceof ServerPlayerEntity owner && (sscExtras$syncPassengers || DrakeEquipment.canRide(owner)

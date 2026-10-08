@@ -95,7 +95,7 @@ public final class DrakeSoulRenderer {
         var formRenderer = stage < 0 ? null : FormRenderUtils.getFormRenderer(form.getFormOriginLayerID(), form.getFormOriginID());
         FormModel model = formRenderer == null ? null : (FormModel)formRenderer.getGeoModel();
         if (model != null) hideParts(body, model);
-        float scale = stage == 3 ? 1.5f : stage == 2 ? 2.2f / 1.8f : stage == 1 ? 2f / 1.8f : 1;
+        float scale = stage == 3 ? 1.8f : stage == 2 ? 2.2f / 1.8f : stage == 1 ? 2f / 1.8f : 1;
         matrices.push();
         matrices.scale(-.9375f * scale, -.9375f * scale, .9375f * scale);
         matrices.translate(0, -1.501, 0);
