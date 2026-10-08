@@ -208,6 +208,7 @@
   "message.ssc-extras.purge_command.empty": "На %s нет проклятого снаряжения.",
   "message.ssc-extras.drake.ritual_soul_returned": "Ваша преобразившаяся душа дрейка возвращается в тело. Смотрители начинают закреплять связь.",
   "message.ssc-extras.drake.bound_return": "Связь ездового животного с этой конюшней разворачивает вас обратно к её территории.",
+  "message.ssc-extras.drake.bound_return_stall": "После привязки вашей души к этой конюшне ваше тело само вернулось в своё стойло.",
   "message.ssc-extras.drake.ritual_feed": "Смотритель кормит вас катализаторами, и ваши инстинкты усиливаются.",
   "item.ssc-extras.full_beastization_catalyst": "Катализатор полного озверения",
   "item.ssc-extras.full_beastization_catalyst.tooltip": "+200 инстинкта. Полное одичание! на 1 минуту.",

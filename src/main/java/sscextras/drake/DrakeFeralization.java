@@ -235,6 +235,10 @@ public final class DrakeFeralization {
         sync(player, claim);
         var control = ((State)player).sscExtras$feralRuntime();
         if (claim != null && DrakeRoaming.mustReturn(player, claim)) {
+            if (DrakeBoundReturn.tick(player, claim)) {
+                if (controlled(player) || claim.returning) stop(player, claim);
+                return;
+            }
             if (!claim.returning || control.brain == null || control.brain.world() != player.getWorld()) {
                 claim.returning = true;
                 if (control.brain != null) control.brain.stop();
@@ -246,6 +250,7 @@ public final class DrakeFeralization {
             control.brain.think();
             return;
         }
+        if (claim != null) DrakeBoundReturn.clear(claim);
         if (claim != null && claim.returning) { stop(player, claim); return; }
         if (!canTakeOver(player, claim)) {
             if (controlled(player)) stop(player, claim);
@@ -282,6 +287,7 @@ public final class DrakeFeralization {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             var claim = DrakeOutpostOwnership.claim(handler.player);
             stop(handler.player, claim);
+            if (claim != null) DrakeBoundReturn.clear(claim);
         });
         ServerTickEvents.START_SERVER_TICK.register(server -> server.getPlayerManager().getPlayerList().forEach(DrakeFeralization::tick));
         ServerTickEvents.END_SERVER_TICK.register(server -> {

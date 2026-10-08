@@ -209,6 +209,7 @@
   "message.ssc-extras.purge_command.empty": "%s没有穿戴诅咒装备。",
   "message.ssc-extras.drake.ritual_soul_returned": "完全化为地龙的灵魂回到你的体内。看守开始封缚这份契约。",
   "message.ssc-extras.drake.bound_return": "坐骑契约驱使你转身走回兽栏的活动范围。",
+  "message.ssc-extras.drake.bound_return_stall": "自从你的灵魂与这座兽栏绑定后，你的身体便自行回到了属于你的畜栏。",
   "message.ssc-extras.drake.ritual_feed": "看守不断喂你催化剂，你的本能在猛涨。",
   "item.ssc-extras.sentient_catalyst": "灵智催化剂",
   "message.ssc-extras.sentient_catalyst.1": "催化剂刺激了一些神经元形成！*它似乎开始理解如何放下方块，以及用爪子按动它们了。*",

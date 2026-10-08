@@ -28,7 +28,7 @@ public final class DrakeCaptureGoal extends Goal {
     private BlockPos sourceGate;
     private int nextSearch, started, nextDisplay;
     private int targetStall = -1;
-    private boolean atGate, leaving, complete;
+    private boolean atGate, leaving, complete, boundReturn;
     private LeashEscortEvent escort;
 
     public DrakeCaptureGoal(PillagerEntity pillager) {
@@ -55,6 +55,7 @@ public final class DrakeCaptureGoal extends Goal {
         if (!eligible(player) || DrakeBattleGoal.assigned(player) || DrakeSoulbinding.ritualActive(player)) return false;
         if (!DrakeOutpostOwnership.owns(player, stable)) return cursedHarness(player);
         var claim = DrakeOutpostOwnership.claim(player);
+        if (claim.returnGuide != 0) return claim.returnGuide == pillager.getId();
         return recallTime(pillager.getWorld()) || EarthenDrake.stage(player) < 2
                 || claim.tryingToEscape && (DrakeLeashing.holder(player) == pillager
                     || pillager.getWorld().getTime() < claim.recallUntil || DrakeRoaming.canSee(pillager, player));
@@ -130,6 +131,21 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     @Override public boolean canStart() {
+        var returning = DrakeBoundReturn.assigned(pillager);
+        if (returning != null) {
+            var claim = DrakeOutpostOwnership.claim(returning);
+            if (pillager.hasVehicle() || DrakeFaction.fighting(pillager)
+                    || DrakeLeashing.attached(returning) && DrakeLeashing.holder(returning) != pillager) return false;
+            stable = navigation().stable();
+            if (stable == null || !claim.matches(pillager.getWorld(), stable)) {
+                ((ServerWorld)pillager.getWorld()).getChunk(claim.bed());
+                stable = findStable((ServerWorld)pillager.getWorld(), claim.bed());
+            }
+            if (stable == null || !claim.matches(pillager.getWorld(), stable)) return false;
+            player = returning; targetStall = claim.stallIndex; boundReturn = true;
+            return true;
+        }
+        boundReturn = false;
         if (pillager.hasVehicle() && DrakeBattleGoal.of(pillager).pursuitTarget() == null
                 || pillager.age < nextSearch || DrakeFaction.fighting(pillager) || DrakeSoulbinding.attendee(pillager) != null) return false;
         nextSearch = pillager.age + 40;
@@ -162,6 +178,8 @@ public final class DrakeCaptureGoal extends Goal {
     @Override public boolean shouldContinue() {
         if (complete || player == null || pillager.hasVehicle() && !DrakeBattleGoal.of(pillager).pursuing(player)) return false;
         if (leaving) return player.isAlive() && player.getWorld() == pillager.getWorld();
+        if (boundReturn) return DrakeBoundReturn.assigned(pillager) == player
+                && (!DrakeLeashing.attached(player) || DrakeLeashing.holder(player) == pillager);
         return (!DrakeFaction.fighting(pillager) || DrakeLeashing.holder(player) == pillager) && wants(player)
                 && near(stable, player.getPos()) && !occupied()
                 && (!DrakeLeashing.attached(player) || DrakeLeashing.holder(player) == pillager)
@@ -177,6 +195,7 @@ public final class DrakeCaptureGoal extends Goal {
     }
 
     private void gates(boolean open) {
+        if (open && boundReturn && !DrakeOutpostOwnership.claim(player).returnToStall) return;
         if (open) navigation().open(stable.gate(targetStall));
         else navigation().close(stable.gate(targetStall));
     }
@@ -231,32 +250,35 @@ public final class DrakeCaptureGoal extends Goal {
             return;
         }
         if (DrakeLeashing.holder(player) != pillager) {
-            if (DrakeBattleGoal.of(pillager).pursue(player)) return;
+            if (!boundReturn && DrakeBattleGoal.of(pillager).pursue(player)) return;
             var approach = player.getRootVehicle();
             if (!pillager.hasVehicle()) pillager.getNavigation().startMovingTo(approach, 1);
             if (DrakeRiding.inInteractionReach(pillager, player) && pillager.getVisibilityCache().canSee(player)) {
                 boolean dismounted = player.hasVehicle();
                 if (dismounted) player.stopRiding();
                 if (player.hasVehicle()) return;
-                if (!dismounted && !pillager.hasVehicle() && EarthenDrake.stage(player) >= 2
+                if (!boundReturn && !dismounted && !pillager.hasVehicle() && EarthenDrake.stage(player) >= 2
                         && DrakeRiding.canCarryPillager(player) && pillager.getRandom().nextBoolean() && DrakeBattleGoal.of(pillager).recall(player, stable)) {
                     complete = true; return;
                 }
                 if (!DrakeLeashing.attachPillager(player, pillager)) return;
                 var claim = DrakeOutpostOwnership.claim(player);
-                if (claim != null && claim.matches(player.getWorld(), stable) && EarthenDrake.stage(player) < 2
+                if (!boundReturn && claim != null && claim.matches(player.getWorld(), stable) && EarthenDrake.stage(player) < 2
                         && !claim.stall().contains(player.getPos()) && !claim.tryingToEscape) {
                     claim.tryingToEscape = true;
                     DrakeOutpostOwnership.get(player.getServer()).markDirty();
                 }
-                BlindingRein.upgrade(player);
-                DrakeDialogue.say(player, DrakeDialogue.escaping(player) ? "escape_caught" : "recall_leashed");
+                if (!boundReturn) BlindingRein.upgrade(player);
+                DrakeDialogue.say(player, boundReturn && !claim.returnToStall ? "range_return"
+                        : DrakeDialogue.escaping(player) ? "escape_caught" : "recall_leashed");
                 sourceGate = stable.gateAt(player.getPos());
                 if (stable.gate(targetStall).equals(sourceGate)) sourceGate = null;
             }
             return;
         }
-        if (escort == null) escort = LeashEscortEvent.start(pillager, player, Vec3d.ofBottomCenter(stable.keeperPosition(targetStall)), null);
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (escort == null) escort = LeashEscortEvent.start(pillager, player, boundReturn && !claim.returnToStall
+                ? DrakeBoundReturn.destination(player, claim) : Vec3d.ofBottomCenter(stable.keeperPosition(targetStall)), null);
         if (escort == null || !escort.valid()) { complete = true; return; }
         if (DrakeLeashing.recoveryDestination(player, pillager) != null) { move(null, false); return; }
         gates(true);
@@ -274,10 +296,15 @@ public final class DrakeCaptureGoal extends Goal {
                 return;
             }
         }
+        if (boundReturn && !claim.returnToStall) {
+            move(escort.route().to(), false);
+            return;
+        }
         if (stable.stall(targetStall).contains(player.getPos()) && DrakeStableLayout.insideGate(stable.getBoundingBox(), stable.gate(targetStall), player.getBoundingBox(), 0)
                 && player.squaredDistanceTo(Vec3d.ofCenter(stable.tie(targetStall))) <= 81) {
             DrakeOutpostOwnership.capture(player, stable, targetStall);
             DrakeLeashing.attach(player, LeashKnotEntity.getOrCreate(pillager.getWorld(), stable.tie(targetStall)));
+            if (boundReturn) DrakeBoundReturn.clear(claim);
             escort.finish(); escort = null;
             DrakeDialogue.say(player, "stable_arrived");
             leaving = true; started = pillager.age;
@@ -305,7 +332,7 @@ public final class DrakeCaptureGoal extends Goal {
         if (escort != null) { escort.finish(); escort = null; }
         DrakeBattleGoal.of(pillager).stopPursuit();
         if (player != null && DrakeLeashing.holder(player) == pillager) DrakeLeashing.detach(player, true);
-        player = null; stable = null; sourceGate = null; targetStall = -1; nextSearch = pillager.age + 100;
+        player = null; stable = null; sourceGate = null; targetStall = -1; boundReturn = false; nextSearch = pillager.age + 100;
         pillager.setSprinting(false);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(ItemStack.EMPTY);
         pillager.getNavigation().stop();

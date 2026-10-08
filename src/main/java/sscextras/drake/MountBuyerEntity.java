@@ -33,6 +33,9 @@ public final class MountBuyerEntity extends PillagerEntity {
     private int elapsed;
     private NpcEvent run;
     private int conversation, collected;
+    private Vec3d counterProgress;
+    private int counterStalled;
+    private boolean approachMerchant;
     private Vec3d directDestination;
     private boolean travelling;
     private boolean atDestinationGate;
@@ -130,15 +133,29 @@ public final class MountBuyerEntity extends PillagerEntity {
     }
     private void visitCounter(MountMerchantEntity merchant) {
         var to = merchant.customerPosition();
-        if (squaredDistanceTo(to) > 1) {
+        if (!approachMerchant && squaredDistanceTo(to) > 1) {
+            if (counterProgress == null || squaredDistanceTo(counterProgress) > .25) {
+                counterProgress = getPos(); counterStalled = 0;
+            }
+            if (++counterStalled >= 100) approachMerchant = true;
+            setSprinting(true);
+            if (!approachMerchant && (age % 10 == 0 || getNavigation().isIdle())) {
+                var path = getNavigation().findPathTo(BlockPos.ofFloored(to), 0, 128);
+                if (path == null || !path.reachesTarget() || !getNavigation().startMovingAlong(path, 1.2))
+                    approachMerchant = true;
+            }
+            if (!approachMerchant) return;
+            getNavigation().stop();
+        }
+        if (approachMerchant && (!DrakeRiding.inInteractionReach(this, merchant) || !canSee(merchant))) {
             setSprinting(true);
             if (age % 10 == 0 || getNavigation().isIdle())
-                getNavigation().startMovingAlong(getNavigation().findPathTo(BlockPos.ofFloored(to), 0, 128), 1.2);
+                getNavigation().startMovingAlong(getNavigation().findPathTo(merchant.getBlockPos(), 0, 128), 1.2);
             return;
         }
         setSprinting(false); getNavigation().stop();
         getLookControl().lookAt(merchant, 30, 30);
-        if (!merchant.atCounter()) return;
+        if (!approachMerchant && !merchant.atCounter()) return;
         merchant.getLookControl().lookAt(this, 30, 30);
         conversation++;
         if (conversation == 1) dialogue("greeting");

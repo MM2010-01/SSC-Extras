@@ -131,7 +131,7 @@ public final class DrakeBattleGoal extends Goal {
             var claim = DrakeOutpostOwnership.claim(player);
             var holder = DrakeLeashing.holder(player);
             return !player.isCreative() && !player.isSpectator() && !player.isSleeping() && owned(player)
-                    && !claim.tryingToEscape && !claim.returning
+                    && !claim.tryingToEscape && !claim.returning && claim.returnGuide == 0
                     && pillager.getWorld().getEntitiesByClass(PillagerEntity.class, player.getBoundingBox().expand(DrakeCaptureGoal.RANGE),
                         guard -> guard.isAlive() && (((DrakeCaptureGoal.Captor)guard).sscExtras$captureGoal().quarry() == player
                             || ((DrakeFaction.EquipmentDisplay)guard).sscExtras$recruiting() == player)).isEmpty()

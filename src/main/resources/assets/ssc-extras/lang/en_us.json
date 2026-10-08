@@ -209,6 +209,7 @@
   "message.ssc-extras.purge_command.empty": "No cursed equipment is worn by %s.",
   "message.ssc-extras.drake.ritual_soul_returned": "Your transformed drake soul returns to your body. The keepers begin sealing the bond.",
   "message.ssc-extras.drake.bound_return": "Your mount bond with this stable turns you back toward the stable's range.",
+  "message.ssc-extras.drake.bound_return_stall": "Following your soul's binding with this stable, your body has returned to your stall on its own.",
   "message.ssc-extras.drake.ritual_feed": "The keeper feeds you catalysts, your instincts surge.",
   "item.ssc-extras.sentient_catalyst": "Sentient Catalyst",
   "message.ssc-extras.sentient_catalyst.1": "The catalyst stimulated some neuron forming! *It looks like it's starting to understand putting blocks down and pressing its paws on them.*",

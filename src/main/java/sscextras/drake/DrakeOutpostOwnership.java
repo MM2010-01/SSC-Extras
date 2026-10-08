@@ -66,6 +66,9 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public int ritualTicks() { return ritualRun == null ? 0 : ritualRun.ticks(); }
         public int catalystsFed() { return ritualCheckpoint == null ? 0 : ritualCheckpoint.catalystsFed; }
         boolean returning;
+        boolean returnToStall;
+        int returnRider, returnGuide;
+        long returnAloneSince = -1, nextReturnSearch;
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
         boolean escapeHinted;

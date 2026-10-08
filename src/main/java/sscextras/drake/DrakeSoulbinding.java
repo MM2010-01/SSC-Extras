@@ -632,7 +632,7 @@ public final class DrakeSoulbinding {
         DrakeOutpostOwnership.get(player.getServer()).markDirty();
     }
 
-    private static Vec3d respawnPosition(ServerPlayerEntity player, ServerWorld world, DrakeOutpostOwnership.Claim claim) {
+    static Vec3d respawnPosition(ServerPlayerEntity player, ServerWorld world, DrakeOutpostOwnership.Claim claim) {
         var center = claim.bed();
         for (int dy = 0; dy <= 3; dy++) for (int dz : new int[]{0, -1, 1, -2, 2}) for (int dx : new int[]{0, 1, -1}) {
             var block = center.add(dx, dy, dz);
