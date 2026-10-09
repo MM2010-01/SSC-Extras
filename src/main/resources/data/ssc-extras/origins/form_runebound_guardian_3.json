@@ -2,6 +2,7 @@
   "powers": [
     "ssc-extras:guardian/body_3",
     "ssc-extras:guardian/armor_restrictions",
+    "ssc-extras:guardian/head_and_feet_restrictions",
     "ssc-extras:guardian/villager_sight",
     "ssc-extras:guardian/flight",
     "ssc-extras:guardian/overdrive"

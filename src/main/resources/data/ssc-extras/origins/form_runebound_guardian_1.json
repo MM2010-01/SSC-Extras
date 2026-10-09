@@ -2,6 +2,7 @@
   "powers": [
     "ssc-extras:guardian/body_1",
     "ssc-extras:guardian/armor_restrictions",
+    "ssc-extras:guardian/head_and_feet_restrictions",
     "shape-shifter-curse:form_instinct_use_golden_apple",
     "shape-shifter-curse:form_instinct_use_catalyst"
   ],
