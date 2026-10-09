@@ -124,6 +124,23 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
         return Map.of(new Pair<>("", "necklace"), getEntitySlot(entity, "", "necklace"));
     }
 
+    public Map<Pair<String, String>, List<ItemStack>> allSlots(LivingEntity wearer) {
+        var result = new java.util.HashMap<Pair<String, String>, List<ItemStack>>();
+        Optional<?> resolved = (Optional<?>) call(resolve, call(inventory, null, wearer));
+        if (resolved.isEmpty()) return result;
+        try {
+            Class<?> api = Class.forName("top.theillusivec4.curios.api.type.capability.ICuriosItemHandler");
+            var handlers = (Map<?, ?>)api.getMethod("getCurios").invoke(resolved.get());
+            for (var entry : handlers.entrySet()) {
+                Object dynamic = call(getStacks, entry.getValue());
+                var items = new ArrayList<ItemStack>();
+                for (int i = 0; i < (int)call(getCount, dynamic); i++) items.add((ItemStack)call(getStack, dynamic, i));
+                result.put(new Pair<>("", (String)entry.getKey()), items);
+            }
+        } catch (ReflectiveOperationException exception) { throw new IllegalStateException("Could not transfer Guardian body accessories", exception); }
+        return result;
+    }
+
     @Override public List<ItemStack> getEntitySlot(LivingEntity entity, String group, String name) {
         Object handler = handler(entity, name);
         if (handler == null) return List.of();

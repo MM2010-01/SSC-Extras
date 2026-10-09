@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "part=0": {
+      "model": "ssc-extras:block/gargoyle_pedestal_0"
+    },
+    "part=1": {
+      "model": "ssc-extras:block/gargoyle_pedestal_1"
+    },
+    "part=2": {
+      "model": "ssc-extras:block/gargoyle_pedestal_2"
+    },
+    "part=3": {
+      "model": "ssc-extras:block/gargoyle_pedestal_3"
+    }
+  }
+}

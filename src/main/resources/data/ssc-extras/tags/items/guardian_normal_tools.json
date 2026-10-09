@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "#origins:tools",
+      "required": false
+    },
+    {
+      "id": "#origins:melee_weapons",
+      "required": false
+    },
+    {
+      "id": "#origins:ranged_weapons",
+      "required": false
+    },
+    "minecraft:shield",
+    "minecraft:fishing_rod",
+    "minecraft:shears",
+    "minecraft:flint_and_steel",
+    "minecraft:trident"
+  ]
+}

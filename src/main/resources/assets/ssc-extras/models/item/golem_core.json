@@ -1,0 +1,94 @@
+{
+  "textures": {
+    "stone": "minecraft:block/sea_lantern",
+    "particle": "minecraft:block/sea_lantern"
+  },
+  "elements": [
+    {
+      "from": [
+        3,
+        3,
+        3
+      ],
+      "to": [
+        13,
+        13,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#stone",
+          "tintindex": 0
+        },
+        "south": {
+          "texture": "#stone",
+          "tintindex": 0
+        },
+        "east": {
+          "texture": "#stone",
+          "tintindex": 0
+        },
+        "west": {
+          "texture": "#stone",
+          "tintindex": 0
+        },
+        "up": {
+          "texture": "#stone",
+          "tintindex": 0
+        },
+        "down": {
+          "texture": "#stone",
+          "tintindex": 0
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

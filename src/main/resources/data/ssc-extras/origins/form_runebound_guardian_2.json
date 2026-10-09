@@ -1,0 +1,14 @@
+{
+  "powers": [
+    "ssc-extras:guardian/body_2",
+    "ssc-extras:guardian/armor_restrictions",
+    "ssc-extras:guardian/villager_sight",
+    "ssc-extras:guardian/flight"
+  ],
+  "icon": {
+    "item": "ssc-extras:guardian_cuffs"
+  },
+  "unchoosable": true,
+  "order": 0,
+  "impact": 0
+}

@@ -1,0 +1,234 @@
+{
+  "textures": {
+    "stone": "minecraft:block/stone_bricks",
+    "carved": "minecraft:block/chiseled_stone_bricks",
+    "rune": "minecraft:block/oxidized_copper",
+    "particle": "minecraft:block/stone_bricks"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        3,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#stone"
+        },
+        "south": {
+          "texture": "#stone"
+        },
+        "east": {
+          "texture": "#stone"
+        },
+        "west": {
+          "texture": "#stone"
+        },
+        "up": {
+          "texture": "#stone"
+        },
+        "down": {
+          "texture": "#stone"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        3,
+        2
+      ],
+      "to": [
+        16,
+        10,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#carved"
+        },
+        "south": {
+          "texture": "#carved"
+        },
+        "east": {
+          "texture": "#carved"
+        },
+        "west": {
+          "texture": "#carved"
+        },
+        "up": {
+          "texture": "#carved"
+        },
+        "down": {
+          "texture": "#carved"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        10,
+        0
+      ],
+      "to": [
+        16,
+        12,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#stone"
+        },
+        "south": {
+          "texture": "#stone"
+        },
+        "east": {
+          "texture": "#stone"
+        },
+        "west": {
+          "texture": "#stone"
+        },
+        "up": {
+          "texture": "#stone"
+        },
+        "down": {
+          "texture": "#stone"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        11.99,
+        2
+      ],
+      "to": [
+        14,
+        12.02,
+        3
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "down": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        11.99,
+        13
+      ],
+      "to": [
+        14,
+        12.02,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "down": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        11.99,
+        3
+      ],
+      "to": [
+        3,
+        12.02,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "down": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "from": [
+        13,
+        11.99,
+        3
+      ],
+      "to": [
+        14,
+        12.02,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "down": {
+          "texture": "#rune"
+        }
+      }
+    }
+  ]
+}

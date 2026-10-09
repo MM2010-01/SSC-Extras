@@ -20,6 +20,7 @@ public abstract class PermanentFormSleepMixin {
             "(Ljava/util/function/Consumer;Lnet/minecraft/world/entity/Entity;Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V"},
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;wakeUp()V"))
     private void sscExtras$allowPermanentSleep(ServerPlayerEntity player, Operation<Void> original) {
-        if (FormAbilityManager.getForm(player).getIndex() != 3 && !DrakeSoulbinding.bound(player)) original.call(player);
+        if (FormAbilityManager.getForm(player).getIndex() != 3 && !DrakeSoulbinding.bound(player)
+                && sscextras.guardian.RuneboundGuardian.stage(player) < 1) original.call(player);
     }
 }

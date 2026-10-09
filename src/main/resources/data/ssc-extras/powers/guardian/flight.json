@@ -1,0 +1,7 @@
+{
+  "type": "origins:creative_flight",
+  "condition": {
+    "type": "ssc-extras:guardian_can_fly"
+  },
+  "hidden": true
+}

@@ -1,0 +1,8 @@
+{
+  "size": 1,
+  "order": 95,
+  "icon": "minecraft:item/heart_of_the_sea",
+  "validators": [
+    "curios:tag"
+  ]
+}

@@ -68,6 +68,7 @@ public final class Infusions {
     public static ItemStack tool(PlayerEntity player, BlockState state) {
         if (sscextras.drake.DrakeShoes.restricted(player)) return ItemStack.EMPTY;
         ItemStack best = sscextras.drake.EarthenDrake.clawTool(player, state);
+        if (best.isEmpty()) best = sscextras.guardian.GuardianCombat.clawTool(player, state);
         for (InfusionSlot slot : InfusionSlot.values()) {
             if (slot.armor()) continue;
             ItemStack stack = active(player, slot);

@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:magic",
+    "minecraft:indirect_magic",
+    "minecraft:wither",
+    "minecraft:dragon_breath",
+    "minecraft:sonic_boom",
+    "minecraft:thorns"
+  ]
+}

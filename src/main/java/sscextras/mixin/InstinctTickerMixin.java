@@ -33,7 +33,7 @@ public abstract class InstinctTickerMixin {
     @Inject(method = "calculateCurrentRate", at = @At("RETURN"), cancellable = true)
     private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
                                            CallbackInfoReturnable<Float> cir) {
-        float rate = cir.getReturnValue() + Collars.instinctRate(player)
+        float rate = cir.getReturnValue() + Collars.instinctRate(player) + sscextras.guardian.GuardianEquipment.instinctRate(player)
                 + (DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player))
                 + sscextras.drake.DrakeSoulbinding.instinctRate(player)) / DrakeInstinct.costMultiplier(player);
         cir.setReturnValue(rate + (comp.instinctValue + rate >= 100 ? 0 : CreatureInstinct.cooldownRate(player, comp)));
@@ -88,6 +88,7 @@ public abstract class InstinctTickerMixin {
     @Inject(method = "checkThreshold", at = @At("HEAD"), cancellable = true)
     private static void sscExtras$transformToPermanent(ServerPlayerEntity player, PlayerInstinctComponent comp,
                                                        CallbackInfo ci) {
+        if (sscextras.guardian.RuneboundGuardian.stage(player) >= 2) { ci.cancel(); return; }
         if (comp.instinctValue >= 100 && MetalCuffs.isSuppressing(player)) {
             ci.cancel();
             return;

@@ -1,0 +1,14 @@
+{
+  "powers": [
+    "ssc-extras:guardian/body_1",
+    "ssc-extras:guardian/armor_restrictions",
+    "shape-shifter-curse:form_instinct_use_golden_apple",
+    "shape-shifter-curse:form_instinct_use_catalyst"
+  ],
+  "icon": {
+    "item": "ssc-extras:guardian_cuffs"
+  },
+  "unchoosable": true,
+  "order": 0,
+  "impact": 0
+}

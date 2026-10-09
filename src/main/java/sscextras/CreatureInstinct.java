@@ -84,6 +84,7 @@ public final class CreatureInstinct {
     }
 
     public static PlayerFormBase permanentTarget(PlayerFormBase form) {
+        if (form.getGroup() == sscextras.guardian.RuneboundGuardian.GROUP) return null;
         return form.getIndex() == 2 && form.getGroup() != null && form.getGroup().hasForm(3)
                 ? form.getGroup().getForm(3) : null;
     }

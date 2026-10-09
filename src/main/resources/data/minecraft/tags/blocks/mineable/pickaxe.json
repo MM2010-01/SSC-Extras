@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "ssc-extras:feral_effigy"
+    "ssc-extras:feral_effigy",
+    "ssc-extras:gargoyle_pedestal"
   ]
 }

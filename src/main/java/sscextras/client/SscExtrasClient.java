@@ -13,6 +13,7 @@ import sscextras.effigy.FeralEffigy;
 
 public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        GuardianClient.register();
         DrakeEquipmentClient.register();
         DrakeCameraControl.register();
         FeralPerception.register();
@@ -38,6 +39,7 @@ public final class SscExtrasClient implements ClientModInitializer {
         });
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
             if (renderer instanceof PlayerEntityRenderer playerRenderer) {
+                helper.register(new GuardianFeatureRenderer(playerRenderer));
                 DrakeSoulRenderer.initialize(context);
                 helper.register(new CollarFeatureRenderer(playerRenderer));
                 helper.register(new CuffsFeatureRenderer(playerRenderer));

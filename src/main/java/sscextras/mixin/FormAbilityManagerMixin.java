@@ -29,5 +29,8 @@ public abstract class FormAbilityManagerMixin {
             io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, sscextras.drake.DrakeBodyPower.class)
                     .forEach(sscextras.drake.DrakeBodyPower::refreshSize);
         sscextras.drake.DrakeFeralization.formChanged(player);
+        if (newForm.getGroup() == sscextras.guardian.RuneboundGuardian.GROUP)
+            io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, sscextras.guardian.GuardianBodyPower.class)
+                    .forEach(sscextras.guardian.GuardianBodyPower::resize);
     }
 }

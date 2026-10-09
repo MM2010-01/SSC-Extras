@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "ssc-extras:metal_cuffs"
+    "ssc-extras:metal_cuffs",
+    "ssc-extras:guardian_cuffs"
   ]
 }

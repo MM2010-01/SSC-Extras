@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:villager",
+    "minecraft:wandering_trader",
+    "minecraft:iron_golem",
+    "minecraft:snow_golem",
+    "ssc-extras:guardian_shell",
+    { "id": "guardvillagers:guard", "required": false }
+  ]
+}

@@ -3,16 +3,39 @@
   "id": "ssc-extras",
   "version": "${version}",
   "name": "SSC Extras",
-  "description": "Instinct progression, Metal Cuffs, feralizing collars, Earthen Drakes, and the Feral Effigy equipment-infusion station for SSC.",
-  "authors": ["Jason"],
+  "description": "Instinct progression, cursed equipment, Earthen Drakes, Runebound Guardians and village rituals, and the Feral Effigy equipment-infusion station for SSC.",
+  "authors": [
+    "Jason"
+  ],
   "environment": "*",
-  "entrypoints": { "main": ["sscextras.SscExtras"], "client": ["sscextras.client.SscExtrasClient"], "cardinal-components-entity": ["sscextras.effigy.InfusionComponents"] },
-  "custom": { "cardinal-components": ["ssc-extras:infusions"] },
-  "mixins": ["ssc-extras.mixins.json"],
+  "entrypoints": {
+    "main": [
+      "sscextras.SscExtras"
+    ],
+    "client": [
+      "sscextras.client.SscExtrasClient"
+    ],
+    "cardinal-components-entity": [
+      "sscextras.effigy.InfusionComponents",
+      "sscextras.guardian.GuardianComponents"
+    ]
+  },
+  "custom": {
+    "cardinal-components": [
+      "ssc-extras:infusions",
+      "ssc-extras:guardian"
+    ]
+  },
+  "mixins": [
+    "ssc-extras.mixins.json"
+  ],
   "depends": {
     "java": ">=17",
     "minecraft": "1.20.1",
     "fabricloader": ">=0.15.0",
-    "shape-shifter-curse": ["1.9.2", "1.9.2-sinytra-connector"]
+    "shape-shifter-curse": [
+      "1.9.2",
+      "1.9.2-sinytra-connector"
+    ]
   }
 }

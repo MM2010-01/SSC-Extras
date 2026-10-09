@@ -69,7 +69,28 @@
     "InfusionArmorEffectsMixin",
     "InfusionPowderSnowMixin",
     "DrakeVoiceMixin",
-    "CollarVoiceMixin"
+    "CollarVoiceMixin",
+    "GuardianDamageMixin",
+    "GuardianPlayerMixin",
+    "GuardianHungerMixin",
+    "GuardianConsumeMixin",
+    "GuardianPotionMixin",
+    "GuardianSleepMixin",
+    "GuardianBedMixin",
+    "GuardianWorkerMixin",
+    "GuardianSleepWorldMixin",
+    "GuardianPedestalSleepMixin",
+    "GuardianCoreItemMixin",
+    "GuardianCoreEntityMixin",
+    "GuardianCoreContainerMixin",
+    "GuardianMovementMixin",
+    "GuardianMovementOwnerMixin",
+    "GuardianNetworkMixin",
+    "GuardianNameMixin",
+    "GuardianTabNameMixin",
+    "GuardianRespawnMixin",
+    "GuardianTeleportMixin",
+    "GuardianVillageStructureMixin"
   ],
   "client": [
     "DrakeMorphscaleArmorMixin",
@@ -97,7 +118,17 @@
     "DrakeGroundAlignmentMixin",
     "DrakeCameraMixin",
     "DrakeFormGearMixin",
-    "DrakeRiderInventoryMixin"
+    "DrakeRiderInventoryMixin",
+    "GuardianModelMixin",
+    "GuardianVanillaBodyMixin",
+    "GuardianHeldItemMixin",
+    "GuardianHudMixin",
+    "GuardianOutlineMixin",
+    "GuardianOutlineColorMixin",
+    "GuardianCameraMixin",
+    "GuardianCoreGlowMixin",
+    "GuardianCameraSourceMixin",
+    "GuardianInputMixin"
   ],
   "injectors": {
     "defaultRequire": 1
