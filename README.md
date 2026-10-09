@@ -98,6 +98,7 @@ Use `/gamerule <name> true` or `/gamerule <name> false` to change these world se
 | `CursedCollarAutoEquipForUncursedPlayers` | `false` |
 | `PillagerMountRecruitingForDrake` | `true` |
 | `PillagerMountRecruitingForUncursed` | `false` |
+| `RemoveBlackoutDuringTransformation` | `true` |
 
 Collar rules cover inventory and container auto-equipping, with permanent forms exempt.
 The Drake recruiting rule covers all drake stages and players already wearing a cursed
@@ -193,7 +194,7 @@ Ownership clears when the player is in **Original Shifter form and at least 16 b
 
 All four drake forms can sleep at night by right-clicking a flat horizontal patch of at least **2×2 hay bales**, with enough clear space above it. Normal waking, leaving sleep, and multiplayer night skipping apply. Sneaking lets you keep building on hay without starting sleep.
 
-Removed darkness effect during transformation.
+Transformation blackout is removed by default. Set `/gamerule RemoveBlackoutDuringTransformation false` to restore SSC's blindness, darkness, and dark screen overlays.
 
 
 

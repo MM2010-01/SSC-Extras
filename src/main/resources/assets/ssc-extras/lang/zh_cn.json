@@ -119,6 +119,8 @@
   "gamerule.PillagerMountRecruitingForDrake.description": "掠夺者会为各阶段地龙补齐诅咒缰绳和诅咒鞍，也会补齐缺失的装备。",
   "gamerule.PillagerMountRecruitingForUncursed": "掠夺者坐骑招募未受诅咒玩家",
   "gamerule.PillagerMountRecruitingForUncursed.description": "掠夺者会为未受诅咒玩家装备诅咒缰绳和诅咒鞍，并补齐缺失的装备。",
+  "gamerule.RemoveBlackoutDuringTransformation": "移除变身时的黑屏效果",
+  "gamerule.RemoveBlackoutDuringTransformation.description": "变身时不施加失明或黑暗效果，也不显示暗屏遮罩。",
   "power.ssc-extras.drake/body_slam.name": "躯体冲撞",
   "power.ssc-extras.drake/body_slam.description": "向前冲刺最多3格，撞到敌人或障碍物时停下，对前方敌人造成相当于自身最大生命值的横扫伤害。消耗1格饥饿值，冷却5秒。",
   "death.attack.ssc-extras.body_slam": "%1$s被%2$s的躯体冲撞压扁了",

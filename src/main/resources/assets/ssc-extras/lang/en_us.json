@@ -119,6 +119,8 @@
   "gamerule.PillagerMountRecruitingForDrake.description": "Pillagers equip drakes at every stage with missing cursed reins and saddles, and complete the equipment of those who are missing a piece.",
   "gamerule.PillagerMountRecruitingForUncursed": "Pillagers mount recruit uncursed players",
   "gamerule.PillagerMountRecruitingForUncursed.description": "Pillagers equip uncursed players with cursed reins and saddles.",
+  "gamerule.RemoveBlackoutDuringTransformation": "Remove blackout during transformation",
+  "gamerule.RemoveBlackoutDuringTransformation.description": "Prevents blindness, darkness, and dark screen overlays during transformation.",
   "power.ssc-extras.drake/body_slam.name": "Body Slam",
   "power.ssc-extras.drake/body_slam.description": "Rush forward up to 3 blocks, stopping on an enemy or obstacle. Sweep enemies in front for damage equal to your maximum health. Costs 1 drumstick (2 hunger points); 5-second cooldown.",
   "death.attack.ssc-extras.body_slam": "%1$s was crushed by %2$s's Body Slam",

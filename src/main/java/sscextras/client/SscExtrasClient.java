@@ -1,18 +1,28 @@
 package sscextras.client;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.text.TranslatableTextContent;
+import sscextras.SscExtrasGameRules;
 import sscextras.collar.CollarItem;
 import sscextras.collar.Collars;
 import sscextras.effigy.FeralEffigy;
 
 public final class SscExtrasClient implements ClientModInitializer {
+    private static boolean removeBlackoutDuringTransformation = true;
+
     @Override public void onInitializeClient() {
+        ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.TRANSFORMATION_BLACKOUT_SYNC, (client, handler, buf, sender) -> {
+            boolean removeBlackout = buf.readBoolean();
+            client.execute(() -> removeBlackoutDuringTransformation = removeBlackout);
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> removeBlackoutDuringTransformation = true);
         GuardianClient.register();
         DrakeEquipmentClient.register();
         DrakeCameraControl.register();
@@ -48,4 +58,6 @@ public final class SscExtrasClient implements ClientModInitializer {
             }
         });
     }
+
+    public static boolean removeBlackoutDuringTransformation() { return removeBlackoutDuringTransformation; }
 }

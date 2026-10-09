@@ -119,6 +119,8 @@
   "gamerule.PillagerMountRecruitingForDrake.description": "Разбойники надевают недостающие проклятые поводья и сёдла на дрейков любой стадии и дополняют снаряжение тех, кому не хватает одной части.",
   "gamerule.PillagerMountRecruitingForUncursed": "Разбойники делают непроклятых игроков ездовыми животными",
   "gamerule.PillagerMountRecruitingForUncursed.description": "Разбойники надевают проклятые поводья и сёдла на непроклятых игроков.",
+  "gamerule.RemoveBlackoutDuringTransformation": "Убирать затемнение при превращении",
+  "gamerule.RemoveBlackoutDuringTransformation.description": "Отключает слепоту, тьму и тёмные экранные эффекты во время превращения.",
   "power.ssc-extras.drake/body_slam.name": "Удар телом",
   "power.ssc-extras.drake/body_slam.description": "Рывок вперёд на расстояние до 3 блоков, который прерывается при столкновении с врагом или препятствием. Поражает врагов перед вами, нанося урон, равный вашему максимальному здоровью. Расходует 2 единицы голода (1 голень на шкале); перезарядка — 5 секунд.",
   "death.attack.ssc-extras.body_slam": "%1$s — жертва удара телом от %2$s",

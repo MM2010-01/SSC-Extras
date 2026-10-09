@@ -7,6 +7,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.effect.PlayerTransformEff
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import sscextras.SscExtrasGameRules;
 
 @Mixin(value = PlayerTransformEffectManager.class, remap = false)
 public abstract class TransformEffectMixin {
@@ -14,8 +15,8 @@ public abstract class TransformEffectMixin {
             "Lnet/minecraft/server/network/ServerPlayerEntity;addStatusEffect(Lnet/minecraft/entity/effect/StatusEffectInstance;)Z",
             remap = true))
     private static boolean sscExtras$skipVisionEffects(ServerPlayerEntity player, StatusEffectInstance effect) {
-        return effect.getEffectType() != StatusEffects.BLINDNESS
-                && effect.getEffectType() != StatusEffects.DARKNESS
-                && player.addStatusEffect(effect);
+        if (player.getWorld().getGameRules().getBoolean(SscExtrasGameRules.REMOVE_BLACKOUT_DURING_TRANSFORMATION)
+                && (effect.getEffectType() == StatusEffects.BLINDNESS || effect.getEffectType() == StatusEffects.DARKNESS)) return false;
+        return player.addStatusEffect(effect);
     }
 }
