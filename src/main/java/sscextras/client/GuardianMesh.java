@@ -14,6 +14,7 @@ import java.util.*;
 
 /** Rigid bone skinning keeps the authored triangle topology and texture coordinates intact. */
 public final class GuardianMesh {
+    public record Motion(boolean corePresent, boolean hideHead, float tailYaw, float tailPitch) { }
     private static final GuardianMesh[] MODELS = new GuardianMesh[4];
     private record Part(int texture, boolean core, float[] vertices) { }
     private static final class Bone {
@@ -87,6 +88,10 @@ public final class GuardianMesh {
     }
     public void render(MatrixStack matrices, VertexConsumerProvider buffers, int light, PlayerEntityModel<?> pose,
             boolean active, boolean weathered, float alpha, String arm, int equipment) {
+        render(matrices, buffers, light, pose, active, weathered, alpha, arm, equipment, new Motion(active, false, 0, 0));
+    }
+    public void render(MatrixStack matrices, VertexConsumerProvider buffers, int light, PlayerEntityModel<?> pose,
+            boolean active, boolean weathered, float alpha, String arm, int equipment, Motion motion) {
         matrices.push();
         if (arm != null) {
             var bone=bones.get(arm); boolean left=arm.equals("bipedLeftArm");
@@ -94,13 +99,13 @@ public final class GuardianMesh {
             float scale=new float[]{1,.94f,.82f,.65f}[stage];matrices.scale(scale,scale,scale);
             matrices.translate(-bone.pivot[0],-bone.pivot[1],-bone.pivot[2]);
         } else if (stage == 3) { matrices.translate(0, 1.5, 0); matrices.scale(1/.9375f, 1/.9375f, 1/.9375f); matrices.translate(0, -1.5, 0); }
-        if (arm == null) for (var root : roots) draw(root, matrices, buffers, light, pose, active, weathered, alpha, equipment);
-        else draw(bones.get(arm), matrices, buffers, light, pose, active, weathered, alpha, equipment);
+        if (arm == null) for (var root : roots) draw(root, matrices, buffers, light, pose, active, weathered, alpha, equipment, motion);
+        else draw(bones.get(arm), matrices, buffers, light, pose, active, weathered, alpha, equipment, motion);
         matrices.pop();
     }
     private void draw(Bone bone, MatrixStack matrices, VertexConsumerProvider buffers, int light,
-            PlayerEntityModel<?> pose, boolean active, boolean weathered, float alpha, int equipment) {
-        if (bone == null) return;
+            PlayerEntityModel<?> pose, boolean active, boolean weathered, float alpha, int equipment, Motion motion) {
+        if (bone == null || motion.hideHead && bone.name.equals("bipedHead")) return;
         matrices.push();
         ModelPart part = pose == null ? null : switch (bone.name) {
             case "bipedHead" -> pose.head;
@@ -117,24 +122,30 @@ public final class GuardianMesh {
             matrices.multiply(RotationAxis.POSITIVE_X.rotation(part.pitch));
             matrices.translate(-p[0], -p[1], -p[2]);
         }
+        if (bone.name.equals("tail_0")) {
+            var p = bone.pivot; matrices.translate(p[0], p[1], p[2]);
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotation(motion.tailYaw));
+            matrices.multiply(RotationAxis.POSITIVE_X.rotation(motion.tailPitch));
+            matrices.translate(-p[0], -p[1], -p[2]);
+        }
         for (var mesh : bone.parts) {
-            if (mesh.core && !active) continue;
+            if (mesh.core && !motion.corePresent) continue;
             Identifier texture = textures[mesh.texture];
-            if (stage == 3) texture = permanentTexture(weathered, active, false);
+            if (stage == 3) texture = permanentTexture(weathered, active || mesh.core, false);
             var layer = alpha < 1 ? RenderLayer.getEntityTranslucent(texture) : RenderLayer.getEntityCutoutNoCull(texture);
             emit(mesh.vertices, matrices, buffers.getBuffer(layer), light, alpha);
-            if (active && alpha == 1 && emission[mesh.texture] != null) {
+            if ((active || mesh.core && motion.corePresent) && alpha == 1 && emission[mesh.texture] != null) {
                 var glow = stage == 3 ? permanentTexture(weathered, true, true) : emission[mesh.texture];
                 emit(mesh.vertices, matrices, buffers.getBuffer(RenderLayer.getEyes(glow)), LightmapTextureManager.MAX_LIGHT_COORDINATE, 1);
             }
         }
         boolean wrist = (equipment & 1) != 0 && (bone.name.equals("left_hand") || bone.name.equals("right_hand"));
         boolean ankle = (equipment & 2) != 0 && (bone.name.equals("left_foot") || bone.name.equals("right_foot"));
-        boolean collar = (equipment & 4) != 0 && bone.name.equals(stage == 3 ? "neck" : "bipedBody");
+        boolean collar = (equipment & 4) != 0 && bone.name.equals(stage >= 2 ? "neck" : "bipedBody");
         if (wrist || ankle || collar) {
             GuardianAdornmentMesh.render("stage_" + stage + "/" + (collar ? "collar" : bone.name), matrices, buffers, light);
         }
-        for (var child : bone.children) draw(child, matrices, buffers, light, pose, active, weathered, alpha, equipment);
+        for (var child : bone.children) draw(child, matrices, buffers, light, pose, active, weathered, alpha, equipment, motion);
         matrices.pop();
     }
     public static void ring(MatrixStack matrices, VertexConsumerProvider buffers, int light, float[] center, float radius, float height) {

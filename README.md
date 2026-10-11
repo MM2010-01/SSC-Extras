@@ -17,6 +17,8 @@ stage 0 → 1, and stage 1 → 2 cost 5×; stage 2 → permanent costs 50× the 
 ### Cooling Down Your instincts
 Now You may cool down your instincts while in the original form and the stage 2 form (before permanent) by not indulging in your instincts.
 
+An ordinary **Inhibitor** removes **25 percentage points** of instinct in Original Shifter form before your first transformation, as well as in stage 2, stopping at zero.
+
 ### Cursed Moonlight
 
 Cursed Moons no longer freeze your instinct gauge. Exposed to it will increase your instinct, hide under a roof! (Or bask in the moonlight, your choice!)

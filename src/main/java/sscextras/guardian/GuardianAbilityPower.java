@@ -24,9 +24,16 @@ public final class GuardianAbilityPower extends Power implements Active {
         if (!(entity instanceof ServerPlayerEntity player) || !isActive() || !player.isAlive()
                 || player.isSpectator() || player.getWorld().getTime() < nextUse) return;
         var state = RuneboundGuardian.state(player);
-        if (state.detached || state.ritualTicks > 0) return;
+        if (GuardianCombat.locked(player)) return;
         if (overdrive) {
-            if (RuneboundGuardian.stage(player) != 3 || state.energy <= 0) return;
+            int stage = RuneboundGuardian.stage(player);
+            if (stage < 2 || state.energy <= 0) return;
+            if (stage == 2 || state.overdrive && !player.isSneaking()) {
+                if (!GuardianCombat.bareClaws(player)) return;
+                GuardianCombat.clawSwipe(player);
+                nextUse = player.getWorld().getTime() + 60;
+                state.sync(); return;
+            }
             state.overdrive = !state.overdrive;
         } else {
             if (RuneboundGuardian.stage(player) < 2) return;

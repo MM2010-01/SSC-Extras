@@ -12,6 +12,8 @@ import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.entity.passive.TameableEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.*;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.registry.RegistryKeys;
@@ -42,13 +44,52 @@ public final class GuardianCombat {
         return RuneboundGuardian.stage(player) >= 2 && tool(stack) && !stack.isIn(RuneboundGuardian.TOOLS);
     }
     public static double toolEfficiency(PlayerEntity player, ItemStack stack) {
+        if (player.getInventory().getMainHandStack().isEmpty()) return 1;
         int stage = RuneboundGuardian.stage(player);
         if (stack.isIn(RuneboundGuardian.TOOLS)) return stage >= 1 ? 1 : .5;
         return stage == 1 && tool(stack) ? .5 : 1;
     }
     public static boolean locked(PlayerEntity player) {
         var state = RuneboundGuardian.state(player);
-        return state.detached || state.ritualTicks > 0;
+        return state.detached || state.ritualTicks > 0 || state.deactivated;
+    }
+    public static boolean bareClaws(PlayerEntity player) {
+        return RuneboundGuardian.stage(player) >= 2 && player.getInventory().getMainHandStack().isEmpty();
+    }
+    public static float swipeDamage(PlayerEntity player) { return 10 + player.experienceLevel * 1.1f; }
+    public static void clawSweep(PlayerEntity player, Entity struck, float damage) {
+        if (player.getWorld().isClient || !bareClaws(player) || locked(player)) return;
+        sweep(player, struck, damage, RuneboundGuardian.stage(player) == 3 ? 3.5 : 3, .45, .15);
+    }
+    public static void clawSwipe(ServerPlayerEntity player) {
+        if (!bareClaws(player) || locked(player)) return;
+        sweep(player, null, swipeDamage(player), 5, 1.8, .65);
+        player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        player.getServerWorld().playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_IRON_GOLEM_ATTACK,
+                net.minecraft.sound.SoundCategory.PLAYERS, 1, .8f);
+        RuneboundGuardian.state(player).spend(2);
+    }
+    private static void sweep(PlayerEntity player, Entity struck, float damage, double reach, double knockback, double lift) {
+        var forward = net.minecraft.util.math.Vec3d.fromPolar(0, player.getYaw());
+        for (var target : player.getWorld().getEntitiesByClass(LivingEntity.class,
+                player.getBoundingBox().expand(reach, 1, reach), e -> e != player && e != struck && e.isAlive())) {
+            var delta = target.getPos().subtract(player.getPos());
+            if (delta.horizontalLengthSquared() > reach * reach || forward.dotProduct(delta.normalize()) < .15
+                    || !canAttack(player, target) || target.isTeammate(player) || !player.canSee(target)
+                    || target.getType().isIn(GuardianEquipment.VILLAGE_FACTION)
+                    || target instanceof TameableEntity pet && pet.isOwner(player)
+                    || target instanceof PlayerEntity other && (other.isCreative() || other.isSpectator() || !player.shouldDamagePlayer(other))) continue;
+            if (target.damage(player.getDamageSources().playerAttack(player), damage)) {
+                target.takeKnockback(knockback, -delta.x, -delta.z);
+                target.addVelocity(0, lift * (1 - target.getAttributeValue(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE)), 0);
+                target.velocityModified = true;
+            }
+        }
+        if (player instanceof ServerPlayerEntity server) {
+            var at = player.getPos().add(forward.multiply(1.5)).add(0, player.getHeight() * .55, 0);
+            server.getServerWorld().spawnParticles(net.minecraft.particle.ParticleTypes.SWEEP_ATTACK,
+                    at.x, at.y, at.z, 1, 0, 0, 0, 0);
+        }
     }
     public static boolean canAttack(PlayerEntity player, Entity target) {
         return !locked(player) && !blockedTool(player, player.getMainHandStack())
@@ -91,6 +132,7 @@ public final class GuardianCombat {
     public static float incoming(PlayerEntity player, DamageSource source, float amount) {
         int stage = RuneboundGuardian.stage(player);
         if (stage < 0 || source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) return amount;
+        if (stage == 3 && source.isIn(DamageTypeTags.IS_FALL)) return amount * 1.5f;
         if (source.isIn(MAGIC)) {
             float absorbed = amount * new float[]{.1f, .6f, .8f, 1}[stage];
             amount -= absorbed;

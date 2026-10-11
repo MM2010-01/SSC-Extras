@@ -74,7 +74,11 @@ public final class GuardianClient {
                 if (!nextDetached && !nextRitual) restore(client);
                 detached = nextDetached; ritual = nextRitual;
             }
-            if (detached) client.options.setPerspective(Perspective.FIRST_PERSON);
+            if (state.deactivated) {
+                player.setYaw(state.frozenYaw); player.setHeadYaw(state.frozenYaw); player.setPitch(state.frozenPitch);
+                player.bodyYaw = state.frozenYaw;
+            }
+            if (detached) client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
             else if (ritual) {client.options.setPerspective(Perspective.THIRD_PERSON_BACK);ritualFocus=player.getPos().add(0,1.3,0);}
             if(aimAtVessel&&ritualFocus!=null&&client.getCameraEntity() instanceof GuardianAnchorEntity anchor) {
                 var delta=ritualFocus.subtract(anchor.getPos());
@@ -121,7 +125,9 @@ public final class GuardianClient {
         return player.getLerpedPos(delta).add(new Vec3d(0, 2.7, -5).rotateY((float)-Math.toRadians(yaw)));
     }
     public static boolean look(Entity entity, double dx, double dy) {
-        if (entity != MinecraftClient.getInstance().player || !camera()) return false;
+        if (entity != MinecraftClient.getInstance().player) return false;
+        if (RuneboundGuardian.state(MinecraftClient.getInstance().player).deactivated) return true;
+        if (!camera()) return false;
         yaw += dx*.15f; pitch = MathHelper.clamp(pitch+(float)dy*.15f,-85,85); return true;
     }
     public static int outline(Entity entity) {
@@ -132,6 +138,8 @@ public final class GuardianClient {
             if (threat.villager.equals(entity.getUuid())) return 0xffd940;
             if (RuneboundGuardian.stage(player) == 3 && threat.attacker.equals(entity.getUuid())) return 0xff3434;
         }
+        if (RuneboundGuardian.stage(player) == 3 && (entity.getType().isIn(net.minecraft.registry.tag.EntityTypeTags.RAIDERS)
+                || entity instanceof net.minecraft.entity.mob.IllagerEntity)) return 0xff3434;
         return entity instanceof VillagerEntity ? 0x35edee : -1;
     }
     public static boolean energy() {

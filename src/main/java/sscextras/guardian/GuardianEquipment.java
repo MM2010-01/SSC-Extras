@@ -161,17 +161,17 @@ public final class GuardianEquipment {
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.cuffs_boundary", RANGE), true);
     }
     public static void rememberDeath(PlayerEntity player) {
+        if (player instanceof ServerPlayerEntity server) GuardianVillages.stopRepair(server);
         var state = RuneboundGuardian.state(player);
-        int stage = RuneboundGuardian.stage(player);
-        state.soulboundStage = complete(player) && (stage >= 0 || FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_SHIFTER) ? stage : -2;
-        if (state.soulboundStage >= -1 && complete(player)) enchantSet(player);
+        state.soulboundStage = complete(player) ? -1 : -2;
+        if (complete(player)) enchantSet(player);
     }
     public static void respawn(ServerPlayerEntity oldPlayer, ServerPlayerEntity player, boolean alive) {
         int stage = RuneboundGuardian.state(oldPlayer).soulboundStage;
         if (alive || stage < -1) return;
-        FormAbilityManager.applyForm(player, stage < 0 ? RegPlayerForms.ORIGINAL_SHIFTER : RuneboundGuardian.FORMS[stage]);
+        FormAbilityManager.applyForm(player, RegPlayerForms.ORIGINAL_SHIFTER);
         RuneboundGuardian.state(player).soulboundStage = -2;
-        if (stage < 0) applyCurse(player);
+        applyCurse(player);
         // The next player tick enforces the boundary after the connection points at the new player.
         RuneboundGuardian.state(player).sync();
     }

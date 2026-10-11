@@ -17,6 +17,18 @@ import sscextras.guardian.*;
 
 @Mixin(PlayerEntity.class)
 public abstract class GuardianPlayerMixin {
+    @WrapOperation(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;damage(Lnet/minecraft/entity/damage/DamageSource;F)Z"))
+    private boolean sscExtras$clawArea(Entity target, net.minecraft.entity.damage.DamageSource source, float amount, Operation<Boolean> original) {
+        boolean hit = original.call(target, source, amount);
+        if (hit) GuardianCombat.clawSweep((PlayerEntity)(Object)this, target, amount);
+        return hit;
+    }
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "handleFallDamage", at = @At(value = "FIELD", target = "Lnet/minecraft/entity/player/PlayerAbilities;allowFlying:Z"))
+    private boolean sscExtras$heavyLanding(net.minecraft.entity.player.PlayerAbilities abilities) {
+        var player = (PlayerEntity)(Object)this;
+        return RuneboundGuardian.stage(player) == 3 && !player.isCreative() && !player.isSpectator()
+                ? abilities.flying : abilities.allowFlying;
+    }
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
     private void sscExtras$guardianAttack(Entity target, CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity)(Object)this;

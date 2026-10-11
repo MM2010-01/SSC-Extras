@@ -23,7 +23,8 @@ public abstract class DrakeLeashPlayerMixin extends LivingEntity implements Drak
     protected DrakeLeashPlayerMixin(EntityType<? extends LivingEntity> type, World world) { super(type, world); }
 
     @Override public float getStepHeight() {
-        return DrakeLeashing.stepHeight((PlayerEntity)(Object)this, super.getStepHeight());
+        var player = (PlayerEntity)(Object)this;
+        return DrakeLeashing.stepHeight(player, super.getStepHeight()) + (sscextras.guardian.RuneboundGuardian.stage(player) >= 2 ? 1 : 0);
     }
 
     @Inject(method = "adjustMovementForSneaking", at = @At("HEAD"), cancellable = true)

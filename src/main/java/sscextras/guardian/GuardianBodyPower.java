@@ -50,12 +50,13 @@ public final class GuardianBodyPower extends Power {
         double speed = (sunlit(player) ? new double[]{.85, .75, .65, .5} : new double[]{.95, .9, .85, .85})[stage];
         if (protecting) speed = 1.2;
         if (stage >= 2 && state.energy <= 0) speed = .25;
+        if (state.deactivated) speed = 0;
         if (overdrive) speed *= 2;
         set(0, new double[]{1, 5, 10, 15}[stage], false, "base");
         set(1, stage * 2, false, "base");
         set(2, new double[]{.1, .35, .6, 1}[stage], false, "base");
         set(3, speed - 1, true, "base");
-        set(4, player.getInventory().getMainHandStack().isEmpty() ? new double[]{1, 4, 5, 6}[stage] : 0, false, "base");
+        set(4, player.getInventory().getMainHandStack().isEmpty() ? new double[]{1, 4, 7, 9}[stage] : 0, false, "base");
         set(4, (charged ? 1.5 : 1) * (overdrive ? 2 : 1) - 1, true, "boost");
         double efficiency = GuardianCombat.toolEfficiency(player, player.getInventory().getMainHandStack());
         set(5, efficiency * (charged ? 1.3 : 1) * (overdrive ? 2 : 1) - 1, true, "base");
@@ -85,8 +86,11 @@ public final class GuardianBodyPower extends Power {
     }
     public static boolean sunlit(PlayerEntity player) {
         var world = player.getWorld();
+        var head = BlockPos.ofFloored(player.getX(), player.getEyeY(), player.getZ());
         return world.getDimension().hasSkyLight() && world.isDay() && !world.isRaining()
-                && world.isSkyVisible(BlockPos.ofFloored(player.getX(), player.getEyeY(), player.getZ()));
+                && !world.getLevelProperties().isRaining() && !world.isThundering()
+                && world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, head.getX(), head.getZ()) <= head.getY()
+                && world.isSkyVisible(head);
     }
     public static void flight(PlayerEntity player, boolean enabled) {
         if (player.getWorld().isClient) return;

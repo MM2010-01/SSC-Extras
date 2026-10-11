@@ -25,7 +25,7 @@ public abstract class GuardianNetworkMixin {
     private void sscExtras$guardianControlsMovement(CallbackInfo ci) {
         if (GuardianCombat.locked(player) || RuneboundGuardian.state(player).protecting) ci.cancel();
     }
-    @Inject(method = {"onPlayerAction", "onPlayerInteractBlock", "onPlayerInteractItem", "onClickSlot"},
+    @Inject(method = {"onPlayerAction", "onPlayerInteractBlock", "onPlayerInteractItem", "onPlayerInteractEntity", "onClickSlot", "onHandSwing"},
             at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V", shift = At.Shift.AFTER), cancellable = true)
     private void sscExtras$coreCannotUseBody(CallbackInfo ci) {
         if (GuardianCombat.locked(player)) { player.currentScreenHandler.syncState(); ci.cancel(); }

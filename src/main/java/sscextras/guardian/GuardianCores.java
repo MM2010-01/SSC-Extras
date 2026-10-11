@@ -150,6 +150,7 @@ public final class GuardianCores {
         try {
             var record = create(player);
             GuardianVillages.stopProtecting(player);
+            GuardianVillages.stopRepair(player);
             if (player.isSleeping()) player.wakeUp();
             ItemStack physical = takeCore(player, record.id);
             player.closeHandledScreen();
@@ -166,9 +167,10 @@ public final class GuardianCores {
                 shell.weatherTicks = state.weatherTicks; shell.setHealth(Math.max(1, player.getHealth()));
                 shell.setCustomName(player.getName()); shell.inventory = player.getInventory().writeNbt(new NbtList()); shell.accessories = accessories;
                 player.getInventory().clear(); player.getServerWorld().spawnEntity(shell);
-                var claim = GuardianVillages.claim(player); if (claim != null) claim.body = shell.getUuid();
+                var claim = GuardianVillages.claim(player);
+                if (claim != null) { claim.body = shell.getUuid(); claim.bodyPos = shell.getBlockPos(); claim.recoveryTicks = 0; }
             }
-            state.detached = true; state.overdrive = false; state.protecting = false;
+            state.detached = true; state.overdrive = false; state.protecting = false; state.deactivated = false;
             record.previousMode = player.interactionManager.getGameMode().getName();
             player.setHealth(Math.max(1, player.getMaxHealth())); player.clearStatusEffects(); player.extinguish();
             player.changeGameMode(GameMode.SPECTATOR); player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
@@ -180,7 +182,7 @@ public final class GuardianCores {
         } finally { TRANSFERRING.remove(player.getUuid()); }
     }
     public static void breakBody(ServerPlayerEntity player) {
-        var claim = GuardianVillages.claim(player); if (claim != null) { claim.body = null; claim.rebuildTicks = 0; }
+        var claim = GuardianVillages.claim(player); if (claim != null) { claim.body = null; claim.bodyPos = null; claim.rebuildTicks = claim.recoveryTicks = 0; }
         detach(player, true);
         player.getServerWorld().spawnParticles(new net.minecraft.particle.BlockStateParticleEffect(net.minecraft.particle.ParticleTypes.BLOCK,
                 net.minecraft.block.Blocks.STONE.getDefaultState()), player.getX(), player.getY() + 1, player.getZ(), 80, .5, 1, .5, .15);
@@ -198,14 +200,14 @@ public final class GuardianCores {
             FormAbilityManager.applyForm(player, RuneboundGuardian.FORMS[3]);
             player.getInventory().readNbt(shell.inventory); restoreAccessories(player, shell.accessories);
             if (!equip(player, core.copyWithCount(1))) return false;
-            state.detached = false; state.energy = Math.min(200, shell.energy); state.weatherTicks = shell.weatherTicks;
+            state.detached = false; state.deactivated = false; state.energy = Math.min(200, shell.energy); state.weatherTicks = shell.weatherTicks;
             state.guardianName = record.name; state.ritualTicks = 0;
             player.changeGameMode(GameMode.byName(record.previousMode, GameMode.SURVIVAL));
             player.setHealth(Math.min(player.getMaxHealth(), Math.max(1, shell.getHealth()))); player.fallDistance = 0;
             update(record, player.getServerWorld(), "body", player.getBlockPos(), player.getUuid());
             shell.inventory = new NbtList(); shell.accessories = new NbtList(); shell.core = ItemStack.EMPTY; shell.discard();
             state.sync(); refreshName(player); player.currentScreenHandler.syncState(); player.sendAbilitiesUpdate();
-            var claim = GuardianVillages.claim(player); if (claim != null) { claim.body = null; claim.rebuildTicks = 0; }
+            var claim = GuardianVillages.claim(player); if (claim != null) { claim.body = null; claim.bodyPos = null; claim.rebuildTicks = claim.recoveryTicks = 0; }
             return true;
         } finally { TRANSFERRING.remove(player.getUuid()); }
     }

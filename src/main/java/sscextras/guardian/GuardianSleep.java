@@ -70,7 +70,6 @@ public final class GuardianSleep {
             if (statue(player) && RuneboundGuardian.construct(player) && GuardianBodyPower.sunlit(player)) {
                 var state = RuneboundGuardian.state(player); state.charge(amount * .025); state.sync();
             }
-            GuardianVillages.skipped(player, amount);
         }
     }
 }

@@ -4,6 +4,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinctComponent;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformRelatedItems;
@@ -16,9 +17,10 @@ import sscextras.CreatureInstinct;
 @Mixin(value = TransformRelatedItems.class, remap = false)
 public abstract class CollarCureMixin {
     @Inject(method = "OnUseCure", at = @At("HEAD"), cancellable = true)
-    private static void sscExtras$calmStageTwo(PlayerEntity player, CallbackInfo ci) {
-        if (player instanceof ServerPlayerEntity
-                && CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player)) != null) {
+    private static void sscExtras$calmInstinct(PlayerEntity player, CallbackInfo ci) {
+        if (!(player instanceof ServerPlayerEntity)) return;
+        var form = FormAbilityManager.getForm(player);
+        if (form == RegPlayerForms.ORIGINAL_SHIFTER || CreatureInstinct.permanentTarget(form) != null) {
             var instinct = RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player);
             instinct.instinctValue = Math.max(0, instinct.instinctValue - 25);
             RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);

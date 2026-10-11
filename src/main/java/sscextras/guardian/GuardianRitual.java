@@ -22,6 +22,12 @@ public final class GuardianRitual {
     public static final Item CHISEL = new Item(new Item.Settings().maxCount(1));
     public static final Item LIQUID_STONE = new Item(new Item.Settings().maxCount(1));
     public static final int SOUL_START = 120, SOUL_SEALED = 200, ENCASED = 360, SCULPTED = 560, COMPLETE = 660;
+    private static final Map<VillagerEntity, Route> ROUTES = new WeakHashMap<>();
+    private static final class Route {
+        Vec3d position;
+        int stuck;
+        Route(Vec3d position) { this.position = position; }
+    }
     private GuardianRitual() { }
     private static Vec3d station(Vec3d center,int index) {
         return center.add(index==1?-2.5:index==2?2.5:.5,-.75,index==0?-2.5:-.5);
@@ -76,6 +82,7 @@ public final class GuardianRitual {
         return null;
     }
     private static void begin(ServerPlayerEntity player, GuardianWorldState.Village village, List<VillagerEntity> attendants) {
+        GuardianVillages.stopRepair(player);
         village.attendants.clear(); attendants.forEach(v -> village.attendants.add(v.getUuid()));
         village.ritualTicks = 1;
         var state = RuneboundGuardian.state(player); state.ritualTicks = 1; state.sync();
@@ -84,8 +91,8 @@ public final class GuardianRitual {
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.ritual_begin"), false);
         GuardianWorldState.get(player.getServer()).markDirty();
     }
-    private static boolean assigned(VillagerEntity villager) {
-        return GuardianWorldState.get(villager.getServer()).villages.values().stream()
+    static boolean assigned(VillagerEntity villager) {
+        return villager.getCommandTags().contains("ssc_extras_guardian_repair") || GuardianWorldState.get(villager.getServer()).villages.values().stream()
                 .anyMatch(v -> (v.ritualTicks > 0 || v.rebuildTicks > 0) && v.attendants.contains(villager.getUuid()));
     }
     private static List<VillagerEntity> attendants(ServerWorld world, GuardianWorldState.Village village) {
@@ -116,12 +123,14 @@ public final class GuardianRitual {
                 player.teleport(world, center.x, center.y, center.z, 180, 0); player.setOnGround(true);
             } else return;
         }
+        boolean ready = true;
         for (int i = 0; i < villagers.size(); i++) {
             var villager = villagers.get(i);
-            Vec3d target = station(center,i);
-            if (!walk(villager, target, .6)) return;
+            Vec3d target = safeStation(villager, center, i);
+            ready &= target != null && walk(villager, target, .8);
             villager.getLookControl().lookAt(center.x, center.y + 1.6, center.z);
         }
+        if (!ready) return;
         if (time < SOUL_SEALED && !state.detached) {
             player.setVelocity(Vec3d.ZERO); player.setPosition(center); player.setYaw(180); player.setHeadYaw(180); player.bodyYaw = 180;
         }
@@ -189,13 +198,25 @@ public final class GuardianRitual {
         } else { village.ritualTicks++; state.ritualTicks = village.ritualTicks; if (time % 10 == 0) state.sync(); }
         GuardianWorldState.get(player.getServer()).markDirty();
     }
-    private static boolean walk(VillagerEntity villager, Vec3d target, double speed) {
+    static boolean walk(VillagerEntity villager, Vec3d target, double speed) {
         villager.addCommandTag("ssc_extras_guardian_worker");
         villager.setAiDisabled(false);
-        if (villager.squaredDistanceTo(target) < 1.44) { villager.getNavigation().stop(); villager.setMovementSpeed(0); return true; }
+        if (villager.isSleeping()) villager.wakeUp();
+        if (villager.squaredDistanceTo(target) < 1.44) {
+            villager.getNavigation().stop(); villager.setMovementSpeed(0); ROUTES.remove(villager); return true;
+        }
+        var route = ROUTES.computeIfAbsent(villager, v -> new Route(v.getPos()));
+        if (villager.squaredDistanceTo(route.position) > .25) { route.position = villager.getPos(); route.stuck = 0; }
+        else route.stuck++;
         if (villager.age % 10 == 0 || villager.getNavigation().isIdle()) villager.getNavigation().startMovingTo(target.x, target.y, target.z, speed);
         if (villager.horizontalCollision && villager.isOnGround() && target.y > villager.getY() + .3)
             villager.setVelocity(villager.getVelocity().add(0, .42, 0));
+        if (route.stuck >= 100 && villager.squaredDistanceTo(target) < 16
+                && villager.getWorld().getBlockState(BlockPos.ofFloored(target).down()).isSolidBlock(villager.getWorld(), BlockPos.ofFloored(target).down())
+                && villager.getWorld().isSpaceEmpty(villager, villager.getDimensions(villager.getPose()).getBoxAt(target))) {
+            villager.refreshPositionAndAngles(target.x, target.y, target.z, villager.getYaw(), 0);
+            villager.getNavigation().stop(); ROUTES.remove(villager); return true;
+        }
         return false;
     }
     private static void prop(VillagerEntity villager, Item item) {
@@ -215,6 +236,7 @@ public final class GuardianRitual {
     public static void releaseWorker(VillagerEntity villager) {
         clearProp(villager);villager.setAiDisabled(false);villager.getNavigation().stop();villager.setMovementSpeed(0);
         villager.removeScoreboardTag("ssc_extras_guardian_worker");
+        villager.removeScoreboardTag("ssc_extras_guardian_repair"); ROUTES.remove(villager);
     }
     public static void suspend(ServerPlayerEntity player, GuardianWorldState.Village village) {
         var world=player.getServer().getWorld(village.world);
@@ -240,75 +262,110 @@ public final class GuardianRitual {
         if (record == null || record.destroyed || !record.world.equals(village.world)) return;
         var world = player.getServer().getWorld(village.world); if (world == null) return;
         Entity holder = record.holder == null ? null : world.getEntity(record.holder);
-        if (holder instanceof PlayerEntity || record.location.equals("block") || record.location.equals("shell")) {
-            release(world,village); village.rebuildTicks=0; return;
+        Vec3d center = GuardianPedestal.position(village.pedestal);
+        if (!(holder instanceof ItemEntity || holder instanceof VillagerEntity)
+                || holder.squaredDistanceTo(center) > GuardianEquipment.RANGE * GuardianEquipment.RANGE) {
+            release(world, village); village.rebuildTicks = village.recoveryTicks = 0; return;
         }
-        if (!(holder instanceof ItemEntity) && !(holder instanceof VillagerEntity)) return;
-        var residents = GuardianVillages.villagers(world, holder.getBlockPos());
-        if (residents.isEmpty() && player.age % 100 == 0) {
-            for (int i = 0; i < 3; i++) {
-                double angle = i * Math.PI * 2 / 3;
-                var at = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
-                        holder.getBlockPos().add((int)(Math.cos(angle) * 32), 0, (int)(Math.sin(angle) * 32)));
-                if (!world.getWorldBorder().contains(at) || !world.getBlockState(at.down()).isSolidBlock(world, at.down())) continue;
-                var villager = EntityType.VILLAGER.create(world); villager.refreshPositionAndAngles(at, 0, 0);
-                if (!world.isSpaceEmpty(villager)) continue;
-                villager.initialize(world, world.getLocalDifficulty(at), SpawnReason.EVENT, null, null);
-                villager.setPersistent(); world.spawnEntity(villager); residents.add(villager);
-            }
-        }
-        if (residents.isEmpty()) return;
+        world.getChunk(village.pedestal);
+        if (!GuardianPedestal.intact(world, village.pedestal)) { release(world, village); return; }
+        village.recoveryTicks++;
+        village.rebuildTicks = Math.max(1, village.rebuildTicks);
+        var body = waitingBody(player, village, world, center);
+        if (body == null) return;
         if (holder instanceof ItemEntity item) {
-            var rescuer = residents.stream().filter(v -> !v.isBaby() && v.getMainHandStack().isEmpty()
-                            && (!assigned(v)||village.attendants.contains(v.getUuid())))
-                    .min(Comparator.comparingDouble(v -> v.squaredDistanceTo(item))).orElse(null);
+            if (!Objects.equals(GuardianCores.id(item.getStack()), record.id)) return;
+            var residents = GuardianVillages.villagers(world, village.pedestal);
+            var rescuer = residents.stream().filter(v -> !v.isBaby() && !v.isAiDisabled() && v.getMainHandStack().isEmpty()
+                            && (!assigned(v) || village.attendants.contains(v.getUuid())))
+                    .min(Comparator.comparingInt((VillagerEntity v) -> village.attendants.contains(v.getUuid()) ? 0 : 1)
+                            .thenComparingDouble(v -> v.squaredDistanceTo(item))).orElse(null);
+            boolean fallback = village.recoveryTicks >= 300;
+            if (rescuer == null && fallback) {
+                rescuer = EntityType.VILLAGER.create(world);
+                Vec3d at = safeStation(rescuer, center, 0);
+                if (at == null) return;
+                rescuer.refreshPositionAndAngles(at.x, at.y, at.z, 0, 0);
+                rescuer.initialize(world, world.getLocalDifficulty(village.pedestal), SpawnReason.EVENT, null, null);
+                rescuer.setPersistent();
+                if (!world.spawnEntity(rescuer)) return;
+            }
             if (rescuer == null) return;
-            if(!village.attendants.contains(rescuer.getUuid())) village.attendants.add(rescuer.getUuid());
-            village.rebuildTicks=Math.max(1,village.rebuildTicks);
-            if (walk(rescuer, item.getPos(), 1)) {
-                rescuer.equipStack(EquipmentSlot.MAINHAND, item.getStack()); rescuer.setEquipmentDropChance(EquipmentSlot.MAINHAND, 2);
-                item.discard(); GuardianCores.observe(rescuer.getMainHandStack(), rescuer, "entity"); holder = rescuer;
-            } else return;
+            if (!village.attendants.contains(rescuer.getUuid())) village.attendants.add(rescuer.getUuid());
+            if (!fallback && !walk(rescuer, item.getPos(), 1)) return;
+            if (fallback && !recoveryCut(player, rescuer, center)) return;
+            rescuer.equipStack(EquipmentSlot.MAINHAND, item.getStack());
+            rescuer.setEquipmentDropChance(EquipmentSlot.MAINHAND, 2);
+            item.setStack(ItemStack.EMPTY); item.discard();
+            GuardianCores.observe(rescuer.getMainHandStack(), rescuer, "entity"); holder = rescuer;
+            village.rebuildTicks = 1;
         }
         var bearer = (VillagerEntity)holder;
         if (!Objects.equals(GuardianCores.id(bearer.getMainHandStack()), record.id)) return;
+        if (!village.attendants.contains(bearer.getUuid())) village.attendants.add(bearer.getUuid());
         GuardianCores.observe(bearer.getMainHandStack(), bearer, "entity");
-        Vec3d center = GuardianPedestal.position(village.pedestal);
-        Vec3d delta = center.subtract(bearer.getPos());
-        if (delta.lengthSquared() > 16) {
-            walk(bearer, bearer.getPos().add(delta.normalize().multiply(Math.min(16, delta.length()))), 1); return;
+        Vec3d at = safeStation(bearer, center, 0);
+        if (at == null) return;
+        if (!walk(bearer, at, 1)) {
+            village.rebuildTicks = 1;
+            if (village.recoveryTicks >= 300) recoveryCut(player, bearer, center);
+            return;
         }
-        if (!GuardianPedestal.intact(world, village.pedestal)) { release(world,village); return; }
-        var body = village.body == null ? null : world.getEntity(village.body) instanceof GuardianShellEntity shell && shell.isAlive() ? shell : null;
-        if (body == null) {
-            body = GuardianCores.SHELL.create(world); body.refreshPositionAndAngles(center.x, center.y, center.z, 180, 0);
-            if (!world.isSpaceEmpty(body)) return;
-            body.formerOwner = player.getUuid(); body.stage(3); body.work(100); body.energy = 100; body.setHealth(26);
-            world.spawnEntity(body); village.body = body.getUuid(); village.rebuildTicks = 1;
+        bearer.getLookControl().lookAt(center.x, center.y + 1.4, center.z);
+        village.rebuildTicks++;
+        if (village.rebuildTicks == 20) {
+            bearer.swingHand(Hand.MAIN_HAND);
+            sound(world, center, SoundEvents.BLOCK_BEACON_ACTIVATE, 1);
         }
-        village.attendants.removeIf(id->!(world.getEntity(id) instanceof VillagerEntity v)||!v.isAlive());
-        if(!village.attendants.contains(bearer.getUuid())) village.attendants.add(bearer.getUuid());
-        var carvers = GuardianVillages.villagers(world, village.pedestal).stream().filter(v -> !v.isBaby() && v != bearer
-                        && (village.attendants.contains(v.getUuid()) || !assigned(v) && !v.isAiDisabled() && v.getMainHandStack().isEmpty()))
-                .sorted(Comparator.comparingInt(v->village.attendants.contains(v.getUuid())?0:1)).limit(2).toList();
-        for(var carver:carvers) if(!village.attendants.contains(carver.getUuid())) village.attendants.add(carver.getUuid());
-        if (!walk(bearer, station(center,0), .7)) return;
-        boolean ready = carvers.size()==2;
-        for (int i = 0; i < carvers.size(); i++) {
-            var carver = carvers.get(i); ready &= walk(carver, station(center,i+1), .7);
-            prop(carver, CHISEL);
-            if (player.age % 20 == 0) carver.swingHand(Hand.MAIN_HAND);
-        }
-        if (!ready) return;
-        village.rebuildTicks++; body.work(Math.max(0, 100 - village.rebuildTicks / 6));
-        if (player.age % 20 == 0) sound(world, center, SoundEvents.BLOCK_STONE_BREAK, .6f);
-        if (village.rebuildTicks >= 600) {
-            var core = bearer.getMainHandStack();
-            body.work(0);
-            if(!GuardianCores.occupy(player, body, core)) return;
-            bearer.equipStack(EquipmentSlot.MAINHAND, ItemStack.EMPTY); release(world,village);
-            village.rebuildTicks = 0; player.sendMessage(Text.translatable("message.ssc-extras.guardian.rebuilt"), false);
+        if (village.rebuildTicks >= 40) {
+            if (!GuardianCores.occupy(player, body, bearer.getMainHandStack())) return;
+            bearer.equipStack(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            release(world, village); village.rebuildTicks = village.recoveryTicks = 0;
+            player.sendMessage(Text.translatable("message.ssc-extras.guardian.rebuilt"), false);
         }
         GuardianWorldState.get(player.getServer()).markDirty();
+    }
+    private static boolean recoveryCut(ServerPlayerEntity player, VillagerEntity bearer, Vec3d center) {
+        Vec3d at = safeStation(bearer, center, 0); if (at == null) return false;
+        var state = RuneboundGuardian.state(player); state.recoveryBlackout = 25; state.sync();
+        bearer.getNavigation().stop(); bearer.setVelocity(Vec3d.ZERO);
+        bearer.refreshPositionAndAngles(at.x, at.y, at.z, 0, 0);
+        return true;
+    }
+    private static GuardianShellEntity waitingBody(ServerPlayerEntity player, GuardianWorldState.Village village, ServerWorld world, Vec3d center) {
+        if (!world.isChunkLoaded(new net.minecraft.util.math.ChunkPos(village.pedestal).toLong())) return null;
+        if (village.bodyPos != null) {
+            world.getChunk(village.bodyPos);
+            if (!world.isChunkLoaded(new net.minecraft.util.math.ChunkPos(village.bodyPos).toLong())) return null;
+        }
+        var body = village.body == null ? null : world.getEntity(village.body) instanceof GuardianShellEntity shell && shell.isAlive() ? shell : null;
+        if (body != null && !body.core.isEmpty()) return null;
+        if (body == null) {
+            body = GuardianCores.SHELL.create(world);
+            body.refreshPositionAndAngles(center.x, center.y, center.z, 180, 0);
+            if (!world.isSpaceEmpty(body)) return null;
+            body.formerOwner = player.getUuid(); body.stage(3); body.energy = 100; body.setHealth(26);
+            if (!world.spawnEntity(body)) return null;
+            village.body = body.getUuid();
+        } else if (body.squaredDistanceTo(center) > .1) {
+            if (!world.isSpaceEmpty(body, body.getDimensions(body.getPose()).getBoxAt(center))) return null;
+            body.refreshPositionAndAngles(center.x, center.y, center.z, 180, 0);
+        }
+        body.work(0); village.bodyPos = body.getBlockPos();
+        GuardianWorldState.get(player.getServer()).markDirty();
+        return body;
+    }
+    private static Vec3d safeStation(VillagerEntity villager, Vec3d center, int index) {
+        var desired = station(center, index); var world = villager.getWorld();
+        for (int radius = 0; radius <= 2; radius++) for (int x = -radius; x <= radius; x++) for (int z = -radius; z <= radius; z++) {
+            if (Math.max(Math.abs(x), Math.abs(z)) != radius) continue;
+            for (int dy : new int[]{0, 1, -1, 2, -2}) {
+                var feet = BlockPos.ofFloored(desired).add(x, dy, z); var floor = feet.down();
+                var at = new Vec3d(feet.getX() + .5, feet.getY(), feet.getZ() + .5);
+                if (world.getWorldBorder().contains(feet) && world.getBlockState(floor).isSideSolidFullSquare(world, floor, net.minecraft.util.math.Direction.UP)
+                        && world.getFluidState(feet).isEmpty() && world.isSpaceEmpty(villager, villager.getDimensions(villager.getPose()).getBoxAt(at))) return at;
+            }
+        }
+        return null;
     }
 }

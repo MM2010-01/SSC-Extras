@@ -20,9 +20,10 @@ public final class GuardianWorldState extends PersistentState {
         public RegistryKey<World> world = World.OVERWORLD;
         public BlockPos pedestal = BlockPos.ORIGIN;
         public long serviceTicks, readyDay = -1;
-        public int ritualTicks, rebuildTicks;
+        public int ritualTicks, rebuildTicks, recoveryTicks;
         public final List<UUID> attendants = new ArrayList<>();
         public UUID body;
+        public BlockPos bodyPos;
         public boolean eligible;
         public long lastServiceTick = Long.MIN_VALUE;
     }
@@ -52,7 +53,9 @@ public final class GuardianWorldState extends PersistentState {
             village.serviceTicks = Math.max(0, Math.min(SERVICE_TICKS, nbt.getLong("Service")));
             village.readyDay = nbt.contains("ReadyDay") ? nbt.getLong("ReadyDay") : -1;
             village.ritualTicks = nbt.getInt("Ritual"); village.rebuildTicks = nbt.getInt("Rebuild");
+            village.recoveryTicks = nbt.getInt("RecoveryTicks");
             if (nbt.containsUuid("Body")) village.body = nbt.getUuid("Body");
+            if (nbt.contains("BodyPos")) village.bodyPos = BlockPos.fromLong(nbt.getLong("BodyPos"));
             var attendants = nbt.getList("Attendants", NbtElement.COMPOUND_TYPE);
             for (int a = 0; a < attendants.size(); a++) if (attendants.getCompound(a).containsUuid("Id")) village.attendants.add(attendants.getCompound(a).getUuid("Id"));
             state.villages.put(nbt.getUuid("Owner"), village);
@@ -74,7 +77,9 @@ public final class GuardianWorldState extends PersistentState {
             var nbt = new NbtCompound(); nbt.putUuid("Owner", owner); nbt.putString("World", village.world.getValue().toString());
             nbt.putLong("Pedestal", village.pedestal.asLong()); nbt.putLong("Service", village.serviceTicks); nbt.putLong("ReadyDay", village.readyDay);
             nbt.putInt("Ritual", village.ritualTicks); nbt.putInt("Rebuild", village.rebuildTicks);
+            nbt.putInt("RecoveryTicks", village.recoveryTicks);
             if (village.body != null) nbt.putUuid("Body", village.body);
+            if (village.bodyPos != null) nbt.putLong("BodyPos", village.bodyPos.asLong());
             var attendants = new NbtList();
             for (var id : village.attendants) { var a = new NbtCompound(); a.putUuid("Id", id); attendants.add(a); }
             nbt.put("Attendants", attendants); villages.add(nbt);

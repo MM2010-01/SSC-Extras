@@ -4,7 +4,8 @@
     "ssc-extras:guardian/armor_restrictions",
     "ssc-extras:guardian/head_and_feet_restrictions",
     "ssc-extras:guardian/villager_sight",
-    "ssc-extras:guardian/flight"
+    "ssc-extras:guardian/flight",
+    "ssc-extras:guardian/claw_swipe"
   ],
   "icon": {
     "item": "ssc-extras:guardian_cuffs"

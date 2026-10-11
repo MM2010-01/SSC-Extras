@@ -13,6 +13,10 @@ public abstract class DrakeStepHeightMixin {
     @ModifyVariable(method = "adjustMovementForCollisions", at = @At("STORE"), ordinal = 0, require = 0)
     private float sscExtras$collisionStepHeight(float height) {
         if ((Object)this instanceof sscextras.drake.StableDrakeEntity) return sscextras.drake.QuadrupedMovement.STEP_HEIGHT;
-        return (Object)this instanceof PlayerEntity player ? DrakeLeashing.stepHeight(player, height) : height;
+        if ((Object)this instanceof PlayerEntity player) {
+            height = DrakeLeashing.stepHeight(player, height);
+            return sscextras.guardian.RuneboundGuardian.stage(player) >= 2 ? Math.max(1.6f, height) : height;
+        }
+        return height;
     }
 }

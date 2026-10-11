@@ -100,22 +100,21 @@ public final class GuardianVillages {
         if (claim != null) {
             if (claim.ritualTicks > 0) { GuardianRitual.tick(player, claim); return; }
             if (stage == 2 && player.age % 20 == 0) {
-                claim.eligible = eligible(player, claim);
-                if (claim.eligible) addService(player, claim, 20);
-                else if (!GuardianEquipment.complete(player)) { claim.serviceTicks = 0; claim.readyDay = -1; }
+                updateService(player, claim);
                 if (claim.readyDay >= 0 && claim.eligible && player.getWorld().isDay()
                         && Math.floorDiv(player.getWorld().getTimeOfDay(), 24000) >= claim.readyDay)
                     GuardianRitual.start(player, claim);
                 GuardianWorldState.get(player.getServer()).markDirty();
             }
         }
+        repair(player);
         if (!InstinctTicker.isPausing && stage < 3 && !player.isCreative() && !player.isSpectator() && player.age % 100 == 0) {
             if (inVillage(player)) InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_GUARDIAN_VILLAGE", .1f);
             if (GuardianPedestal.standing(player)) InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_GUARDIAN_PEDESTAL", .2f);
         }
         if (stage >= 2 && player.age % 20 == 0) sendVision(player);
         if(state.brain==null && state.protecting) stopProtecting(player);
-        if (stage != 3 || state.energy <= 0 || player.isCreative() || player.isSpectator() || player.isSleeping() || state.detached) { stopProtecting(player); return; }
+        if (stage != 3 || state.energy <= 0 || player.isCreative() || player.isSpectator() || player.isSleeping() || GuardianCombat.locked(player)) { stopProtecting(player); return; }
         if (state.brain != null && (!state.brain.valid() || state.brain.getWorld() != player.getWorld())) stopProtecting(player);
         if (state.brain == null && player.age % 10 == 0) {
             var offender = offender(player);
@@ -141,15 +140,56 @@ public final class GuardianVillages {
                 && GuardianPedestal.intact(player.getWorld(), village.pedestal)
                 && villagers(player.getServerWorld(), village.pedestal).size() >= 3;
     }
-    private static void addService(ServerPlayerEntity player, GuardianWorldState.Village village, long ticks) {
-        village.serviceTicks = Math.min(GuardianWorldState.SERVICE_TICKS, village.serviceTicks + ticks);
-        if (village.serviceTicks == GuardianWorldState.SERVICE_TICKS && village.readyDay < 0)
-            village.readyDay = Math.floorDiv(player.getWorld().getTimeOfDay(), 24000) + 1;
+    public static void updateService(ServerPlayerEntity player, GuardianWorldState.Village village) {
+        long now = player.getWorld().getTimeOfDay();
+        long elapsed = village.lastServiceTick == Long.MIN_VALUE || !village.eligible ? 20 : Math.max(0, now - village.lastServiceTick);
+        village.lastServiceTick = now;
+        village.eligible = eligible(player, village);
+        if (!GuardianEquipment.complete(player)) { village.serviceTicks = 0; village.readyDay = -1; }
+        if (!village.eligible) return;
+        long needed = GuardianWorldState.SERVICE_TICKS - village.serviceTicks;
+        village.serviceTicks += Math.min(needed, elapsed);
+        if (village.serviceTicks == GuardianWorldState.SERVICE_TICKS && village.readyDay < 0) {
+            long completedAt = now - Math.max(0, elapsed - needed);
+            village.readyDay = Math.floorDiv(completedAt, 24000) + 1;
+        }
     }
-    public static void skipped(ServerPlayerEntity player, long ticks) {
-        var village = claim(player);
-        if (village != null && ticks <= 24000 && player.isSleeping() && eligible(player, village)) {
-            addService(player, village, ticks); GuardianWorldState.get(player.getServer()).markDirty();
+    public static void stopRepair(ServerPlayerEntity player) {
+        var state = RuneboundGuardian.state(player);
+        if (state.repairer != null) for (var world : player.getServer().getWorlds())
+            if (world.getEntity(state.repairer) instanceof VillagerEntity worker) GuardianRitual.releaseWorker(worker);
+        state.repairer = null; state.repairTicks = 0;
+    }
+    private static void repair(ServerPlayerEntity player) {
+        var state = RuneboundGuardian.state(player);
+        var world = player.getServerWorld();
+        var worker = state.repairer == null ? null : world.getEntity(state.repairer) instanceof VillagerEntity v ? v : null;
+        boolean needed = RuneboundGuardian.stage(player) >= 1 && world.isDay() && player.isAlive()
+                && !state.detached && state.ritualTicks == 0 && player.getHealth() < player.getMaxHealth();
+        if (!needed || worker != null && (!worker.isAlive() || player.squaredDistanceTo(worker) > 32 * 32)) {
+            if (worker != null) GuardianRitual.releaseWorker(worker);
+            state.repairer = null; state.repairTicks = 0; return;
+        }
+        if (worker == null && player.age % 40 == 0) {
+            worker = world.getEntitiesByClass(VillagerEntity.class, player.getBoundingBox().expand(16),
+                    v -> v.isAlive() && !v.isBaby() && !v.isAiDisabled() && !v.isSleeping() && v.getMainHandStack().isEmpty() && !GuardianRitual.assigned(v))
+                    .stream().min(Comparator.comparingDouble(v -> v.squaredDistanceTo(player))).orElse(null);
+            if (worker != null) {
+                state.repairer = worker.getUuid(); worker.addCommandTag("ssc_extras_guardian_repair"); worker.addCommandTag("ssc_extras_guardian_worker");
+                var cobble = new net.minecraft.item.ItemStack(net.minecraft.item.Items.COBBLESTONE);
+                cobble.getOrCreateNbt().putBoolean("GuardianProp", true);
+                worker.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, cobble);
+                worker.setEquipmentDropChance(net.minecraft.entity.EquipmentSlot.MAINHAND, 0);
+            }
+        }
+        if (worker == null) return;
+        if (worker.squaredDistanceTo(player) > 6.25) { GuardianRitual.walk(worker, player.getPos(), .8); state.repairTicks = 0; return; }
+        worker.getNavigation().stop(); worker.getLookControl().lookAt(player);
+        if (++state.repairTicks % 40 == 0) {
+            worker.swingHand(net.minecraft.util.Hand.MAIN_HAND); player.heal(2);
+            world.playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_IRON_GOLEM_REPAIR,
+                    net.minecraft.sound.SoundCategory.NEUTRAL, .7f, 1);
+            world.spawnParticles(net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER, player.getX(), player.getY() + 1, player.getZ(), 4, .5, .5, .5, 0);
         }
     }
     private static void sendVision(ServerPlayerEntity player) {
@@ -189,10 +229,14 @@ public final class GuardianVillages {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             stopProtecting(handler.player); GuardianRitual.stopEscort(handler.player);
             var village=claim(handler.player);
+            var state = RuneboundGuardian.state(handler.player);
+            if (state.repairer != null && handler.player.getServerWorld().getEntity(state.repairer) instanceof VillagerEntity worker)
+                GuardianRitual.releaseWorker(worker);
+            if (village != null) { village.lastServiceTick = Long.MIN_VALUE; village.eligible = false; }
             if(village!=null && (village.ritualTicks>0||village.rebuildTicks>0)) GuardianRitual.suspend(handler.player,village);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            for (var player : server.getPlayerManager().getPlayerList()) if (RuneboundGuardian.state(player).protecting || RuneboundGuardian.state(player).escort != null)
+            for (var player : server.getPlayerManager().getPlayerList()) if (RuneboundGuardian.state(player).protecting || RuneboundGuardian.state(player).deactivated || RuneboundGuardian.state(player).escort != null)
                 player.networkHandler.requestTeleport(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
         });
     }

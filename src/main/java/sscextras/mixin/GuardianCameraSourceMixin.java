@@ -12,6 +12,7 @@ import sscextras.guardian.GuardianAnchorEntity;
 public abstract class GuardianCameraSourceMixin {
     @Inject(method="render",at=@At("HEAD"),cancellable=true)
     private void guardianView(Entity entity,double x,double y,double z,float yaw,float delta,MatrixStack matrices,VertexConsumerProvider consumers,int light,CallbackInfo ci) {
-        if(MinecraftClient.getInstance().getCameraEntity() instanceof GuardianAnchorEntity anchor && anchor.follows(entity)) ci.cancel();
+        if(MinecraftClient.getInstance().options.getPerspective().isFirstPerson()
+                && MinecraftClient.getInstance().getCameraEntity() instanceof GuardianAnchorEntity anchor && anchor.follows(entity)) ci.cancel();
     }
 }
