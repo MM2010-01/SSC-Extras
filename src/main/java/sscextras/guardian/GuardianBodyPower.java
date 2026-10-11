@@ -24,9 +24,13 @@ public final class GuardianBodyPower extends Power {
     public GuardianBodyPower(PowerType<?> type, LivingEntity entity, int stage) {
         super(type, entity); this.stage = stage; setTicking();
     }
-    @Override public void onAdded() { refresh(); resize(); }
-    @Override public void onRespawn() { refresh(); resize(); }
+    @Override public void onAdded() { enableCoreSlot(); refresh(); resize(); }
+    @Override public void onRespawn() { enableCoreSlot(); refresh(); resize(); }
     @Override public void tick() { refresh(); }
+
+    private void enableCoreSlot() {
+        if (stage == 3 && entity instanceof PlayerEntity player) GuardianCores.setSlotEnabled(player, true);
+    }
 
     public void resize() {
         if (entity.getWorld().isClient) return;

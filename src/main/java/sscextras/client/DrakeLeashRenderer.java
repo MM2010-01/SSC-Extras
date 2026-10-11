@@ -17,6 +17,11 @@ public final class DrakeLeashRenderer {
             if (context.consumers() == null) return;
             for (var player : context.world().getPlayers()) {
                 var holder = DrakeLeashing.holder(player);
+                if (holder == null) {
+                    var state = sscextras.guardian.RuneboundGuardian.state(player);
+                    if (state.ritualTicks == 1 && state.ritualGuideId != 0)
+                        holder = context.world().getEntityById(state.ritualGuideId);
+                }
                 if (holder == null) continue;
                 float tick = context.tickDelta();
                 var start = player.getLerpedPos(tick).add(0, player.getHeight() * .75, 0);

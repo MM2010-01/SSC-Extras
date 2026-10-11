@@ -55,6 +55,7 @@ public final class GuardianVillages {
             player.sendMessage(Text.translatable("message.ssc-extras.guardian.cuffs_boundary", GuardianEquipment.RANGE), true); return;
         }
         var village = new GuardianWorldState.Village(); village.world = world.getRegistryKey(); village.pedestal = pos.toImmutable();
+        GuardianDialogue.stop(player);
         data.villages.put(player.getUuid(), village); data.markDirty();
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.pedestal_bound"), true);
     }
@@ -62,9 +63,9 @@ public final class GuardianVillages {
         var data = GuardianWorldState.get(world.getServer());
         data.villages.forEach((owner, village) -> {
             if (!village.world.equals(world.getRegistryKey()) || !village.pedestal.equals(pos)) return;
-            village.serviceTicks = 0; village.readyDay = -1; village.eligible = false;
+            village.resetService(); village.eligible = false;
             var player = world.getServer().getPlayerManager().getPlayer(owner);
-            if (player != null) GuardianRitual.cancel(player, village);
+            if (player != null) { GuardianDialogue.stop(player); GuardianRitual.cancel(player, village); }
         });
         data.markDirty();
     }
@@ -107,6 +108,7 @@ public final class GuardianVillages {
                 GuardianWorldState.get(player.getServer()).markDirty();
             }
         }
+        GuardianDialogue.tick(player);
         repair(player);
         if (!InstinctTicker.isPausing && stage < 3 && !player.isCreative() && !player.isSpectator() && player.age % 100 == 0) {
             if (inVillage(player)) InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_GUARDIAN_VILLAGE", .1f);
@@ -145,10 +147,18 @@ public final class GuardianVillages {
         long elapsed = village.lastServiceTick == Long.MIN_VALUE || !village.eligible ? 20 : Math.max(0, now - village.lastServiceTick);
         village.lastServiceTick = now;
         village.eligible = eligible(player, village);
-        if (!GuardianEquipment.complete(player)) { village.serviceTicks = 0; village.readyDay = -1; }
+        if (!GuardianEquipment.complete(player)) village.resetService();
         if (!village.eligible) return;
-        long needed = GuardianWorldState.SERVICE_TICKS - village.serviceTicks;
+        long previous = village.serviceTicks;
+        long needed = GuardianWorldState.SERVICE_TICKS - previous;
         village.serviceTicks += Math.min(needed, elapsed);
+        int hint = village.serviceTicks >= 8 * 24000L ? 8 : village.serviceTicks >= 5 * 24000L ? 5 : 0;
+        if (hint > village.serviceHint) {
+            // Date the milestone at its actual crossing, so time skips do not replay old dialogue.
+            long reachedAt = now - Math.max(0, elapsed - (hint * 24000L - previous));
+            village.serviceHint = hint;
+            village.serviceHintDay = Math.floorDiv(reachedAt, 24000);
+        }
         if (village.serviceTicks == GuardianWorldState.SERVICE_TICKS && village.readyDay < 0) {
             long completedAt = now - Math.max(0, elapsed - needed);
             village.readyDay = Math.floorDiv(completedAt, 24000) + 1;
@@ -217,9 +227,10 @@ public final class GuardianVillages {
             var data = GuardianWorldState.get(world.getServer());
             data.villages.forEach((owner, village) -> {
                 if (!village.world.equals(world.getRegistryKey()) || !new Box(village.pedestal).expand(RADIUS).contains(entity.getPos())) return;
-                village.serviceTicks = 0; village.readyDay = -1;
+                village.resetService();
                 var player = world.getServer().getPlayerManager().getPlayer(owner);
                 if (player != null && RuneboundGuardian.stage(player) == 2) {
+                    GuardianDialogue.stop(player);
                     GuardianRitual.cancel(player, village);
                     player.sendMessage(Text.translatable("message.ssc-extras.guardian.service_reset"), false);
                 }
@@ -227,6 +238,7 @@ public final class GuardianVillages {
             data.markDirty();
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            GuardianDialogue.stop(handler.player);
             stopProtecting(handler.player); GuardianRitual.stopEscort(handler.player);
             var village=claim(handler.player);
             var state = RuneboundGuardian.state(handler.player);

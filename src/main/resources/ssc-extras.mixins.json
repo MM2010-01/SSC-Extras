@@ -120,15 +120,14 @@
     "DrakeFormGearMixin",
     "DrakeRiderInventoryMixin",
     "GuardianModelMixin",
-    "GuardianVanillaBodyMixin",
-    "GuardianHeldItemMixin",
     "GuardianHudMixin",
     "GuardianOutlineMixin",
     "GuardianOutlineColorMixin",
     "GuardianCameraMixin",
     "GuardianCoreGlowMixin",
     "GuardianCameraSourceMixin",
-    "GuardianInputMixin"
+    "GuardianInputMixin",
+    "GuardianAttackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

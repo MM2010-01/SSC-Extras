@@ -33,6 +33,10 @@ public abstract class GuardianPlayerMixin {
     private void sscExtras$guardianAttack(Entity target, CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity)(Object)this;
         if (!GuardianCombat.canAttack(player, target)) { ci.cancel(); return; }
+        if (GuardianCombat.overdriveClaws(player)) {
+            if (player instanceof net.minecraft.server.network.ServerPlayerEntity server) GuardianCombat.clawSwipe(server);
+            ci.cancel(); return;
+        }
         if (!player.getWorld().isClient && RuneboundGuardian.construct(player)) RuneboundGuardian.state(player).spend(.05);
     }
     @Inject(method = "getBlockBreakingSpeed", at = @At("RETURN"), cancellable = true)

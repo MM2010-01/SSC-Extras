@@ -1,6 +1,7 @@
 package sscextras.guardian;
 
 import net.fabricmc.fabric.api.event.player.*;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CampfireBlock;
@@ -30,6 +31,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
 import sscextras.CreatureInstinct;
 
 public final class GuardianCombat {
+    public static final Identifier CLAW_SWIPE = RuneboundGuardian.id("guardian_claw_swipe");
     public static final TagKey<DamageType> MAGIC = TagKey.of(RegistryKeys.DAMAGE_TYPE, RuneboundGuardian.id("guardian_magic"));
     private static final TagKey<Item> NORMAL_TOOLS = TagKey.of(RegistryKeys.ITEM, RuneboundGuardian.id("guardian_normal_tools"));
     private GuardianCombat() { }
@@ -51,10 +53,13 @@ public final class GuardianCombat {
     }
     public static boolean locked(PlayerEntity player) {
         var state = RuneboundGuardian.state(player);
-        return state.detached || state.ritualTicks > 0 || state.deactivated;
+        return state.detached || state.ritualRestrained() || state.deactivated;
     }
     public static boolean bareClaws(PlayerEntity player) {
         return RuneboundGuardian.stage(player) >= 2 && player.getInventory().getMainHandStack().isEmpty();
+    }
+    public static boolean overdriveClaws(PlayerEntity player) {
+        return RuneboundGuardian.stage(player) == 3 && RuneboundGuardian.state(player).overdrive && bareClaws(player);
     }
     public static float swipeDamage(PlayerEntity player) { return 10 + player.experienceLevel * 1.1f; }
     public static void clawSweep(PlayerEntity player, Entity struck, float damage) {
@@ -62,12 +67,25 @@ public final class GuardianCombat {
         sweep(player, struck, damage, RuneboundGuardian.stage(player) == 3 ? 3.5 : 3, .45, .15);
     }
     public static void clawSwipe(ServerPlayerEntity player) {
-        if (!bareClaws(player) || locked(player)) return;
-        sweep(player, null, swipeDamage(player), 5, 1.8, .65);
+        var state = RuneboundGuardian.state(player);
+        if (!bareClaws(player) || locked(player) || !player.isAlive() || player.isSpectator()
+                || player.isUsingItem() || state.energy <= 0) return;
+        float damage = swipeDamage(player);
+        if (overdriveClaws(player)) {
+            float charge = player.getAttackCooldownProgress(.5f);
+            damage *= .2f + charge * charge * .8f;
+            player.resetLastAttackedTicks();
+        } else {
+            long now = player.getWorld().getTime();
+            if (now < state.nextClawSwipe) return;
+            state.nextClawSwipe = now + 60;
+        }
+        sweep(player, null, damage, 5, 1.8, .65);
         player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
         player.getServerWorld().playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_IRON_GOLEM_ATTACK,
                 net.minecraft.sound.SoundCategory.PLAYERS, 1, .8f);
-        RuneboundGuardian.state(player).spend(2);
+        state.spend(2);
+        state.sync();
     }
     private static void sweep(PlayerEntity player, Entity struck, float damage, double reach, double knockback, double lift) {
         var forward = net.minecraft.util.math.Vec3d.fromPolar(0, player.getYaw());
@@ -190,6 +208,10 @@ public final class GuardianCombat {
         return true;
     }
     public static void register() {
+        ServerPlayNetworking.registerGlobalReceiver(CLAW_SWIPE, (server, player, handler, buffer, sender) ->
+                server.execute(() -> {
+                    if (overdriveClaws(player)) clawSwipe(player);
+                }));
         AttackEntityCallback.EVENT.register((player, world, hand, target, hit) -> canAttack(player, target) ? ActionResult.PASS : ActionResult.FAIL);
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> locked(player) || blockedTool(player, player.getStackInHand(hand)) ? ActionResult.FAIL : ActionResult.PASS);
         UseItemCallback.EVENT.register((player, world, hand) -> canUse(player, player.getStackInHand(hand))

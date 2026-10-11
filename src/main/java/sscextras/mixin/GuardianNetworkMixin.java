@@ -20,7 +20,22 @@ public abstract class GuardianNetworkMixin {
             ci.cancel();
         }
     }
-    @Inject(method = {"onPlayerMove", "onPlayerInput", "onClientCommand", "onSpectatorTeleport", "onUpdatePlayerAbilities"},
+    @Inject(method = "onPlayerMove",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V", shift = At.Shift.AFTER), cancellable = true)
+    private void sscExtras$guardianEscortLook(net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket packet, CallbackInfo ci) {
+        var state = RuneboundGuardian.state(player);
+        if (!GuardianCombat.locked(player) && !state.protecting) return;
+        if (state.ritualTicks == 1 && state.ritualGuideId != 0 && packet.changesLook()) {
+            float yaw = packet.getYaw(player.getYaw()), pitch = packet.getPitch(player.getPitch());
+            if (Float.isFinite(yaw) && Float.isFinite(pitch)) {
+                player.setYaw(net.minecraft.util.math.MathHelper.wrapDegrees(yaw));
+                player.setHeadYaw(player.getYaw());
+                player.setPitch(net.minecraft.util.math.MathHelper.clamp(pitch, -90, 90));
+            }
+        }
+        ci.cancel();
+    }
+    @Inject(method = {"onPlayerInput", "onClientCommand", "onSpectatorTeleport", "onUpdatePlayerAbilities"},
             at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V", shift = At.Shift.AFTER), cancellable = true)
     private void sscExtras$guardianControlsMovement(CallbackInfo ci) {
         if (GuardianCombat.locked(player) || RuneboundGuardian.state(player).protecting) ci.cancel();

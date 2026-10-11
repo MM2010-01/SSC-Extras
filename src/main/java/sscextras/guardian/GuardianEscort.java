@@ -22,8 +22,9 @@ public final class GuardianEscort extends PathAwareEntity {
         getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED));
         if(age%10==1||getNavigation().isIdle()) getNavigation().startMovingTo(destination.x,destination.y,destination.z,.9);
         getNavigation().tick();getMoveControl().tick();getJumpControl().tick();
-        player.setYaw(getYaw());player.setHeadYaw(getYaw());player.bodyYaw=getYaw();player.setJumping(jumping);
-        input=new Vec3d(0,0,forwardSpeed==0?0:1);
+        player.setJumping(jumping);
+        double angle=Math.toRadians(getYaw()-player.getYaw());
+        input=forwardSpeed==0?Vec3d.ZERO:new Vec3d(-Math.sin(angle),0,Math.cos(angle));
     }
     public Vec3d input(){return input;}
     public void stop(){getNavigation().stop();player.setJumping(false);discard();}

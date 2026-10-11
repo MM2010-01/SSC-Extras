@@ -96,6 +96,7 @@ public final class GuardianEquipment {
         }
         for (var slot : EquipmentSlot.values()) if (slot.getType() == EquipmentSlot.Type.ARMOR) {
             var stack = player.getEquippedStack(slot);
+            if (net.onixary.shapeShifterCurseFabric.additional_power.IsMorphScaleItemCondition.MSI_condition(null, stack)) continue;
             player.equipStack(slot, ItemStack.EMPTY);
             if (!stack.isEmpty()) player.dropItem(stack, true, false);
         }

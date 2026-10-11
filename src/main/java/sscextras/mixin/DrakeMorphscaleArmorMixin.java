@@ -25,6 +25,13 @@ public abstract class DrakeMorphscaleArmorMixin {
         var model = context.baseModel();
         scale(bones.leftBoot, model.leftLeg.xScale, model.leftLeg.yScale, model.leftLeg.zScale);
         scale(bones.rightBoot, model.rightLeg.xScale, model.rightLeg.yScale, model.rightLeg.zScale);
+        if (context.currentEntity() instanceof net.minecraft.client.network.AbstractClientPlayerEntity guardianPlayer
+                && net.minecraft.client.MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(guardianPlayer)
+                        instanceof net.minecraft.client.render.entity.PlayerEntityRenderer renderer
+                && renderer.getModel() instanceof sscextras.client.GuardianPlayerModel guardian) {
+            sscextras.client.GuardianArmorFit.fit(guardian, bones, context.currentSlot());
+            return;
+        }
         if (!(context.currentEntity() instanceof PlayerEntity player) || EarthenDrake.stage(player) != 3) return;
         switch (context.currentSlot()) {
             case HEAD -> scale(bones.head, .64f, .38f, .68f);

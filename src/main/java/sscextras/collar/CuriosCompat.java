@@ -2,6 +2,7 @@ package sscextras.collar;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /** Optional Forge API bridge: SSC's Connector jar does not enable its Curios mixins. */
 public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
@@ -24,6 +26,7 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
     private final Class<?> itemInterface, contextClass;
     private final Method register, inventory, resolve, getHandler, getStacks, getCount, getStack, setStack, renders;
     private final Method entity, identifier, index;
+    private final Method slotModifiers, addSlotModifier, removeSlotModifier;
 
     private CuriosCompat() throws ReflectiveOperationException {
         Class<?> api = Class.forName("top.theillusivec4.curios.api.CuriosApi");
@@ -38,6 +41,9 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
         getHandler = handler.getMethod("getStacksHandler", String.class);
         getStacks = stacks.getMethod("getStacks");
         renders = stacks.getMethod("getRenders");
+        slotModifiers = stacks.getMethod("getModifiers");
+        addSlotModifier = stacks.getMethod("addPermanentModifier", EntityAttributeModifier.class);
+        removeSlotModifier = stacks.getMethod("removeModifier", UUID.class);
         getCount = dynamic.getMethod("getSlots");
         getStack = dynamic.getMethod("getStackInSlot", int.class);
         setStack = dynamic.getMethod("setStackInSlot", int.class, ItemStack.class);
@@ -122,6 +128,18 @@ public final class CuriosCompat implements AccessoryUtils.AccessoryIO {
 
     @Override public Map<Pair<String, String>, List<ItemStack>> getEntitySlots(LivingEntity entity) {
         return Map.of(new Pair<>("", "necklace"), getEntitySlot(entity, "", "necklace"));
+    }
+
+    public void setSlotModifier(LivingEntity entity, String slot, UUID id, double amount) {
+        Object handler = handler(entity, slot);
+        if (handler == null) return;
+        var modifiers = (Map<?, ?>) call(slotModifiers, handler);
+        var old = (EntityAttributeModifier) modifiers.get(id);
+        if (old != null && old.getValue() == amount || old == null && amount == 0) return;
+        call(removeSlotModifier, handler, id);
+        if (amount != 0) call(addSlotModifier, handler, new EntityAttributeModifier(id, "Guardian core slot", amount,
+                EntityAttributeModifier.Operation.ADDITION));
+        call(getStacks, handler);
     }
 
     public Map<Pair<String, String>, List<ItemStack>> allSlots(LivingEntity wearer) {

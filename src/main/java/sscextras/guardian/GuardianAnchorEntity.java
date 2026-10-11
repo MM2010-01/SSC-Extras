@@ -14,6 +14,7 @@ public final class GuardianAnchorEntity extends Entity {
     private static final TrackedData<Integer> SOURCE = DataTracker.registerData(GuardianAnchorEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public UUID owner;
     public GuardianAnchorEntity(EntityType<?> type, World world) { super(type, world); noClip = true; setNoGravity(true); }
+    @Override public boolean isInsideWall() { return false; }
     @Override protected void initDataTracker() { dataTracker.startTracking(SOURCE, -1); }
     public void source(Entity entity) { dataTracker.set(SOURCE, entity == null ? -1 : entity.getId()); }
     public boolean follows(Entity entity) { return entity.getId() == dataTracker.get(SOURCE); }

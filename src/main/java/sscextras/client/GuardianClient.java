@@ -21,10 +21,8 @@ public final class GuardianClient {
     private record Threat(UUID villager, UUID attacker, long until) { }
     private static final List<Threat> THREATS = new ArrayList<>();
     private static Entity owner;
-    private static boolean detached, ritual;
+    private static boolean detached, freeLook;
     private static Perspective previous;
-    private static Vec3d ritualFocus;
-    private static boolean aimAtVessel;
     public static float yaw, pitch;
     private GuardianClient() { }
     public static void register() {
@@ -63,27 +61,15 @@ public final class GuardianClient {
             });
         });
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
+            updateCamera(client);
             var player = client.player;
-            if (owner != player) { restore(client); owner = player; }
             if (player == null) return;
             var state = RuneboundGuardian.state(player);
-            boolean nextDetached = state.detached, nextRitual = state.ritualTicks > 0 && !nextDetached;
-            if(nextDetached&&!detached&&state.ritualTicks>0)aimAtVessel=true;
-            if (nextDetached != detached || nextRitual != ritual) {
-                if (!detached && !ritual) { previous = client.options.getPerspective(); yaw = player.getYaw(); pitch = player.getPitch(); }
-                if (!nextDetached && !nextRitual) restore(client);
-                detached = nextDetached; ritual = nextRitual;
-            }
             if (state.deactivated) {
                 player.setYaw(state.frozenYaw); player.setHeadYaw(state.frozenYaw); player.setPitch(state.frozenPitch);
                 player.bodyYaw = state.frozenYaw;
             }
             if (detached) client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
-            else if (ritual) {client.options.setPerspective(Perspective.THIRD_PERSON_BACK);ritualFocus=player.getPos().add(0,1.3,0);}
-            if(aimAtVessel&&ritualFocus!=null&&client.getCameraEntity() instanceof GuardianAnchorEntity anchor) {
-                var delta=ritualFocus.subtract(anchor.getPos());
-                yaw=(float)Math.toDegrees(Math.atan2(delta.z,delta.x))-90;pitch=(float)-Math.toDegrees(Math.atan2(delta.y,delta.horizontalLength()));aimAtVessel=false;
-            }
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { restore(client); THREATS.clear(); owner = null; });
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
@@ -116,19 +102,32 @@ public final class GuardianClient {
     }
     private static void restore(MinecraftClient client) {
         if (previous != null) client.options.setPerspective(previous);
-        previous = null; detached = ritual = false;aimAtVessel=false;ritualFocus=null;
+        previous = null; detached = freeLook = false;
     }
-    public static boolean camera() { return detached || ritual; }
-    public static boolean coreCamera() { return detached; }
-    public static Vec3d ritualCamera(float delta) {
-        var player = MinecraftClient.getInstance().player;
-        return player.getLerpedPos(delta).add(new Vec3d(0, 2.7, -5).rotateY((float)-Math.toRadians(yaw)));
+    private static void updateCamera(MinecraftClient client) {
+        var player = client.player;
+        if (owner != player) { restore(client); owner = player; }
+        if (player == null) return;
+        var state = RuneboundGuardian.state(player);
+        boolean nextDetached = state.detached && state.ritualTicks <= 1;
+        boolean nextFreeLook = state.ritualTicks <= 1 && (nextDetached || state.deactivated);
+        if (nextFreeLook && !freeLook) { yaw = player.getYaw(); pitch = player.getPitch(); }
+        if (nextDetached && !detached) previous = client.options.getPerspective();
+        if (!nextDetached && detached) {
+            if (previous != null) client.options.setPerspective(previous);
+            previous = null;
+        }
+        detached = nextDetached; freeLook = nextFreeLook;
     }
+    public static boolean camera() {
+        updateCamera(MinecraftClient.getInstance());
+        return freeLook;
+    }
+    public static boolean detachedCamera() { return detached; }
     public static boolean look(Entity entity, double dx, double dy) {
         if (entity != MinecraftClient.getInstance().player) return false;
-        if (RuneboundGuardian.state(MinecraftClient.getInstance().player).deactivated) return true;
         if (!camera()) return false;
-        yaw += dx*.15f; pitch = MathHelper.clamp(pitch+(float)dy*.15f,-85,85); return true;
+        yaw += dx*.15f; pitch = MathHelper.clamp(pitch+(float)dy*.15f,-90,90); return true;
     }
     public static int outline(Entity entity) {
         var client = MinecraftClient.getInstance(); var player = client.player;

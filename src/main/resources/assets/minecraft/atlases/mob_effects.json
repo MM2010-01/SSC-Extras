@@ -9,6 +9,16 @@
       "type": "single",
       "resource": "shape-shifter-curse:mob_effect/to_bat_0_effect",
       "sprite": "ssc-extras:to_earthen_drake_0_potion"
+    },
+    {
+      "type": "single",
+      "resource": "shape-shifter-curse:mob_effect/to_bat_0_effect",
+      "sprite": "ssc-extras:to_runebound_guardian_0_effect"
+    },
+    {
+      "type": "single",
+      "resource": "shape-shifter-curse:mob_effect/to_bat_0_effect",
+      "sprite": "ssc-extras:to_runebound_guardian_0_potion"
     }
   ]
 }

@@ -16,6 +16,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public boolean vision = true, overdrive, detached, protecting, flightGranted, deactivated;
     public float frozenYaw, frozenPitch;
     public int recoveryBlackout;
+    public boolean recoveryHintPending;
     public UUID repairer;
     public int repairTicks;
     public String guardianName = "";
@@ -27,12 +28,15 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public float previousSaturation = 5;
     public boolean replacedHunger;
     public long magicInstinctAt = Long.MIN_VALUE;
+    public long nextClawSwipe;
     public int lastStage = -1;
+    public boolean stageTwoHintShown;
     public Vec3d previousPosition;
     public Vec3d cuffPosition;
     public int soulboundStage = -2;
     public GuardianProtectBrain brain;
     public GuardianEscort escort;
+    public int ritualGuideId;
     private int lastEnergy = -1;
     private boolean lastDetached, lastProtecting, lastDeactivated;
 
@@ -42,6 +46,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public void charge(double amount) { energy = MathHelper.clamp(energy + amount, 0, capacity()); }
     public void spend(double amount) { charge(-amount * (overdrive ? 2 : 1)); }
     public void sync() { if (!owner.getWorld().isClient) GuardianComponents.KEY.sync(owner); }
+    public boolean ritualRestrained() { return ritualTicks > 1 || ritualTicks == 1 && ritualGuideId != 0; }
 
     @Override public void serverTick() {
         if (!(owner instanceof ServerPlayerEntity player)) return;
@@ -51,6 +56,8 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         if (stage < 0 && lastStage < 0 && coreId == null && !flightGranted && !replacedHunger) return;
         if (stage != lastStage) {
             GuardianVillages.stopRepair(player);
+            GuardianDialogue.stop(player);
+            if (stage < 2) stageTwoHintShown = false;
             var service = GuardianVillages.claim(player);
             if (service != null) { service.lastServiceTick = Long.MIN_VALUE; service.eligible = false; }
             if (stage >= 2 && lastStage < 2 && !replacedHunger) {
@@ -71,12 +78,13 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
             }
             if (stage < 3 && coreId != null && ritualTicks == 0) GuardianCores.revert(player);
             if (stage < 0) { weatherTicks = 0; vision = true; GuardianCores.revert(player); }
+            GuardianCores.updateSlot(player);
             previousPosition = null;
             lastStage = stage;
             sync();
         }
         if (stage < 0) { GuardianBodyPower.flight(player, false); return; }
-        if (!player.isAlive()) return;
+        if (!player.isAlive()) { GuardianDialogue.stop(player); return; }
         if (recoveryBlackout > 0) { recoveryBlackout--; if (recoveryBlackout == 0) sync(); }
         GuardianCores.tick(player);
         if (detached) {
@@ -88,12 +96,6 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
             player.getHungerManager().setFoodLevel(20);
             player.getHungerManager().setSaturationLevel(0);
             if (!player.isCreative() && !player.isSpectator()) {
-                if (stage == 3 && energy <= 0 && !deactivated) {
-                    deactivated = true; overdrive = false;
-                    frozenYaw = player.getYaw(); frozenPitch = player.getPitch();
-                    player.clearActiveItem(); player.closeHandledScreen(); player.setSprinting(false);
-                    GuardianVillages.stopProtecting(player);
-                }
                 double cost = 100.0 / 24000;
                 if (previousPosition != null && previousPosition.squaredDistanceTo(player.getPos()) < 16)
                     cost += player.getPos().subtract(previousPosition).length() * (player.isSprinting() ? .008 : .003);
@@ -101,6 +103,12 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                 if (protecting && player.isSprinting()) cost *= 1.2;
                 boolean pedestal = GuardianPedestal.standing(player);
                 if (!pedestal && !deactivated) spend(cost);
+                if (stage == 3 && energy <= 0 && !deactivated) {
+                    deactivated = true; overdrive = false;
+                    frozenYaw = player.getYaw(); frozenPitch = player.getPitch();
+                    player.clearActiveItem(); player.closeHandledScreen(); player.setSprinting(false);
+                    GuardianVillages.stopProtecting(player);
+                }
                 if (GuardianBodyPower.sunlit(player) && (pedestal || stage == 3)) charge(pedestal ? .025 : .0125);
                 if (deactivated && energy >= 2) deactivated = false;
                 if (energy <= 0) {
@@ -114,7 +122,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                 player.bodyYaw = frozenYaw;
                 player.setVelocity(0, player.getVelocity().y, 0);
             }
-            GuardianBodyPower.flight(player, energy > 0 && !deactivated && ritualTicks == 0 && !player.isSleeping());
+            GuardianBodyPower.flight(player, energy > 0 && !deactivated && !ritualRestrained() && !player.isSleeping());
         } else GuardianBodyPower.flight(player, false);
         previousPosition = player.getPos();
         GuardianVillages.tick(player);
@@ -143,14 +151,17 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         overdrive = nbt.getBoolean("Overdrive"); detached = nbt.getBoolean("Detached");
         deactivated = nbt.getBoolean("Deactivated"); frozenYaw = nbt.getFloat("FrozenYaw"); frozenPitch = nbt.getFloat("FrozenPitch");
         recoveryBlackout = nbt.getInt("RecoveryBlackout");
+        recoveryHintPending = nbt.getBoolean("RecoveryHintPending");
         flightGranted = nbt.getBoolean("FlightGranted");
         protecting = nbt.getBoolean("Protecting"); guardianName = nbt.getString("Name");
         coreId = nbt.containsUuid("Core") ? nbt.getUuid("Core") : null;
         ritualTicks = nbt.getInt("RitualTicks"); weatherTicks = MathHelper.clamp(nbt.getInt("WeatherTicks"), 0, 72000);
+        ritualGuideId = owner.getWorld().isClient && ritualTicks == 1 ? nbt.getInt("RitualGuide") : 0;
         previousFood = nbt.contains("PreviousFood") ? nbt.getInt("PreviousFood") : 20;
         previousSaturation = nbt.getFloat("PreviousSaturation"); replacedHunger = nbt.getBoolean("ReplacedHunger");
         foodRemainder = nbt.getDouble("FoodRemainder");
         soulboundStage = nbt.contains("SoulboundStage") ? MathHelper.clamp(nbt.getInt("SoulboundStage"), -2, 3) : -2;
+        stageTwoHintShown = nbt.getBoolean("StageTwoHintShown");
         pedestalSleeping = nbt.getBoolean("PedestalSleeping"); daySleep = nbt.getBoolean("DaySleep");
     }
     @Override public void writeToNbt(NbtCompound nbt) {
@@ -159,11 +170,14 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         nbt.putBoolean("Detached", detached); nbt.putBoolean("Protecting", protecting); nbt.putString("Name", guardianName);
         nbt.putBoolean("Deactivated", deactivated); nbt.putFloat("FrozenYaw", frozenYaw); nbt.putFloat("FrozenPitch", frozenPitch);
         nbt.putInt("RecoveryBlackout", recoveryBlackout);
+        nbt.putBoolean("RecoveryHintPending", recoveryHintPending);
         if (coreId != null) nbt.putUuid("Core", coreId);
         nbt.putInt("RitualTicks", ritualTicks); nbt.putInt("WeatherTicks", weatherTicks);
+        nbt.putInt("RitualGuide", ritualGuideId);
         nbt.putInt("PreviousFood", previousFood); nbt.putFloat("PreviousSaturation", previousSaturation);
         nbt.putBoolean("ReplacedHunger", replacedHunger); nbt.putDouble("FoodRemainder", foodRemainder);
         nbt.putInt("SoulboundStage", soulboundStage);
+        nbt.putBoolean("StageTwoHintShown", stageTwoHintShown);
         nbt.putBoolean("PedestalSleeping", pedestalSleeping); nbt.putBoolean("DaySleep", daySleep);
     }
 }

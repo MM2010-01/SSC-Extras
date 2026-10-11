@@ -28,11 +28,9 @@ public final class GuardianAbilityPower extends Power implements Active {
         if (overdrive) {
             int stage = RuneboundGuardian.stage(player);
             if (stage < 2 || state.energy <= 0) return;
-            if (stage == 2 || state.overdrive && !player.isSneaking()) {
-                if (!GuardianCombat.bareClaws(player)) return;
+            if (stage == 2) {
                 GuardianCombat.clawSwipe(player);
-                nextUse = player.getWorld().getTime() + 60;
-                state.sync(); return;
+                return;
             }
             state.overdrive = !state.overdrive;
         } else {

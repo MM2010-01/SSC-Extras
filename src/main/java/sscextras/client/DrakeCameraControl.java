@@ -51,7 +51,7 @@ public final class DrakeCameraControl {
         var player = client.player;
         if (owner != player || player == null || !player.isAlive()) restore(client);
         if (player == null || !player.isAlive()) return;
-        boolean held = DrakeSoulbinding.restrained(player);
+        boolean held = DrakeSoulbinding.restrained(player) || sscextras.guardian.RuneboundGuardian.state(player).ritualTicks > 1;
         boolean mounted = !held && client.options.getPerspective().isFirstPerson()
                 && player.getFirstPassenger() instanceof PillagerEntity rider && DrakeRiding.canControl(player, rider);
         if (ritual == held && ridden == mounted) return;
@@ -107,7 +107,9 @@ public final class DrakeCameraControl {
         return true;
     }
 
-    public static boolean active(Entity entity) { return owner == entity && (ritual || ridden); }
+    public static boolean active(Entity entity) {
+        return owner != null && (ritual || ridden) && (owner == entity || ritual && entity == MinecraftClient.getInstance().getCameraEntity());
+    }
     public static boolean free(Entity entity) { return owner == entity && ritual; }
     public static Vec3d position(float delta) { return previousPosition.lerp(position, delta); }
     public static float yaw(float delta) { return MathHelper.lerpAngleDegrees(delta, previousYaw, yaw); }

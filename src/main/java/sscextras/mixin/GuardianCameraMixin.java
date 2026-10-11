@@ -11,16 +11,14 @@ import sscextras.client.GuardianClient;
 public abstract class GuardianCameraMixin {
     @Shadow protected abstract void setPos(Vec3d pos);
     @Shadow protected abstract void setRotation(float yaw,float pitch);
-    @Shadow protected abstract void moveBy(double x, double y, double z);
-    @Shadow protected abstract double clipToSpace(double distance);
-    @Inject(method="update",at=@At("TAIL"))
+    @Inject(method="update",at=@At(value="INVOKE",target="Lnet/minecraft/client/render/Camera;setPos(DDD)V",ordinal=0,shift=At.Shift.AFTER))
     private void guardianCamera(BlockView world,Entity entity,boolean thirdPerson,boolean inverse,float delta,CallbackInfo ci) {
         if(!GuardianClient.camera()) return;
-        if(!GuardianClient.coreCamera()) setPos(GuardianClient.ritualCamera(delta));
-        setRotation(GuardianClient.yaw,GuardianClient.coreCamera()?GuardianClient.pitch:15);
-        if (GuardianClient.coreCamera()) {
-            setPos(entity.getLerpedPos(delta).add(0, .35, 0));
-            moveBy(-clipToSpace(3), 0, 0);
-        }
+        setRotation(GuardianClient.yaw,GuardianClient.pitch);
+        if (GuardianClient.detachedCamera()) setPos(entity.getLerpedPos(delta).add(0, .35, 0));
+    }
+    @ModifyArg(method="update",at=@At(value="INVOKE",target="Lnet/minecraft/client/render/Camera;clipToSpace(D)D"),index=0)
+    private double guardianDistance(double distance) {
+        return GuardianClient.detachedCamera() ? 3 : distance;
     }
 }

@@ -8,6 +8,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.inventory.StackReference;
+import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -42,6 +43,16 @@ public abstract class InfusionPlayerMixin {
         ItemStack tool = Infusions.tool(player, state);
         if (tool.isEmpty()) return original.call(state);
         try (var ignored = new InfusionHand(player, tool)) { return original.call(state); }
+    }
+
+    // Forge's block-breaking path calls this positional overload directly.
+    @WrapMethod(method = "getDigSpeed", remap = false, require = 0)
+    private float sscExtras$infusedForgeMiningSpeed(BlockState state, BlockPos pos, Operation<Float> original) {
+        PlayerEntity player = (PlayerEntity)(Object)this;
+        if (!InfusionHand.get(player).isEmpty()) return original.call(state, pos);
+        ItemStack tool = Infusions.tool(player, state);
+        if (tool.isEmpty()) return original.call(state, pos);
+        try (var ignored = new InfusionHand(player, tool)) { return original.call(state, pos); }
     }
 
     @WrapMethod(method = "canHarvest")

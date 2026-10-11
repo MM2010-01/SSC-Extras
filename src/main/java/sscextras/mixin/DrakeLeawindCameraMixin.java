@@ -13,6 +13,7 @@ import sscextras.client.DrakeCameraControl;
 public abstract class DrakeLeawindCameraMixin {
     @Inject(method = "isAvailable", at = @At("HEAD"), cancellable = true, require = 0)
     private static void sscExtras$ritualCamera(CallbackInfoReturnable<Boolean> cir) {
-        if (DrakeCameraControl.free(MinecraftClient.getInstance().player)) cir.setReturnValue(false);
+        if (DrakeCameraControl.free(MinecraftClient.getInstance().player) || sscextras.client.GuardianClient.camera())
+            cir.setReturnValue(false);
     }
 }

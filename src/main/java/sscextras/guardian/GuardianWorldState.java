@@ -20,15 +20,25 @@ public final class GuardianWorldState extends PersistentState {
         public RegistryKey<World> world = World.OVERWORLD;
         public BlockPos pedestal = BlockPos.ORIGIN;
         public long serviceTicks, readyDay = -1;
+        public boolean serviceOffered;
+        public int serviceHint;
+        public long serviceHintDay = -1;
+        public UUID speaker;
+        public int speakerTicks;
         public int ritualTicks, rebuildTicks, recoveryTicks;
         public final List<UUID> attendants = new ArrayList<>();
         public UUID body;
         public BlockPos bodyPos;
         public boolean eligible;
         public long lastServiceTick = Long.MIN_VALUE;
+        public void resetService() {
+            serviceTicks = 0; readyDay = -1; serviceHint = 0; serviceHintDay = -1;
+        }
     }
     public static final class Core {
         public UUID id, owner, holder;
+        public UUID rescuer;
+        public int recoveryTicks, insertionTicks;
         public RegistryKey<World> world = World.OVERWORLD;
         public BlockPos pos = BlockPos.ORIGIN;
         public String location = "body", name = "";
@@ -52,6 +62,10 @@ public final class GuardianWorldState extends PersistentState {
             var village = new Village(); village.world = world(nbt); village.pedestal = BlockPos.fromLong(nbt.getLong("Pedestal"));
             village.serviceTicks = Math.max(0, Math.min(SERVICE_TICKS, nbt.getLong("Service")));
             village.readyDay = nbt.contains("ReadyDay") ? nbt.getLong("ReadyDay") : -1;
+            village.serviceOffered = nbt.getBoolean("ServiceOffered");
+            village.serviceHint = nbt.contains("ServiceHint") ? nbt.getInt("ServiceHint")
+                    : village.serviceTicks >= 8 * 24000L ? 8 : village.serviceTicks >= 5 * 24000L ? 5 : 0;
+            village.serviceHintDay = nbt.contains("ServiceHintDay") ? nbt.getLong("ServiceHintDay") : -1;
             village.ritualTicks = nbt.getInt("Ritual"); village.rebuildTicks = nbt.getInt("Rebuild");
             village.recoveryTicks = nbt.getInt("RecoveryTicks");
             if (nbt.containsUuid("Body")) village.body = nbt.getUuid("Body");
@@ -67,6 +81,8 @@ public final class GuardianWorldState extends PersistentState {
             core.pos = BlockPos.fromLong(nbt.getLong("Pos")); core.location = nbt.getString("Location");
             core.destroyed = nbt.getBoolean("Destroyed"); core.name = nbt.getString("Name"); core.previousMode = nbt.getString("Mode");
             if (nbt.containsUuid("Holder")) core.holder = nbt.getUuid("Holder");
+            if (nbt.containsUuid("Rescuer")) core.rescuer = nbt.getUuid("Rescuer");
+            core.recoveryTicks = nbt.getInt("RecoveryTicks"); core.insertionTicks = nbt.getInt("InsertionTicks");
             state.cores.put(core.id, core);
         }
         return state;
@@ -76,6 +92,8 @@ public final class GuardianWorldState extends PersistentState {
         this.villages.forEach((owner, village) -> {
             var nbt = new NbtCompound(); nbt.putUuid("Owner", owner); nbt.putString("World", village.world.getValue().toString());
             nbt.putLong("Pedestal", village.pedestal.asLong()); nbt.putLong("Service", village.serviceTicks); nbt.putLong("ReadyDay", village.readyDay);
+            nbt.putBoolean("ServiceOffered", village.serviceOffered); nbt.putInt("ServiceHint", village.serviceHint);
+            nbt.putLong("ServiceHintDay", village.serviceHintDay);
             nbt.putInt("Ritual", village.ritualTicks); nbt.putInt("Rebuild", village.rebuildTicks);
             nbt.putInt("RecoveryTicks", village.recoveryTicks);
             if (village.body != null) nbt.putUuid("Body", village.body);
@@ -90,7 +108,9 @@ public final class GuardianWorldState extends PersistentState {
             var nbt = new NbtCompound(); nbt.putUuid("Id", core.id); nbt.putUuid("Owner", core.owner);
             nbt.putString("World", core.world.getValue().toString()); nbt.putLong("Pos", core.pos.asLong());
             nbt.putString("Location", core.location); nbt.putString("Name", core.name); nbt.putString("Mode", core.previousMode);
-            nbt.putBoolean("Destroyed", core.destroyed); if (core.holder != null) nbt.putUuid("Holder", core.holder); cores.add(nbt);
+            nbt.putBoolean("Destroyed", core.destroyed); if (core.holder != null) nbt.putUuid("Holder", core.holder);
+            if (core.rescuer != null) nbt.putUuid("Rescuer", core.rescuer);
+            nbt.putInt("RecoveryTicks", core.recoveryTicks); nbt.putInt("InsertionTicks", core.insertionTicks); cores.add(nbt);
         });
         tag.put("Cores", cores); return tag;
     }
