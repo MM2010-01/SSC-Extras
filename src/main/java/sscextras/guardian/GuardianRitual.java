@@ -28,10 +28,54 @@ public final class GuardianRitual {
     }
     public static void start(ServerPlayerEntity player, GuardianWorldState.Village village) {
         if (village.ritualTicks != 0 || !GuardianVillages.eligible(player, village)) return;
-        var attendants = GuardianVillages.villagers(player.getServerWorld(), village.pedestal).stream()
-                .filter(v -> !v.isBaby() && !v.isAiDisabled() && v.getMainHandStack().isEmpty() && !assigned(v))
-                .sorted(Comparator.comparingDouble(v -> v.squaredDistanceTo(player))).limit(3).toList();
+        var attendants = availableAttendants(player.getServerWorld(), village, player.getPos());
         if (attendants.size() < 3) return;
+        begin(player, village, attendants);
+    }
+    private static List<VillagerEntity> availableAttendants(ServerWorld world, GuardianWorldState.Village village, Vec3d position) {
+        return GuardianVillages.villagers(world, village.pedestal).stream()
+                .filter(v -> !v.isBaby() && !v.isAiDisabled() && v.getMainHandStack().isEmpty() && !assigned(v))
+                .sorted(Comparator.comparingDouble(v -> v.squaredDistanceTo(position))).limit(3).toList();
+    }
+    public static String startCommand(ServerPlayerEntity player) {
+        var village = GuardianVillages.claim(player);
+        if (village == null) return "no_pedestal";
+        if (!player.isAlive() || player.isSpectator()) return "not_ready";
+        var state = RuneboundGuardian.state(player);
+        if (village.ritualTicks > 0 || village.rebuildTicks > 0 || state.ritualTicks > 0 || state.detached
+                || player.hasVehicle() || player.hasPassengers() || sscextras.drake.DrakeSoulbinding.ritualActive(player)
+                || net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager.getPlayerTransformData(player).isTransforming) return "busy";
+        if (RuneboundGuardian.stage(player) != 2 || !GuardianEquipment.complete(player)) return "guardian_required";
+        var world = player.getServer().getWorld(village.world);
+        if (world == null) return "pedestal_unavailable";
+        world.getChunk(village.pedestal);
+        if (!GuardianPedestal.intact(world, village.pedestal)) return "pedestal_unavailable";
+        var center = GuardianPedestal.position(village.pedestal);
+        var attendants = new ArrayList<>(availableAttendants(world, village, center));
+        while (attendants.size() < 3) {
+            var villager = EntityType.VILLAGER.create(world);
+            if (villager == null) return "pedestal_unavailable";
+            var position = station(center, attendants.size());
+            villager.refreshPositionAndAngles(position.x, position.y, position.z, 0, 0);
+            villager.initialize(world, world.getLocalDifficulty(village.pedestal), SpawnReason.COMMAND, null, null);
+            villager.setBreedingAge(0);
+            villager.setPersistent();
+            if (!world.spawnEntity(villager)) return "pedestal_unavailable";
+            attendants.add(villager);
+        }
+        if (player.isSleeping()) player.wakeUp();
+        player.teleport(world, center.x, center.y, center.z, 180, 0);
+        player.clearActiveItem(); player.setVelocity(Vec3d.ZERO); player.fallDistance = 0; player.setOnGround(true);
+        for (int i = 0; i < attendants.size(); i++) {
+            var villager = attendants.get(i);
+            var position = station(center, i);
+            villager.getNavigation().stop();
+            villager.refreshPositionAndAngles(position.x, position.y, position.z, 0, 0);
+        }
+        begin(player, village, attendants);
+        return null;
+    }
+    private static void begin(ServerPlayerEntity player, GuardianWorldState.Village village, List<VillagerEntity> attendants) {
         village.attendants.clear(); attendants.forEach(v -> village.attendants.add(v.getUuid()));
         village.ritualTicks = 1;
         var state = RuneboundGuardian.state(player); state.ritualTicks = 1; state.sync();

@@ -10,6 +10,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import sscextras.collar.CleansingKeyItem;
+import sscextras.guardian.GuardianRitual;
 import java.util.Locale;
 import java.util.function.ToIntBiFunction;
 
@@ -32,6 +33,17 @@ public final class DrakeRitualCommands {
                     return 1;
                 }));
             }
+            rituals.then(withPlayer("guardianawakening", (source, player) -> {
+                var error = GuardianRitual.startCommand(player);
+                if (error != null) {
+                    source.sendError(Text.empty().append(player.getDisplayName()).append(": ")
+                            .append(Text.translatable("message.ssc-extras.ritual_command." + error)));
+                    return 0;
+                }
+                source.sendFeedback(() -> Text.translatable("message.ssc-extras.ritual_command.guardian_started",
+                        Text.translatable("ritual.ssc-extras.guardianawakening"), player.getDisplayName()), false);
+                return 1;
+            }));
             var clear = CommandManager.literal("clear");
             for (var effect : new String[]{"PermanentMount", "Feralization"}) {
                 for (var command : new String[]{effect, effect.toLowerCase(Locale.ROOT)}) {

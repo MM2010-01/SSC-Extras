@@ -33,9 +33,10 @@ public abstract class InstinctTickerMixin {
     @Inject(method = "calculateCurrentRate", at = @At("RETURN"), cancellable = true)
     private static void sscExtras$bonusRate(PlayerEntity player, PlayerInstinctComponent comp,
                                            CallbackInfoReturnable<Float> cir) {
-        float rate = cir.getReturnValue() + Collars.instinctRate(player) + sscextras.guardian.GuardianEquipment.instinctRate(player)
-                + (DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player))
-                + sscextras.drake.DrakeSoulbinding.instinctRate(player)) / DrakeInstinct.costMultiplier(player);
+        float rate = cir.getReturnValue() + Collars.instinctRate(player)
+                + (sscextras.guardian.GuardianEquipment.instinctRate(player)
+                + DrakeInstinct.stallGain(player, MoonlightInstinct.rate(player))
+                + sscextras.drake.DrakeSoulbinding.instinctRate(player)) / CreatureInstinct.progressionCostMultiplier(player);
         cir.setReturnValue(rate + (comp.instinctValue + rate >= 100 ? 0 : CreatureInstinct.cooldownRate(player, comp)));
     }
 
@@ -49,7 +50,7 @@ public abstract class InstinctTickerMixin {
     private static void sscExtras$permanentBaseRate(PlayerEntity player, CallbackInfoReturnable<Float> cir) {
         float base = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player)) != null
                 ? 5.5555557E-4f / CreatureInstinct.PERMANENT_INSTINCT_COST : cir.getReturnValue();
-        cir.setReturnValue(Collars.gain(player, base) / DrakeInstinct.costMultiplier(player));
+        cir.setReturnValue(Collars.gain(player, base) / CreatureInstinct.progressionCostMultiplier(player));
     }
 
     @Redirect(method = "calculateCurrentRate", at = @At(value = "INVOKE", target =

@@ -10,9 +10,12 @@ import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctCo
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinctComponent;
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import net.onixary.shapeShifterCurseFabric.status_effects.BaseTransformativeStatusEffect;
+import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManager;
+import sscextras.guardian.RuneboundGuardian;
 
 public final class CreatureInstinct {
     public static final float PERMANENT_INSTINCT_COST = 10.0f;
+    private static final float GUARDIAN_INSTINCT_COST = 5.0f;
 
     private CreatureInstinct() { }
 
@@ -76,7 +79,7 @@ public final class CreatureInstinct {
         PlayerFormBase form = FormAbilityManager.getForm(player);
         float rate = form.equals(RegPlayerForms.ORIGINAL_SHIFTER) ? -0.025f
                 : permanentTarget(form) != null ? -0.005f : 0;
-        return rate / sscextras.drake.DrakeInstinct.costMultiplier(player);
+        return rate / progressionCostMultiplier(player);
     }
 
     public static void clearTarget(PlayerEntity player) {
@@ -94,7 +97,23 @@ public final class CreatureInstinct {
     }
 
     public static float costMultiplier(PlayerEntity player) {
-        return costMultiplier(FormAbilityManager.getForm(player)) * sscextras.drake.DrakeInstinct.costMultiplier(player);
+        return costMultiplier(FormAbilityManager.getForm(player)) * progressionCostMultiplier(player);
+    }
+
+    public static float progressionCostMultiplier(PlayerEntity player) {
+        int stage = RuneboundGuardian.stage(player);
+        if (stage >= 0) return stage < 3 ? GUARDIAN_INSTINCT_COST : 1;
+        if (FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_SHIFTER) {
+            var target = getTarget(player);
+            if (target != null) {
+                if (target.getGroup() == RuneboundGuardian.GROUP) return GUARDIAN_INSTINCT_COST;
+            } else {
+                var curse = EffectManager.getTransformativeEffect(player);
+                if (curse != null && curse.getTransformativeEffectType() == RuneboundGuardian.CURSE)
+                    return GUARDIAN_INSTINCT_COST;
+            }
+        }
+        return sscextras.drake.DrakeInstinct.costMultiplier(player);
     }
 
     public static PlayerFormBase getTarget(PlayerEntity player) {
