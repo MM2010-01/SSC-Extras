@@ -8,7 +8,6 @@ import sscextras.drake.DrakeInstinct;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBase;
-import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctEffect;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
 import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctComponent;
@@ -48,7 +47,7 @@ public abstract class InstinctTickerMixin {
 
     @Inject(method = "judgeInstinctGrowRate", at = @At("RETURN"), cancellable = true)
     private static void sscExtras$permanentBaseRate(PlayerEntity player, CallbackInfoReturnable<Float> cir) {
-        float base = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player)) != null
+        float base = CreatureInstinct.permanentTarget(player) != null
                 ? 5.5555557E-4f / CreatureInstinct.PERMANENT_INSTINCT_COST : cir.getReturnValue();
         cir.setReturnValue(Collars.gain(player, base) / CreatureInstinct.progressionCostMultiplier(player));
     }
@@ -94,7 +93,7 @@ public abstract class InstinctTickerMixin {
             ci.cancel();
             return;
         }
-        PlayerFormBase target = CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player));
+        PlayerFormBase target = CreatureInstinct.permanentTarget(player);
         if (target != null) {
             if (comp.instinctValue >= 100.0f && !InstinctTicker.isPausing
                     && player.isAlive() && (!player.isCreative() || Collars.strength(player) > 0) && !player.isSpectator()

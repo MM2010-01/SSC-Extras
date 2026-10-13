@@ -1,6 +1,7 @@
 package sscextras;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class SscExtrasConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("ssc-extras");
@@ -19,6 +22,7 @@ public final class SscExtrasConfig {
     private static final Map<String, Float> lootChances = new LinkedHashMap<>();
     private static float instinctPerHit = 10.0f;
     private static float instinctPerPotion = 200.0f / 3.0f;
+    private static Set<Identifier> permanentFormProgressionExceptions = Set.of();
 
     static {
         LOOT_DEFAULTS.put("cursedCollarLootChance", 1.0f / 15.0f);
@@ -53,12 +57,22 @@ public final class SscExtrasConfig {
         }
         boolean changed = config.putIfAbsent("instinctPerHit", "10.0") == null;
         changed |= config.putIfAbsent("instinctPerPotion", Float.toString(200.0f / 3.0f)) == null;
+        changed |= config.putIfAbsent("permanentFormProgressionExceptions", "") == null;
         for (var entry : LOOT_DEFAULTS.entrySet()) {
             changed |= config.putIfAbsent(entry.getKey(), Float.toString(entry.getValue())) == null;
             lootChances.put(entry.getKey(), readValue(config, entry.getKey(), entry.getValue(), true));
         }
         instinctPerHit = readValue(config, "instinctPerHit", 10.0f, false);
         instinctPerPotion = readValue(config, "instinctPerPotion", 200.0f / 3.0f, false);
+        var exceptions = new HashSet<Identifier>();
+        for (String entry : config.getProperty("permanentFormProgressionExceptions").split(",")) {
+            String value = entry.trim();
+            if (value.isEmpty()) continue;
+            Identifier id = Identifier.tryParse(value);
+            if (id != null && value.contains(":")) exceptions.add(id);
+            else LOGGER.warn("Invalid permanentFormProgressionExceptions entry: {}; expected namespace:stage_2_form_id", value);
+        }
+        permanentFormProgressionExceptions = Set.copyOf(exceptions);
         if (readable && changed) {
             try {
                 Files.createDirectories(file.toAbsolutePath().getParent());
@@ -67,7 +81,9 @@ public final class SscExtrasConfig {
                             + "Loot/drop chances: 0 to 1 (0 disables, 1 guarantees; 0.25 = 25%).\n"
                             + "Collars: eligible dungeon chests. Drake Curse potions: pillager outpost chests.\n"
                             + "stable*LootChance: stable chests. stableDrake*DropChance: naturally equipped drake gear.\n"
-                            + "Natural gear retains +0.01 per Looting level unless disabled. Player-supplied gear always drops.");
+                            + "Natural gear retains +0.01 per Looting level unless disabled. Player-supplied gear always drops.\n"
+                            + "permanentFormProgressionExceptions: comma-separated stage 2 form IDs allowed without Echo Catalyst\n"
+                            + "when UnlockedPermanentFormProgressionForOtherForms is false (example: shape-shifter-curse:bat_2). Empty by default.");
                 }
             } catch (IOException exception) {
                 LOGGER.warn("Could not save SSC Extras config defaults", exception);
@@ -93,4 +109,5 @@ public final class SscExtrasConfig {
 
     public static float instinctPerHit() { return instinctPerHit; }
     public static float instinctPerPotion() { return instinctPerPotion; }
+    public static Set<Identifier> permanentFormProgressionExceptions() { return permanentFormProgressionExceptions; }
 }

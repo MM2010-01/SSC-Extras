@@ -21,10 +21,14 @@ public final class MountConversionRitual extends NpcEvent {
     private final RitualStageRunner<MountConversionRitual> stages;
     private LeashEscortEvent escort;
     private int feeding;
+    private int observedStage;
     private boolean atGate;
 
     public MountConversionRitual(MountMerchantEntity merchant, ServerPlayerEntity player, RitualProgress progress, boolean pretend) {
         this.merchant = merchant; this.player = player;
+        var transform = TransformManager.getPlayerTransformData(player);
+        observedStage = transform.isTransforming && transform.curFromForm != null
+                ? transform.curFromForm.getIndex() : EarthenDrake.stage(player);
         assignments = DrakeOutpostOwnership.get(player.getServer()).assignments();
         stages = new RitualStageRunner<>(List.of(
                 RitualStage.afterAndWhen("answer", pretend ? 60 : 0, ritual -> ritual.merchant.squaredDistanceTo(ritual.player) <= 4, MountConversionRitual::harness),
@@ -32,7 +36,8 @@ public final class MountConversionRitual extends NpcEvent {
                         && ritual.player.getBoundingBox().minZ >= ritual.merchant.gate().getZ() + 1, MountConversionRitual::tie),
                 new RitualStage<>("convert", 0, ritual -> EarthenDrake.stage(ritual.player) >= 2 && !ritual.transforming(),
                         RitualStage.Completion.WHEN, 72000, RitualStage.Fallback.pause(), RitualStage.Fallback.cancel(), ritual -> {
-                            MountMerchantEntity.say(ritual.player, ritual.merchant.capturedSeller() ? "captured_ready" : "ready"); return true;
+                            MountMerchantEntity.say(ritual.player, ritual.merchant.capturedSeller() ? "captured_ready" : "ready");
+                            MountMerchantEntity.say(ritual.player, "return_to_counter"); return true;
                         })), progress);
     }
     private boolean transforming() { return TransformManager.getPlayerTransformData(player).isTransforming; }
@@ -74,6 +79,12 @@ public final class MountConversionRitual extends NpcEvent {
         }
         if (stage.equals("convert")) {
             if (!merchant.pen().contains(player.getPos())) return false;
+            if (!transforming()) {
+                int currentStage = EarthenDrake.stage(player);
+                if (currentStage >= 0 && currentStage > observedStage && currentStage <= 2)
+                    MountMerchantEntity.say(player, "stage_" + currentStage);
+                observedStage = currentStage;
+            }
             if (!DrakeLeashing.attached(player)) {
                 clearFeeding(); merchant.getNavigation().stop(); return true;
             }

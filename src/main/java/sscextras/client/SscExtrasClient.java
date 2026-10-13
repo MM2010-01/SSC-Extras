@@ -23,6 +23,13 @@ public final class SscExtrasClient implements ClientModInitializer {
             client.execute(() -> removeBlackoutDuringTransformation = removeBlackout);
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> removeBlackoutDuringTransformation = true);
+        ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.PERMANENT_PROGRESSION_SYNC, (client, handler, buf, sender) -> {
+            boolean unlocked = buf.readBoolean();
+            var exceptions = java.util.Set.copyOf(buf.readList(net.minecraft.network.PacketByteBuf::readIdentifier));
+            client.execute(() -> SscExtrasGameRules.setClientPermanentProgression(unlocked, exceptions));
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
+                SscExtrasGameRules.setClientPermanentProgression(true, java.util.Set.of()));
         GuardianClient.register();
         DrakeEquipmentClient.register();
         DrakeCameraControl.register();

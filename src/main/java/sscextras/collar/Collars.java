@@ -278,7 +278,7 @@ public final class Collars {
                 if (target != null) ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$setTarget(target.FormID);
             }
             if (CreatureInstinct.getTarget(player) == null) return 0;
-        } else if (form.getIndex() < 0 || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(form) == null)) return 0;
+        } else if (form.getIndex() < 0 || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(player) == null)) return 0;
         return sscextras.drake.DrakeInstinct.stallGain(player, strength * 0.05f) / CreatureInstinct.costMultiplier(player);
     }
 

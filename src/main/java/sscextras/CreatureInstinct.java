@@ -64,7 +64,7 @@ public final class CreatureInstinct {
         }
         boolean original = RegPlayerForms.ORIGINAL_SHIFTER.equals(current);
         if (!original && (current.getIndex() < 0
-                || (current.getIndex() >= 2 && permanentTarget(current) == null)
+                || (current.getIndex() >= 2 && permanentTarget(player) == null)
                 || current.getGroup() == null
                 || !current.getGroup().GroupID.equals(target.getGroup().GroupID))) {
             return false;
@@ -78,7 +78,7 @@ public final class CreatureInstinct {
                 || TransformManager.getPlayerTransformData(player).isTransforming) return 0;
         PlayerFormBase form = FormAbilityManager.getForm(player);
         float rate = form.equals(RegPlayerForms.ORIGINAL_SHIFTER) ? -0.025f
-                : permanentTarget(form) != null ? -0.005f : 0;
+                : permanentTarget(player) != null ? -0.005f : 0;
         return rate / progressionCostMultiplier(player);
     }
 
@@ -86,18 +86,17 @@ public final class CreatureInstinct {
         ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$setTarget(null);
     }
 
-    public static PlayerFormBase permanentTarget(PlayerFormBase form) {
+    public static PlayerFormBase permanentTarget(PlayerEntity player) {
+        var form = FormAbilityManager.getForm(player);
         if (form.getGroup() == sscextras.guardian.RuneboundGuardian.GROUP) return null;
         return form.getIndex() == 2 && form.getGroup() != null && form.getGroup().hasForm(3)
+                && (form.FormID.getNamespace().equals("ssc-extras")
+                    || SscExtrasGameRules.permanentProgressionUnlocked(player, form.FormID))
                 ? form.getGroup().getForm(3) : null;
     }
 
-    public static float costMultiplier(PlayerFormBase form) {
-        return permanentTarget(form) != null ? PERMANENT_INSTINCT_COST : 1.0f;
-    }
-
     public static float costMultiplier(PlayerEntity player) {
-        return costMultiplier(FormAbilityManager.getForm(player)) * progressionCostMultiplier(player);
+        return (permanentTarget(player) != null ? PERMANENT_INSTINCT_COST : 1.0f) * progressionCostMultiplier(player);
     }
 
     public static float progressionCostMultiplier(PlayerEntity player) {

@@ -26,7 +26,7 @@ public abstract class CodexInstinctMixin {
     private static void sscExtras$permanentWarning(CodexData.ContentType type, PlayerEntity player,
                                                    CallbackInfoReturnable<Text> cir) {
         if (type == CodexData.ContentType.INSTINCTS
-                && CreatureInstinct.permanentTarget(FormAbilityManager.getForm(player)) != null) {
+                && CreatureInstinct.permanentTarget(player) != null) {
             cir.setReturnValue(Text.translatable("codex.ssc-extras.instincts_2"));
         }
     }
@@ -35,7 +35,7 @@ public abstract class CodexInstinctMixin {
     private static void sscExtras$previousStageHints(CodexData.ContentType type, PlayerEntity player,
                                                      CallbackInfoReturnable<Text> cir) {
         var form = FormAbilityManager.getForm(player);
-        if (type == CodexData.ContentType.INSTINCTS && CreatureInstinct.permanentTarget(form) != null
+        if (type == CodexData.ContentType.INSTINCTS && CreatureInstinct.permanentTarget(player) != null
                 && form.getGroup() != EarthenDrake.GROUP
                 && form.getGroup().hasForm(1)) {
             cir.setReturnValue(form.getGroup().getForm(1).getContentText(type));

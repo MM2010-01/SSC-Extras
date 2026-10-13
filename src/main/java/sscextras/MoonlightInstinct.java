@@ -19,7 +19,7 @@ public final class MoonlightInstinct {
                 || !CursedMoon.isCursedMoon(world) || !CursedMoon.isNight(world)) return 0;
         var form = FormAbilityManager.getForm(player);
         if (form == RegPlayerForms.ORIGINAL_BEFORE_ENABLE
-                || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(form) == null)
+                || (form.getIndex() >= 2 && CreatureInstinct.permanentTarget(player) == null)
                 || !world.isSkyVisible(player.getBlockPos())) return 0;
         return 0.05f;
     }

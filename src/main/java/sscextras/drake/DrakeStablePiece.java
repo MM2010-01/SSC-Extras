@@ -69,6 +69,8 @@ public final class DrakeStablePiece extends StructurePiece {
         int eaves = facing ? 7 : 5;
         fillWithOutline(world, chunkBox, 0, 1, 0, end, box.getBlockCountY() - 1, depth, AIR, AIR, false);
         fillWithOutline(world, chunkBox, 0, 0, 0, end, 0, depth, Blocks.COBBLESTONE.getDefaultState(), Blocks.COARSE_DIRT.getDefaultState(), false);
+        for (int x = 0; x <= end; x++) for (int z = 0; z <= depth; z++)
+            fillDownwards(world, Blocks.COBBLESTONE.getDefaultState(), x, -1, z, chunkBox);
         for (int z = 0; z <= depth; z++) {
             int height = eaves + Math.min(z, depth - z) / 3;
             fillWithOutline(world, chunkBox, 0, height, z, end, height, z,
@@ -99,7 +101,6 @@ public final class DrakeStablePiece extends StructurePiece {
         // Build supports last so the stall fencing cannot replace their lower logs.
         for (int x = 0; x <= end; x += 7) for (int z : new int[]{0, depth}) {
             fillWithOutline(world, chunkBox, x, 1, z, x, eaves - 1, z, Blocks.DARK_OAK_LOG.getDefaultState(), Blocks.DARK_OAK_LOG.getDefaultState(), false);
-            fillDownwards(world, Blocks.COBBLESTONE.getDefaultState(), x, -1, z, chunkBox);
         }
         addChest(world, chunkBox, random, 1, 1, facing ? 13 : 1, EarthenDrake.id("chests/drake_stable"));
         for (int stall = 0; stall < stallCount(); stall++) {

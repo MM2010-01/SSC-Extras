@@ -49,7 +49,7 @@ public final class MetalCuffs {
         if (!player.isAlive() || player.isSpectator() || TransformManager.getPlayerTransformData(player).isTransforming) return false;
         var form = FormAbilityManager.getForm(player);
         return form.equals(RegPlayerForms.ORIGINAL_SHIFTER) || form.getIndex() >= 0 && form.getIndex() <= 2
-                && (form.getIndex() < 2 || CreatureInstinct.permanentTarget(form) != null);
+                && (form.getIndex() < 2 || CreatureInstinct.permanentTarget(player) != null);
     }
 
     /** Negative means no cuffs are equipped; both pairs contribute their actual capacity. */

@@ -20,7 +20,7 @@ public abstract class CollarCureMixin {
     private static void sscExtras$calmInstinct(PlayerEntity player, CallbackInfo ci) {
         if (!(player instanceof ServerPlayerEntity)) return;
         var form = FormAbilityManager.getForm(player);
-        if (form == RegPlayerForms.ORIGINAL_SHIFTER || CreatureInstinct.permanentTarget(form) != null) {
+        if (form == RegPlayerForms.ORIGINAL_SHIFTER || CreatureInstinct.permanentTarget(player) != null) {
             var instinct = RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player);
             instinct.instinctValue = Math.max(0, instinct.instinctValue - 25);
             RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);

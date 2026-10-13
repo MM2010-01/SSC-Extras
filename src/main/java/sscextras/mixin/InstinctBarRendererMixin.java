@@ -52,7 +52,7 @@ public abstract class InstinctBarRendererMixin {
     private void sscExtras$removeMoonLock(DrawContext context, float tickDelta, int x, int y,
             PlayerEntity player, CallbackInfo ci) {
         PlayerFormBase form = FormAbilityManager.getForm(player);
-        if (form.getIndex() < 2 || CreatureInstinct.permanentTarget(form) != null) isInstinctLock = false;
+        if (form.getIndex() < 2 || CreatureInstinct.permanentTarget(player) != null) isInstinctLock = false;
     }
 
     @Inject(method = "renderInstinctBar", at = @At("TAIL"))
@@ -67,9 +67,4 @@ public abstract class InstinctBarRendererMixin {
         return RegPlayerForms.ORIGINAL_SHIFTER.equals(form) ? PlayerFormPhase.PHASE_0 : form.getPhase();
     }
 
-    @Redirect(method = "render", at = @At(value = "FIELD", target =
-            "Lnet/onixary/shapeShifterCurseFabric/player_form/PlayerFormBase;FormIndex:I"))
-    private int sscExtras$unlockPermanentProgression(PlayerFormBase form) {
-        return CreatureInstinct.permanentTarget(form) != null ? 1 : form.FormIndex;
-    }
 }
