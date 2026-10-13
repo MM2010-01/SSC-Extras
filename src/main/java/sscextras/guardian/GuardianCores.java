@@ -86,6 +86,12 @@ public final class GuardianCores {
         setSlotEnabled(player, RuneboundGuardian.stage(player) == 3);
     }
 
+    public static void beforeSpawn(ServerPlayerEntity player) {
+        updateSlot(player);
+        if (CuriosCompat.instance == null && player.playerScreenHandler instanceof dev.emi.trinkets.TrinketPlayerScreenHandler handler)
+            handler.trinkets$updateTrinketSlots(false);
+    }
+
     static void setSlotEnabled(PlayerEntity player, boolean enabled) {
         if (player.getWorld().isClient) return;
         // Keep the registered capacity so existing saved cores survive inventory loading.
@@ -420,8 +426,7 @@ public final class GuardianCores {
     }
 
     private static void refreshName(ServerPlayerEntity player) {
-        player.getServer().getPlayerManager().sendToAll(new net.minecraft.network.packet.s2c.play.PlayerListS2CPacket(
-                net.minecraft.network.packet.s2c.play.PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, player));
+        sscextras.player.PlayerNames.refresh(player);
     }
 
     private static void follow(ServerPlayerEntity player, GuardianWorldState.Core record) {

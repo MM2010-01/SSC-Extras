@@ -7,14 +7,29 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 final class DrakeBoundReturn {
-    static final int PULL_DELAY = 3 * 20, STUCK_TICKS = 5 * 20;
+    static final int PULL_DELAY = 3 * 20, STUCK_TICKS = 5 * 20, BLACKOUT_TICKS = 40;
     static final double MIN_PROGRESS = 5;
 
     private DrakeBoundReturn() { }
 
+    static final class Progress {
+        private long since = -1;
+        private double distance;
+
+        boolean started() { return since >= 0; }
+        void clear() { since = -1; distance = 0; }
+        boolean sample(long time, double remaining) {
+            if (since < 0 || time < since) { since = time; distance = remaining; return false; }
+            if (time - since < STUCK_TICKS) return false;
+            double progress = distance - remaining;
+            since = time; distance = remaining;
+            return progress < MIN_PROGRESS;
+        }
+    }
+
     static void clear(DrakeOutpostOwnership.Claim claim) {
-        claim.returnOutsideSince = claim.returnProgressSince = -1;
-        claim.returnDistance = 0;
+        claim.returnOutsideSince = -1;
+        claim.returnProgress.clear();
     }
 
     static boolean ready(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
@@ -29,27 +44,24 @@ final class DrakeBoundReturn {
         double dx = Math.max(Math.max(box.getMinX() - player.getX(), player.getX() - (box.getMaxX() + 1)), 0);
         double dz = Math.max(Math.max(box.getMinZ() - player.getZ(), player.getZ() - (box.getMaxZ() + 1)), 0);
         double distance = Math.sqrt(dx * dx + dz * dz);
-        if (claim.returnProgressSince < 0) {
-            claim.returnProgressSince = time;
-            claim.returnDistance = distance;
-            return false;
-        }
-        if (time - claim.returnProgressSince < STUCK_TICKS) return false;
-        double progress = claim.returnDistance - distance;
-        claim.returnProgressSince = time;
-        claim.returnDistance = distance;
-        if (progress >= MIN_PROGRESS) return false;
+        if (!claim.returnProgress.sample(time, distance) || !returnToStall(player, claim)) return false;
+        player.sendMessage(Text.translatable("message.ssc-extras.drake.bound_return_stall").formatted(Formatting.LIGHT_PURPLE, Formatting.ITALIC), false);
+        clear(claim);
+        return true;
+    }
+
+    static boolean returnToStall(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         var world = player.getServerWorld();
+        if (!claim.world.equals(world.getRegistryKey())) return false;
         world.getChunk(claim.bed());
         var pos = DrakeSoulbinding.respawnPosition(player, world, claim);
         if (pos == null) return false;
         DrakeLeashing.detach(player, false);
         DrakeFeralization.stop(player, claim);
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 40, 0, false, false, false));
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, BLACKOUT_TICKS, 0, false, false, false));
         player.teleport(world, pos.x, pos.y, pos.z, DrakeStableLayout.outwardYaw(claim.stable, claim.gate()), 0);
         player.fallDistance = 0;
-        player.sendMessage(Text.translatable("message.ssc-extras.drake.bound_return_stall").formatted(Formatting.LIGHT_PURPLE, Formatting.ITALIC), false);
-        clear(claim);
+        player.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
         return true;
     }
 }

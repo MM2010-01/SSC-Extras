@@ -13,6 +13,6 @@ public abstract class DrakeMountTabNameMixin {
     @Inject(method = "getPlayerListName", at = @At("RETURN"), cancellable = true)
     private void sscExtras$tabName(CallbackInfoReturnable<Text> cir) {
         var player = (ServerPlayerEntity)(Object)this;
-        if (!((DrakeOutpostOwnership.Display)player).sscExtras$mountName().isEmpty()) cir.setReturnValue(player.getDisplayName());
+        if (sscextras.player.PlayerNames.overridden(player)) cir.setReturnValue(player.getDisplayName());
     }
 }

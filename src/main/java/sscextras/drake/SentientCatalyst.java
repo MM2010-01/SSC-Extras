@@ -28,6 +28,14 @@ public final class SentientCatalyst extends Item {
     public static final String HINT_MARKER = "ssc-extras:sentient_catalyst_hint";
 
     public static Text hint(int dose) {
+        return hintKey(Integer.toString(dose));
+    }
+
+    public static Text hint(net.minecraft.entity.player.PlayerEntity player, int dose) {
+        return hintKey((sscextras.player.PlayerMind.enabled(player) ? "" : "legacy.") + dose);
+    }
+
+    private static Text hintKey(String dose) {
         return Text.translatable("message.ssc-extras.sentient_catalyst." + dose)
                 .formatted(Formatting.AQUA).styled(style -> style.withInsertion(HINT_MARKER));
     }

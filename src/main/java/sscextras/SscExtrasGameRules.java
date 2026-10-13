@@ -14,6 +14,8 @@ import java.util.Set;
 public final class SscExtrasGameRules {
     public static final Identifier TRANSFORMATION_BLACKOUT_SYNC = new Identifier("ssc-extras", "transformation_blackout");
     public static final Identifier PERMANENT_PROGRESSION_SYNC = new Identifier("ssc-extras", "permanent_progression");
+    public static final Identifier INT_SYSTEM_SYNC = new Identifier("ssc-extras", "int_system");
+    private static boolean clientIntSystemEnabled = true;
     private static boolean clientPermanentProgressionUnlocked = true;
     private static Set<Identifier> clientPermanentProgressionExceptions = Set.of();
     public static final GameRules.Key<GameRules.BooleanRule> COLLAR_AUTO_EQUIP_CURSED = GameRuleRegistry.register(
@@ -30,6 +32,14 @@ public final class SscExtrasGameRules {
     public static final GameRules.Key<GameRules.BooleanRule> UNLOCKED_PERMANENT_FORM_PROGRESSION_FOR_OTHER_FORMS = GameRuleRegistry.register(
             "UnlockedPermanentFormProgressionForOtherForms", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true,
                     (server, rule) -> server.getPlayerManager().getPlayerList().forEach(player -> syncPermanentProgression(player, rule.get()))));
+    public static final GameRules.Key<GameRules.BooleanRule> ENABLE_INT_SYSTEM = GameRuleRegistry.register(
+            "EnableINTSystem", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true,
+                    (server, rule) -> server.getPlayerManager().getPlayerList().forEach(player -> {
+                        syncIntSystem(player, rule.get());
+                        player.clearActiveItem(); player.closeHandledScreen();
+                        sscextras.player.PlayerMind.refresh(player);
+                        player.playerScreenHandler.onContentChanged(player.getInventory());
+                    })));
 
     private SscExtrasGameRules() { }
 
@@ -38,7 +48,19 @@ public final class SscExtrasGameRules {
             var rules = handler.player.getWorld().getGameRules();
             syncBlackoutRule(handler.player, rules.getBoolean(REMOVE_BLACKOUT_DURING_TRANSFORMATION));
             syncPermanentProgression(handler.player, rules.getBoolean(UNLOCKED_PERMANENT_FORM_PROGRESSION_FOR_OTHER_FORMS));
+            syncIntSystem(handler.player, rules.getBoolean(ENABLE_INT_SYSTEM));
         });
+    }
+
+    public static boolean intSystemEnabled(PlayerEntity player) {
+        return player.getWorld().isClient ? clientIntSystemEnabled : player.getWorld().getGameRules().getBoolean(ENABLE_INT_SYSTEM);
+    }
+
+    public static void setClientIntSystem(boolean enabled) { clientIntSystemEnabled = enabled; }
+
+    private static void syncIntSystem(ServerPlayerEntity player, boolean enabled) {
+        var packet = PacketByteBufs.create(); packet.writeBoolean(enabled);
+        ServerPlayNetworking.send(player, INT_SYSTEM_SYNC, packet);
     }
 
     public static boolean permanentProgressionUnlocked(PlayerEntity player, Identifier form) {

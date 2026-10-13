@@ -20,6 +20,9 @@ public abstract class DrakeFeralUseMixin {
     private void sscExtras$onlyEatFood(Hand hand, CallbackInfo ci) {
         if ((Object)this instanceof PlayerEntity player && (sscextras.drake.DrakeSoulbinding.restrained(player)
                 || !sscextras.drake.DrakeShoes.canUse(player, hand)
-                || DrakeFeralization.itemsRestricted(player) && !DrakeFeralization.edible(player.getStackInHand(hand)))) ci.cancel();
+                || !sscextras.player.PlayerMind.enabled(player) && DrakeFeralization.itemsRestricted(player)
+                    && !DrakeFeralization.edible(player.getStackInHand(hand))
+                || !sscextras.player.PlayerMind.allow(player, sscextras.player.MentalContext.item(
+                    sscextras.player.MentalContext.Action.USE, player.getStackInHand(hand))))) ci.cancel();
     }
 }

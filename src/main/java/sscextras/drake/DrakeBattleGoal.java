@@ -5,12 +5,8 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ai.goal.CrossbowAttackGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.decoration.LeashKnotEntity;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.mob.PillagerEntity;
-import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -39,6 +35,7 @@ public final class DrakeBattleGoal extends Goal {
     private boolean complete, fighting, won, engaged, pendingRecall;
     private int nextPursuitSearch;
     private Vec3d pursuitDestination;
+    private Vec3d pursuitPosition;
 
     public DrakeBattleGoal(PillagerEntity pillager) {
         this.pillager = pillager;
@@ -100,10 +97,7 @@ public final class DrakeBattleGoal extends Goal {
                 && (target == attacker && pillager.getWorld().getTime() - attackedAt < 1200
                 || pillager.getWorld().getTime() - AttackEntityDataTracker.lastAttackPillagerTimeMap
                         .getOrDefault(player.getUuid(), -1200L) < 1200);
-        boolean neutral = target instanceof Angerable || target instanceof PiglinEntity || target instanceof SpiderEntity;
-        boolean aggressive = target instanceof MobEntity mob && mob.getTarget() != null
-                || target instanceof Angerable angerable && angerable.hasAngerTime();
-        return target instanceof HostileEntity && (!neutral || aggressive) || target instanceof MobEntity mob
+        return DrakeFaction.hostileThreat(target) || target instanceof MobEntity mob
                 && mob.getTarget() != null && owned(mob.getTarget())
                 || target == attacker && pillager.getWorld().getTime() - attackedAt < 1200;
     }
@@ -184,7 +178,7 @@ public final class DrakeBattleGoal extends Goal {
             int choice = pillager.getRandom().nextInt(total), index = 0;
             while ((choice -= DrakeAttention.called(candidates.get(index)) ? 3 : 1) >= 0) index++;
             var candidate = candidates.remove(index);
-            if (purpose == Purpose.PURSUIT && pillager.squaredDistanceTo(candidate) >= pillager.squaredDistanceTo(enemy)) continue;
+            if (purpose == Purpose.PURSUIT && pillager.squaredDistanceTo(candidate) >= pillager.squaredDistanceTo(pursuitPosition)) continue;
             if ((purpose == Purpose.PATROL || purpose == Purpose.RECALL && !DrakeCaptureGoal.recallTime(pillager.getWorld())) && (!pillager.getVisibilityCache().canSee(candidate)
                     || pillager.squaredDistanceTo(candidate) > 32 * 32)) continue;
             if (purpose == Purpose.RECALL && (!(candidate instanceof StableDrakeEntity drake)
@@ -207,9 +201,14 @@ public final class DrakeBattleGoal extends Goal {
 
     // The owning goal equips or leashes its target without giving up the borrowed mount.
     public boolean pursue(PlayerEntity target) {
+        return pursue(target, target.getRootVehicle().getPos());
+    }
+
+    public boolean pursue(PlayerEntity target, Vec3d lastKnownPosition) {
+        pursuitPosition = lastKnownPosition;
         if (pursuing(target)) {
-            if (phase == Phase.APPROACH && (pillager.squaredDistanceTo(target) <= 64
-                    || pillager.squaredDistanceTo(target) <= pillager.squaredDistanceTo(mount))) {
+            if (phase == Phase.APPROACH && (pillager.squaredDistanceTo(lastKnownPosition) <= 64
+                    || pillager.squaredDistanceTo(lastKnownPosition) <= pillager.squaredDistanceTo(mount))) {
                 stopPursuit(); return false;
             }
             if (!shouldContinue() || !target.isAlive() || target.getWorld() != pillager.getWorld()
@@ -225,7 +224,7 @@ public final class DrakeBattleGoal extends Goal {
             return true;
         }
         if (phase != null || pendingRecall || pillager.hasVehicle() || pillager.age < nextPursuitSearch
-                || pillager.squaredDistanceTo(target) <= 64) return false;
+                || pillager.squaredDistanceTo(lastKnownPosition) <= 64) return false;
         nextPursuitSearch = pillager.age + 40;
         stable = navigation().stable();
         if (stable == null) return false;
@@ -280,7 +279,8 @@ public final class DrakeBattleGoal extends Goal {
     }
 
     @Override public boolean shouldContinue() {
-        if (complete || mount == null || !mount.isAlive() || mount.getWorld() != pillager.getWorld() || pillager.age - started > 3600) return false;
+        if (complete || mount == null || !mount.isAlive() || mount.getWorld() != pillager.getWorld()
+                || purpose != Purpose.PURSUIT && pillager.age - started > 3600) return false;
         if (mount instanceof PlayerEntity player && (purpose != Purpose.RECALL && !owned(player)
                 || player.isCreative() || player.isSpectator() || player.isSleeping()
                 || !DrakeRiding.canCarryPillager(player)
@@ -350,8 +350,8 @@ public final class DrakeBattleGoal extends Goal {
         }
         if (phase == Phase.PURSUIT) {
             pillager.setTarget(null);
-            pillager.getLookControl().lookAt(enemy, 30, 30);
-            pathTo(enemy.getRootVehicle().getPos(), 1);
+            pillager.getLookControl().lookAt(pursuitPosition.x, pursuitPosition.y + 1, pursuitPosition.z, 30, 30);
+            pathTo(pursuitPosition, 1);
             return;
         }
         if (phase == Phase.PATROL) {
@@ -458,6 +458,7 @@ public final class DrakeBattleGoal extends Goal {
 
     @Override public void stop() {
         pursuitDestination = null;
+        pursuitPosition = null;
         if (fighting) attack.stop();
         if (pillager.getVehicle() == mount) pillager.stopRiding();
         if (mount != null) {

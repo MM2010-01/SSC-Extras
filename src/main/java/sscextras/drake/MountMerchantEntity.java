@@ -4,7 +4,8 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
-import net.minecraft.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.entity.ai.goal.CrossbowAttackGoal;
+import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.damage.DamageSource;
@@ -81,7 +82,21 @@ public final class MountMerchantEntity extends PillagerEntity {
     private MountConversionRitual ritual;
     private DrakeStableRepairGoal repairGoal;
 
-    public MountMerchantEntity(EntityType<? extends PillagerEntity> type, World world) { super(type, world); setPersistent(); }
+    public MountMerchantEntity(EntityType<? extends PillagerEntity> type, World world) {
+        super(type, world); setPersistent(); arm();
+    }
+    private void arm() {
+        var bow = getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);
+        if (bow.isEmpty()) {
+            bow = new ItemStack(Items.CROSSBOW);
+            equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, bow);
+        }
+        if (!bow.isOf(Items.CROSSBOW)) return;
+        var enchantments = net.minecraft.enchantment.EnchantmentHelper.get(bow);
+        enchantments.merge(net.minecraft.enchantment.Enchantments.QUICK_CHARGE, 3, Math::max);
+        enchantments.merge(net.minecraft.enchantment.Enchantments.UNBREAKING, 3, Math::max);
+        net.minecraft.enchantment.EnchantmentHelper.set(enchantments, bow);
+    }
     public void setSite(BlockPos site, DrakeStablePiece destination) { this.site = site.toImmutable(); this.destination = destination; }
     public BlockPos site() { return site; }
     public DrakeStablePiece destination() { return destination; }
@@ -344,12 +359,17 @@ public final class MountMerchantEntity extends PillagerEntity {
     }
     @Override protected void initGoals() {
         super.initGoals(); goalSelector.clear(goal -> true); targetSelector.clear(goal -> true);
-        goalSelector.add(0, new SwimGoal(this)); goalSelector.add(1, new MeleeAttackGoal(this, MOVE_SPEED, false));
+        goalSelector.add(0, new SwimGoal(this)); goalSelector.add(1, new CrossbowAttackGoal<>(this, MOVE_SPEED, 16));
         goalSelector.add(3, repairGoal = new DrakeStableRepairGoal(this));
         goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8)); goalSelector.add(7, new LookAroundGoal(this));
         targetSelector.add(0, new RevengeGoal(this));
+        targetSelector.add(1, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false, this::canTarget));
     }
-    @Override public boolean canTarget(LivingEntity target) { return target == getAttacker() && super.canTarget(target); }
+    @Override public boolean canTarget(LivingEntity target) {
+        return super.canTarget(target) && !DrakeFaction.member(target) && !isTeammate(target)
+                && (target == getAttacker() || site != null && pen().expand(16).contains(target.getPos())
+                && DrakeFaction.hostileThreat(target));
+    }
     @Override public void tickMovement() {
         double x = getX(), z = getZ();
         super.tickMovement();
@@ -363,6 +383,12 @@ public final class MountMerchantEntity extends PillagerEntity {
         if (!(getWorld() instanceof ServerWorld world) || site == null || destination == null) return;
         if (!stocked && world.isChunkLoaded(site.add(12, 0, 10))) { recoverStock(); restock(); stocked = true; }
         if (age % 40 == 0) { recoverStock(); updateSigns(); }
+        if (DrakeFaction.fighting(this)) {
+            interrupt();
+            ((DrakeFaction.EquipmentDisplay)(Object)this).sscExtras$showEquipment(ItemStack.EMPTY);
+            ((DrakeStableNavigation)getNavigation()).open(gate());
+            return;
+        }
         if (age % 20 == 0) { releaseWithoutDemand(); recruit(); }
         if (!DrakeFaction.fighting(this) && chaseRunaway()) return;
         if (age % 20 == 0) {
@@ -483,6 +509,7 @@ public final class MountMerchantEntity extends PillagerEntity {
     }
     @Override public void readCustomDataFromNbt(NbtCompound tag) {
         super.readCustomDataFromNbt(tag);
+        arm();
         site = tag.contains("MarketSite") ? BlockPos.fromLong(tag.getLong("MarketSite")) : null;
         destination = MountMarket.readStable(tag.getCompound("MarketDestination"));
         seller = tag.containsUuid("MarketSeller") ? tag.getUuid("MarketSeller") : null;

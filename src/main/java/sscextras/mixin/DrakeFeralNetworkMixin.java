@@ -13,6 +13,15 @@ import sscextras.drake.DrakeFeralization;
 @Mixin(ServerPlayNetworkHandler.class)
 public abstract class DrakeFeralNetworkMixin {
     @Shadow public ServerPlayerEntity player;
+    @Inject(method = "onCraftRequest", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
+            shift = At.Shift.AFTER), cancellable = true)
+    private void sscExtras$recipeBookInt(CraftRequestC2SPacket packet, CallbackInfo ci) {
+        var recipe = player.getWorld().getRecipeManager().get(packet.getRecipe());
+        if (recipe.isPresent() && !sscextras.player.MentalCrafting.allowed(player, recipe.get())) {
+            player.currentScreenHandler.syncState(); ci.cancel();
+        }
+    }
     @Inject(method = "tick", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/network/ServerPlayerEntity;playerTick()V", shift = At.Shift.AFTER))
     private void sscExtras$keepServerMovement(CallbackInfo ci) {

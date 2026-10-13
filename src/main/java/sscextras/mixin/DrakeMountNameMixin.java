@@ -14,7 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.drake.DrakeOutpostOwnership;
 
 @Mixin(PlayerEntity.class)
-public abstract class DrakeMountNameMixin implements DrakeOutpostOwnership.Display {
+public abstract class DrakeMountNameMixin implements DrakeOutpostOwnership.Display, sscextras.player.PlayerNames.State {
+    @Unique private Text sscExtras$lastDisplayName;
+    public Text sscExtras$lastDisplayName() { return sscExtras$lastDisplayName; }
+    public void sscExtras$lastDisplayName(Text value) { sscExtras$lastDisplayName = value; }
     @Unique private static final TrackedData<String> SSC_EXTRAS_MOUNT_NAME = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.STRING);
     public String sscExtras$mountName() { return ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_MOUNT_NAME); }
     public void sscExtras$mountName(String name) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_MOUNT_NAME, name); }
@@ -22,17 +25,4 @@ public abstract class DrakeMountNameMixin implements DrakeOutpostOwnership.Displ
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void sscExtras$initName(CallbackInfo ci) { ((PlayerEntity)(Object)this).getDataTracker().startTracking(SSC_EXTRAS_MOUNT_NAME, ""); }
 
-    @Inject(method = "getName", at = @At("RETURN"), cancellable = true)
-    private void sscExtras$mountName(CallbackInfoReturnable<Text> cir) {
-        var name = sscExtras$mountName();
-        if (!name.isEmpty()) cir.setReturnValue(Text.literal(name).formatted(net.minecraft.util.Formatting.ITALIC));
-    }
-
-    @Inject(method = "getDisplayName", at = @At("RETURN"), cancellable = true)
-    private void sscExtras$displayMountName(CallbackInfoReturnable<Text> cir) {
-        var name = sscExtras$mountName();
-        if (!name.isEmpty()) cir.setReturnValue(net.minecraft.scoreboard.Team.decorateName(
-                ((PlayerEntity)(Object)this).getScoreboardTeam(), Text.literal(name).formatted(net.minecraft.util.Formatting.ITALIC))
-                .setStyle(cir.getReturnValue().getStyle().withItalic(true)));
-    }
 }

@@ -40,7 +40,7 @@ public final class DrakeBodyPower extends Power {
     private void update(boolean force, boolean sync) {
         if (entity.getWorld().isClient || !(entity instanceof PlayerEntity player)) return;
         boolean feralPosture = DrakeSoulbinding.bound(player) || DrakeFeralization.feral(player);
-        boolean next = stage == 3 || feralPosture || stage == 2 && (player.isSprinting() || player.isSneaking()
+        boolean next = stage == 3 || feralPosture || sscextras.player.PlayerStance.requested(player) || stage == 2 && (player.isSprinting() || player.isSneaking()
                 || player.hasPassengers() || DrakeLeashing.attached(player) || sscextras.collar.TamingCollar.worn(player)
                 || player.getHungerManager().getFoodLevel() <= 6);
         if (!force && next == allFours) return;

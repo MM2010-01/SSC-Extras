@@ -31,6 +31,7 @@ public final class DrakeRoaming {
 
     static void tick(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         if (MountMarket.get(player.getServer()).busy(player)) return;
+        if (claim.pursuit != null) claim.pursuit.active();
         if (escapeHint(player, claim)) return;
         if (!player.isAlive() || player.isCreative() || player.isSpectator() || EarthenDrake.stage(player) < 0
                 || !claim.world.equals(player.getWorld().getRegistryKey()) || player.hasPassengers()) {
@@ -91,6 +92,10 @@ public final class DrakeRoaming {
             hint(player, "escape_marked");
             DrakeDialogue.say(player, "escape_seen");
         }
+        if (claim.tryingToEscape && claim.pursuit == null) {
+            var stable = ((DrakeStableNavigation)witness.getNavigation()).stable();
+            if (stable != null) DrakeEscapePursuit.alert(witness, player, stable);
+        }
     }
 
     private static boolean escapeHint(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
@@ -113,6 +118,8 @@ public final class DrakeRoaming {
 
     static boolean pursued(PlayerEntity player) {
         if (DrakeLeashing.holder(player) instanceof PillagerEntity holder && holder.isAlive()) return true;
+        var claim = DrakeOutpostOwnership.claim(player);
+        if (claim != null && claim.pursuit != null && claim.pursuit.active()) return true;
         return !player.getWorld().getEntitiesByClass(PillagerEntity.class,
                 player.getBoundingBox().expand(DrakeCaptureGoal.RANGE * 2 + 24), guard -> {
                     if (!guard.isAlive() || guard.isAiDisabled()) return false;
@@ -130,7 +137,7 @@ public final class DrakeRoaming {
         return pillager.isAlive() && !pillager.isAiDisabled()
                 && (!pillager.hasVehicle() || DrakeBattleGoal.of(pillager).pursuing(player))
                 && pillager.squaredDistanceTo(player) <= range * range
-                && belongs(pillager, claim) && DrakeCaptureGoal.near(claim.stable, player.getPos());
+                && belongs(pillager, claim);
     }
 
     private static boolean roaming(PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
@@ -174,6 +181,7 @@ public final class DrakeRoaming {
             if (MountMarket.get(player.getServer()).busy(player)) continue;
             var claim = DrakeOutpostOwnership.claim(player);
             if (claim == null) continue;
+            if (claim.tryingToEscape) continue;
             if (claim.escort == pillager.getId() && roaming(player, claim) && escortAvailable(pillager, player, claim, true)) return player;
             if ((claim.outside || claim.warnedEdge) && !DrakeLeashing.attached(player) && claim.witness == pillager.getId()
                     && player.getWorld().getTime() < claim.recallUntil && tracking(pillager, player, claim)) return player;

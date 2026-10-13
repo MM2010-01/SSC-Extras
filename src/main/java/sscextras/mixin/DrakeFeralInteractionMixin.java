@@ -22,13 +22,13 @@ public abstract class DrakeFeralInteractionMixin {
     @Shadow protected ServerPlayerEntity player;
     @Inject(method = "processBlockBreakingAction", at = @At("HEAD"), cancellable = true)
     private void sscExtras$noMining(CallbackInfo ci) {
-        if (DrakeFeralization.restricted(player) && DrakeFeralization.controlled(player)
+        if (!sscextras.player.PlayerMind.allowHeldTool(player) || DrakeFeralization.controlled(player)
                 || DrakeShoes.restricted(player) || DrakeSoulbinding.restrained(player)
                 || sscextras.drake.FormItemRestrictions.rejectHeldTool(player)) ci.cancel();
     }
     @Inject(method = "tryBreakBlock", at = @At("HEAD"), cancellable = true)
     private void sscExtras$noBreaking(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        if (DrakeFeralization.restricted(player) && DrakeFeralization.controlled(player)
+        if (!sscextras.player.PlayerMind.allowHeldTool(player) || DrakeFeralization.controlled(player)
                 || DrakeShoes.restricted(player) || DrakeSoulbinding.restrained(player)
                 || sscextras.drake.FormItemRestrictions.rejectHeldTool(player)) cir.setReturnValue(false);
     }

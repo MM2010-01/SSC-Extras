@@ -16,13 +16,16 @@ public abstract class DrakeFeralItemTextMixin {
     @Inject(method = "getName", at = @At("RETURN"), cancellable = true)
     private void sscExtras$unknownItem(CallbackInfoReturnable<Text> cir) {
         if (FeralPerception.active()) cir.setReturnValue(FeralText.itemName((ItemStack)(Object)this, cir.getReturnValue()));
+        else if (sscextras.client.MentalPerception.unreadable((ItemStack)(Object)this)) cir.setReturnValue(sscextras.client.MentalPerception.scramble(cir.getReturnValue()));
     }
     @Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
     private void sscExtras$noItemDetails(CallbackInfoReturnable<List<Text>> cir) {
         if (FeralPerception.active()) cir.setReturnValue(new java.util.ArrayList<>(List.of(((ItemStack)(Object)this).getName())));
+        else if (sscextras.client.MentalPerception.unreadable((ItemStack)(Object)this))
+            cir.setReturnValue(new java.util.ArrayList<>(cir.getReturnValue().stream().map(sscextras.client.MentalPerception::scramble).toList()));
     }
     @Inject(method = "getTooltipData", at = @At("RETURN"), cancellable = true)
     private void sscExtras$noBundlePreview(CallbackInfoReturnable<Optional<net.minecraft.client.item.TooltipData>> cir) {
-        if (FeralPerception.active()) cir.setReturnValue(Optional.empty());
+        if (FeralPerception.active() || sscextras.client.MentalPerception.unreadable((ItemStack)(Object)this)) cir.setReturnValue(Optional.empty());
     }
 }

@@ -40,12 +40,13 @@ public final class FeralPerception {
         return player != null && DrakeFeralization.mindRestricted(player);
     }
     public static OrderedText scramble(OrderedText text) {
+        if (MentalPerception.unreadableScreen()) return FeralText.scramble(text, "", 1);
         if (!active()) return text;
         var client = MinecraftClient.getInstance();
         var screen = client.currentScreen;
         if (screen != null && !(screen instanceof net.minecraft.client.gui.screen.ChatScreen)
                 && !(screen instanceof net.minecraft.client.gui.screen.ingame.BookScreen)
                 && !(screen instanceof net.minecraft.client.gui.screen.ingame.BookEditScreen)) return text;
-        return FeralText.scramble(text, ((DrakeOutpostOwnership.Display)client.player).sscExtras$mountName(), strength(client.player));
+        return FeralText.scramble(text, sscextras.player.PlayerNames.resolve(client.player).text().getString(), strength(client.player));
     }
 }

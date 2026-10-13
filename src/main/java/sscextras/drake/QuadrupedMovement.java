@@ -7,6 +7,6 @@ public final class QuadrupedMovement {
     public static final float STEP_HEIGHT = 1.125f;
     private QuadrupedMovement() { }
     public static boolean quadrupedal(Entity entity) {
-        return entity instanceof StableDrakeEntity || entity instanceof PlayerEntity player && EarthenDrake.onAllFours(player);
+        return entity instanceof StableDrakeEntity || entity instanceof PlayerEntity player && sscextras.player.PlayerStance.quadrupedal(player);
     }
 }

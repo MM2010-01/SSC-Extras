@@ -58,6 +58,14 @@ public final class DrakeFaction {
         return member(target) && harnessed(player);
     }
 
+    public static boolean hostileThreat(LivingEntity entity) {
+        if (!(entity instanceof net.minecraft.entity.mob.HostileEntity) || !entity.isAlive() || member(entity)) return false;
+        boolean neutral = entity instanceof net.minecraft.entity.mob.Angerable
+                || entity instanceof net.minecraft.entity.mob.PiglinEntity || entity instanceof net.minecraft.entity.mob.SpiderEntity;
+        return !neutral || ((net.minecraft.entity.mob.MobEntity)entity).getTarget() != null
+                || entity instanceof net.minecraft.entity.mob.Angerable angerable && angerable.hasAngerTime();
+    }
+
     public static boolean fighting(PillagerEntity pillager) {
         var target = pillager.getTarget();
         return target != null && target.isAlive() && !pillager.isTeammate(target)

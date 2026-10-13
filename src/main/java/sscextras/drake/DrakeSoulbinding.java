@@ -547,6 +547,7 @@ public final class DrakeSoulbinding {
     }
 
     static void clearFeralization(ServerPlayerEntity player) {
+        sscextras.player.PlayerMind.restore(player);
         var claim = DrakeOutpostOwnership.claim(player);
         if (claim != null) {
             if (claim.ritualCheckpoint != null && claim.ritualCheckpoint.type.equals(DrakeRituals.FERALIZATION.command())) finishRitual(player, claim);
@@ -596,12 +597,13 @@ public final class DrakeSoulbinding {
 
     public static void afterRespawn(ServerPlayerEntity player, boolean alive) {
         var claim = DrakeOutpostOwnership.claim(player);
+        if (!alive && (claim == null || !claim.soulbound)
+                && (EarthenDrake.stage(player) == 3 || claim != null && claim.feral && EarthenDrake.stage(player) >= 0)) {
+            DrakeRitualTransform.finish(player);
+            FormAbilityManager.applyForm(player, net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_SHIFTER);
+        }
         if (claim == null) return;
         if (!claim.soulbound) {
-            if (!alive && claim.feral && EarthenDrake.stage(player) >= 0) {
-                DrakeRitualTransform.finish(player);
-                FormAbilityManager.applyForm(player, net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_SHIFTER);
-            }
             claim.awaitingRespawn = false;
             var form = FormAbilityManager.getForm(player);
             if (claim.feral && (form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ORIGINAL_SHIFTER
@@ -633,14 +635,7 @@ public final class DrakeSoulbinding {
     }
 
     static Vec3d respawnPosition(ServerPlayerEntity player, ServerWorld world, DrakeOutpostOwnership.Claim claim) {
-        var center = claim.bed();
-        for (int dy = 0; dy <= 3; dy++) for (int dz : new int[]{0, -1, 1, -2, 2}) for (int dx : new int[]{0, 1, -1}) {
-            var block = center.add(dx, dy, dz);
-            var pos = Vec3d.ofBottomCenter(block);
-            if (world.getBlockState(block.down()).isSolidBlock(world, block.down())
-                    && world.isSpaceEmpty(player, player.getDimensions(player.getPose()).getBoxAt(pos))) return pos;
-        }
-        return null;
+        return DrakeStableLayout.safePosition(player, world, claim.bed());
     }
 
     static void hint(PlayerEntity player, String key) {

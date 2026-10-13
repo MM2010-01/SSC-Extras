@@ -15,6 +15,9 @@ public abstract class DrakeFeralItemUseMixin {
     private void sscExtras$blockItemsOnly(ItemUsageContext context, CallbackInfoReturnable<ActionResult> cir) {
         var player = context.getPlayer();
         if (player != null && (!DrakeFeralization.canUse(player, (ItemStack)(Object)this)
+                || !sscextras.player.PlayerMind.allow(player, sscextras.player.MentalContext.item(
+                    ((ItemStack)(Object)this).getItem() instanceof net.minecraft.item.BlockItem ? sscextras.player.MentalContext.Action.PLACE : sscextras.player.MentalContext.Action.USE,
+                    (ItemStack)(Object)this))
                 || sscextras.drake.FormItemRestrictions.prevents(player, (ItemStack)(Object)this))) cir.setReturnValue(ActionResult.FAIL);
     }
 }

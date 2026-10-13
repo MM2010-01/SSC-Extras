@@ -26,7 +26,7 @@ public abstract class DrakeFeralTextMixin {
     private void sscExtras$plainGibberish(String text, float x, float y, int color, boolean shadow, Matrix4f matrix,
             VertexConsumerProvider vertices, TextRenderer.TextLayerType layer, int background, int light, boolean mirror,
             CallbackInfoReturnable<Integer> cir) {
-        if (text != null && FeralPerception.active()) cir.setReturnValue(((TextRenderer)(Object)this).draw(
+        if (text != null && (FeralPerception.active() || sscextras.client.MentalPerception.unreadableScreen())) cir.setReturnValue(((TextRenderer)(Object)this).draw(
                 OrderedText.styledForwardsVisitedString(text, Style.EMPTY), x, y, color, shadow, matrix, vertices, layer, background, light));
     }
 }

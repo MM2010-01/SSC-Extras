@@ -68,8 +68,22 @@ public final class DrakeRitualCommands {
                 }
                 return removed;
             });
+            var intelligence = CommandManager.literal("int").then(withPlayer("get", (source, player) -> {
+                source.sendFeedback(() -> Text.translatable("message.ssc-extras.int.current", player.getDisplayName(),
+                        sscextras.player.PlayerMind.baseInt(player).text(), sscextras.player.PlayerMind.effectiveInt(player).text())
+                        .styled(style -> style.withInsertion("ssc-extras:mental_hint")), false);
+                return sscextras.player.PlayerMind.effectiveInt(player).ordinal();
+            }));
+            var setInt = CommandManager.literal("set");
+            for (var level : sscextras.player.IntLevel.values()) setInt.then(withPlayer(level.id(), (source, player) -> {
+                sscextras.player.PlayerMind.setBaseInt(player, level);
+                source.sendFeedback(() -> Text.translatable("message.ssc-extras.int.current", player.getDisplayName(),
+                        level.text(), sscextras.player.PlayerMind.effectiveInt(player).text())
+                        .styled(style -> style.withInsertion("ssc-extras:mental_hint")), false);
+                return 1;
+            }));
             dispatcher.register(CommandManager.literal("ssc-extras").requires(source -> source.hasPermissionLevel(2))
-                    .then(rituals).then(clear).then(purge));
+                    .then(rituals).then(clear).then(purge).then(intelligence.then(setInt)));
         });
     }
 

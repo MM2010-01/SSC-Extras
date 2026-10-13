@@ -89,11 +89,17 @@
     "GuardianMovementMixin",
     "GuardianMovementOwnerMixin",
     "GuardianNetworkMixin",
-    "GuardianNameMixin",
-    "GuardianTabNameMixin",
+    "PlayerNameMixin",
     "GuardianRespawnMixin",
     "GuardianTeleportMixin",
-    "GuardianVillageStructureMixin"
+    "GuardianVillageStructureMixin",
+    "MentalCraftingMixin",
+    "MentalFurnaceMixin",
+    "MentalScreenMixin",
+    "MentalScreenHandlerAccessor",
+    "MentalItemTickMixin",
+    "MentalCampfireMixin",
+    "GuardianCoreSpawnMixin"
   ],
   "client": [
     "PowerAnimationPacketMixin",
@@ -131,7 +137,10 @@
     "GuardianCoreGlowMixin",
     "GuardianCameraSourceMixin",
     "GuardianInputMixin",
-    "GuardianAttackMixin"
+    "GuardianAttackMixin",
+    "MentalInstrumentMixin",
+    "MentalMapMixin",
+    "MentalMapRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

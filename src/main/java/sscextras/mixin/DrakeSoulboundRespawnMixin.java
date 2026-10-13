@@ -12,6 +12,8 @@ import sscextras.drake.DrakeSoulbinding;
 public abstract class DrakeSoulboundRespawnMixin {
     @Inject(method = "respawnPlayer", at = @At("HEAD"))
     private void sscExtras$prepareRespawn(ServerPlayerEntity player, boolean alive, CallbackInfoReturnable<ServerPlayerEntity> cir) {
+        sscextras.player.PlayerControl.clear(player);
+        sscextras.player.PlayerStance.clear(player);
         DrakeSoulbinding.beforeRespawn(player, alive);
     }
 

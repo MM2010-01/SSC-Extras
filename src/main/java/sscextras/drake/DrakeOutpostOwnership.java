@@ -66,13 +66,14 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public int ritualTicks() { return ritualRun == null ? 0 : ritualRun.ticks(); }
         public int catalystsFed() { return ritualCheckpoint == null ? 0 : ritualCheckpoint.catalystsFed; }
         boolean returning;
-        long returnOutsideSince = -1, returnProgressSince = -1;
-        double returnDistance;
+        long returnOutsideSince = -1;
+        final DrakeBoundReturn.Progress returnProgress = new DrakeBoundReturn.Progress();
         final java.util.List<UUID> attendants = new java.util.ArrayList<>();
         boolean outside, warnedEdge, spotted;
         boolean escapeHinted;
         long escapeOutsideSince = -1;
         long nextOutsideHint, seenSince = -1, recallUntil, nextEscortSearch;
+        DrakeEscapePursuit pursuit;
         int witness, escort;
         Claim(RegistryKey<World> world, BlockBox stable, String name) {
             this.world = world; this.stable = stable; this.name = name;
@@ -169,6 +170,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         BlindingRein.setClosed(player, false);
         if (owns(player, stable)) {
             var claim = claim(player);
+            if (claim.pursuit != null) claim.pursuit.finish();
             if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {
                 claim.escapes++;
                 claim.tryingToEscape = false;
@@ -245,6 +247,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         var data = get(player.getServer());
         var old = data.mounts.remove(player.getUuid());
         if (old != null) {
+            if (old.pursuit != null) old.pursuit.finish();
             DrakeSoulbinding.clearCurse(player, old);
             data.updateSign(player.getServer(), GlobalPos.create(old.world, old.sign()), "", false);
             if (DrakeLeashing.holder(player) instanceof LeashKnotEntity knot
@@ -262,7 +265,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         if (state.sscExtras$mountName().equals(name)) return;
         state.sscExtras$mountName(name);
         if (player instanceof ServerPlayerEntity serverPlayer)
-            player.getServer().getPlayerManager().sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, serverPlayer));
+            sscextras.player.PlayerNames.refresh(serverPlayer);
     }
 
     public static void tick(PlayerEntity player) {

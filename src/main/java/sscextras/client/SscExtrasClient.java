@@ -18,6 +18,7 @@ public final class SscExtrasClient implements ClientModInitializer {
     private static boolean removeBlackoutDuringTransformation = true;
 
     @Override public void onInitializeClient() {
+        MentalPerception.register();
         ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.TRANSFORMATION_BLACKOUT_SYNC, (client, handler, buf, sender) -> {
             boolean removeBlackout = buf.readBoolean();
             client.execute(() -> removeBlackoutDuringTransformation = removeBlackout);

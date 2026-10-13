@@ -55,6 +55,21 @@ public final class EarthenDrake {
     public static Identifier id(String path) { return new Identifier("ssc-extras", path); }
 
     public static void register() {
+        sscextras.player.PlayerStance.registerGroup(GROUP.GroupID, new sscextras.player.PlayerStance.Profile() {
+            public boolean supports(PlayerEntity player, sscextras.player.PlayerStance.Stance stance) {
+                return stance != sscextras.player.PlayerStance.Stance.UPRIGHT || stage(player) < 3;
+            }
+            public sscextras.player.PlayerStance.Stance current(PlayerEntity player) {
+                boolean down = PowerHolderComponent.getPowers(player, DrakeBodyPower.class).stream().anyMatch(DrakeBodyPower::onAllFours);
+                return down ? sscextras.player.PlayerStance.Stance.QUADRUPEDAL : sscextras.player.PlayerStance.Stance.UPRIGHT;
+            }
+            public void refresh(net.minecraft.server.network.ServerPlayerEntity player) {
+                PowerHolderComponent.getPowers(player, DrakeBodyPower.class).forEach(DrakeBodyPower::refreshSize);
+            }
+            public java.util.Set<Identifier> sources(PlayerEntity player) {
+                return current(player) == sscextras.player.PlayerStance.Stance.QUADRUPEDAL ? java.util.Set.of(id("drake_body")) : java.util.Set.of();
+            }
+        });
         DrakeFeralization.register();
         DrakeShoes.register();
         DrakeInstinct.register();
@@ -92,7 +107,7 @@ public final class EarthenDrake {
     }
 
     public static boolean onAllFours(PlayerEntity player) {
-        return PowerHolderComponent.getPowers(player, DrakeBodyPower.class).stream().anyMatch(DrakeBodyPower::onAllFours);
+        return stage(player) >= 0 && sscextras.player.PlayerStance.quadrupedal(player);
     }
 
     public static int eatingDuration(PlayerEntity player, ItemStack stack, int original) {

@@ -10,6 +10,16 @@ import net.minecraft.util.math.Vec3d;
 public final class DrakeStableLayout {
     private DrakeStableLayout() { }
 
+    public static Vec3d safePosition(net.minecraft.entity.Entity entity, net.minecraft.server.world.ServerWorld world, BlockPos center) {
+        for (int dy = 0; dy <= 3; dy++) for (int dz : new int[]{0, -1, 1, -2, 2}) for (int dx : new int[]{0, 1, -1}) {
+            var block = center.add(dx, dy, dz);
+            var pos = Vec3d.ofBottomCenter(block);
+            if (world.getBlockState(block.down()).isSolidBlock(world, block.down())
+                    && world.isSpaceEmpty(entity, entity.getDimensions(entity.getPose()).getBoxAt(pos))) return pos;
+        }
+        return null;
+    }
+
     // Saved bounds distinguish the original single row from the mansion's facing rows.
     public static boolean facingRows(BlockBox box) { return box.getBlockCountZ() == 27; }
     public static int stallCount(BlockBox box) { return (box.getBlockCountX() - 1) / 7 * (facingRows(box) ? 2 : 1); }

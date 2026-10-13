@@ -67,6 +67,7 @@ public final class FeralText {
 
     private static boolean readableHint(Style style) {
         return DrakeFeralization.TAKEOVER_TEXT_MARKER.equals(style.getInsertion())
+                || "ssc-extras:mental_hint".equals(style.getInsertion())
                 || SentientCatalyst.HINT_MARKER.equals(style.getInsertion());
     }
 }

@@ -39,6 +39,8 @@ public final class MountBuyerEntity extends PillagerEntity {
     private Vec3d directDestination;
     private boolean travelling;
     private boolean atDestinationGate;
+    private int nextThreatSearch;
+    private boolean avoidingThreat;
 
     public MountBuyerEntity(EntityType<? extends PillagerEntity> type, World world) { super(type, world); setPersistent(); }
     @Override protected void initGoals() {
@@ -283,6 +285,7 @@ public final class MountBuyerEntity extends PillagerEntity {
             var exit = Vec3d.ofBottomCenter(marketSite.add(8, 1, -2)).add(.5, 0, 0);
             move(aligned || target.getZ() < marketSite.getZ() + 4.5 ? exit : approach, true); return;
         }
+        if (avoidThreats(world, DrakeStableLayout.gatePoint(destination.getBoundingBox(), gate, -1.5))) return;
         if (target.squaredDistanceTo(Vec3d.ofCenter(gate)) < 64) navigation.open(gate);
         var approach = DrakeStableLayout.gatePoint(destination.getBoundingBox(), gate, -1.5);
         if (Math.abs(target.getX() - approach.x) < .2 && Math.abs(target.getZ() - approach.z) < .45) atDestinationGate = true;
@@ -313,6 +316,54 @@ public final class MountBuyerEntity extends PillagerEntity {
         } else if (getNavigation().isIdle() || age % 10 == 0)
             getNavigation().startMovingAlong(getNavigation().findPathTo(destination.x, destination.y, destination.z, 0), travelling ? 1.2 : .9);
         if (travelling) DrakeRiding.tickPillager(this);
+    }
+    private boolean avoidThreats(ServerWorld world, Vec3d home) {
+        if (age >= nextThreatSearch) {
+            nextThreatSearch = age + 20;
+            var origin = hasVehicle() ? getVehicle() : this;
+            var threats = world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(16, 6, 16), enemy ->
+                    enemy != getVehicle() && !isTeammate(enemy) && !DrakeFaction.member(enemy) && enemy.isAlive()
+                    && (DrakeFaction.hostileThreat(enemy) || enemy == getAttacker()
+                    || enemy instanceof net.minecraft.entity.mob.MobEntity mob && mob.getTarget() != null
+                    && (mob.getTarget() == this || purchases.stream().anyMatch(p -> p.mount().equals(mob.getTarget().getUuid()))))
+                    && !(enemy instanceof net.minecraft.entity.player.PlayerEntity player && (player.isCreative() || player.isSpectator()))
+                    && getVisibilityCache().canSee(enemy));
+            boolean wasAvoiding = avoidingThreat;
+            avoidingThreat = !threats.isEmpty();
+            if (avoidingThreat) {
+                var nearest = threats.stream().min(java.util.Comparator.comparingDouble(origin::squaredDistanceTo)).orElseThrow();
+                net.minecraft.entity.ai.pathing.Path best = null;
+                double bestScore = Double.POSITIVE_INFINITY;
+                for (int attempt = 0; attempt < 9; attempt++) {
+                    var point = attempt == 0 ? waypoint(world, home)
+                            : net.minecraft.entity.ai.NoPenaltyTargeting.findFrom(this, 16, 7, nearest.getPos());
+                    if (point == null || nearest.squaredDistanceTo(point) < Math.min(100, origin.squaredDistanceTo(nearest) + 16)) continue;
+                    var path = getNavigation().findPathTo(point.x, point.y, point.z, 0);
+                    if (path == null || !path.reachesTarget()) continue;
+                    boolean safe = true;
+                    for (int node = 1; safe && node < path.getLength(); node++) {
+                        var position = path.getNodePosition(origin, node);
+                        for (var threat : threats) if (threat.squaredDistanceTo(position) < Math.min(64, origin.squaredDistanceTo(threat) - 1)) {
+                            safe = false; break;
+                        }
+                    }
+                    double score = point.squaredDistanceTo(home);
+                    if (safe && attempt == 0) {
+                        avoidingThreat = false;
+                        if (wasAvoiding) getNavigation().stop();
+                        return false;
+                    }
+                    if (safe && score < bestScore) { best = path; bestScore = score; }
+                }
+                getNavigation().stop();
+                if (best != null) getNavigation().startMovingAlong(best, 1.2);
+                atDestinationGate = false;
+            } else if (wasAvoiding) getNavigation().stop();
+        }
+        if (!avoidingThreat) return false;
+        travelling = hasVehicle(); directDestination = null; setSprinting(true);
+        if (travelling) DrakeRiding.tickPillager(this);
+        return true;
     }
     private Vec3d waypoint(ServerWorld world, Vec3d target) {
         var delta = target.subtract(getPos());
@@ -354,6 +405,7 @@ public final class MountBuyerEntity extends PillagerEntity {
         discard();
     }
     public void interrupt() {
+        avoidingThreat = false; nextThreatSearch = 0;
         directDestination = null; travelling = false; setSprinting(false); getNavigation().stop();
         if (run != null) { run.finish(); run = null; }
     }
