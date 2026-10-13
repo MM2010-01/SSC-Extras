@@ -15,8 +15,7 @@ public abstract class GuardianCoreEntityMixin {
     private void sscExtras$followDroppedCore(CallbackInfo ci) {
         var item = (ItemEntity)(Object)this;
         if (item.getWorld().isClient || !item.getStack().hasNbt()) return;
-        GuardianCores.forEachCore(item.getStack(), stack -> item.setNeverDespawn(), 0);
-        GuardianCores.observe(item.getStack(), item, "item");
+        GuardianCores.observe(item);
         if (item.getY() < item.getWorld().getBottomY() - 64) GuardianCores.destroyed(item.getStack(), item.getServer());
     }
     @Inject(method = "damage", at = @At("RETURN"))

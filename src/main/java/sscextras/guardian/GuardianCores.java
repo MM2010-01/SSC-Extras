@@ -10,7 +10,6 @@ import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.*;
@@ -54,10 +53,10 @@ public final class GuardianCores {
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
             if (!(entity instanceof ServerPlayerEntity player) || RuneboundGuardian.stage(player) != 3) return true;
             var state = RuneboundGuardian.state(player);
-            if (source.isOf(DamageTypes.GENERIC_KILL)) { invalidate(player); return true; }
-            if (state.coreId == null) initialize(player);
             var record = record(player);
-            if (record == null || record.destroyed) return true;
+            if (record != null && record.destroyed) { invalidate(player); return true; }
+            if (state.detached) { player.setHealth(player.getMaxHealth()); return false; }
+            if (record == null) initialize(player);
             breakBody(player); return false;
         });
         UseEntityCallback.EVENT.register((actor, world, hand, target, hit) -> {
@@ -156,6 +155,12 @@ public final class GuardianCores {
 
     public static void tick(ServerPlayerEntity player) {
         var state = RuneboundGuardian.state(player);
+        if (state.detached && record(player) == null) {
+            restoreControl(player, null);
+            state.coreId = null;
+            state.guardianName = "";
+            state.sync(); refreshName(player);
+        }
         if (RuneboundGuardian.stage(player) == 3 && state.coreId == null && !state.detached) initialize(player);
         var record = record(player); if (record == null) return;
         if (record.destroyed) { destroyOwner(player); return; }
@@ -293,12 +298,21 @@ public final class GuardianCores {
     }
 
     public static void observe(ItemStack stack, Entity holder, String location) {
-        if (!(holder.getWorld() instanceof ServerWorld world)) return;
-        forEachCore(stack, core -> {
-            var record = GuardianWorldState.get(world.getServer()).cores.get(id(core));
-            if (record != null && !record.destroyed && !bodyStillHolds(record, world.getServer()))
-                update(record, world, location, holder.getBlockPos(), holder.getUuid());
+        if (!(holder.getWorld() instanceof ServerWorld world)
+                || GuardianWorldState.get(world.getServer()).cores.isEmpty()) return;
+        forEachCore(stack, core -> observeCore(core, holder, location, world), 0);
+    }
+    public static void observe(ItemEntity item) {
+        if (!(item.getWorld() instanceof ServerWorld world)) return;
+        forEachCore(item.getStack(), core -> {
+            item.setNeverDespawn();
+            observeCore(core, item, "item", world);
         }, 0);
+    }
+    private static void observeCore(ItemStack core, Entity holder, String location, ServerWorld world) {
+        var record = GuardianWorldState.get(world.getServer()).cores.get(id(core));
+        if (record != null && !record.destroyed && !bodyStillHolds(record, world.getServer()))
+            update(record, world, location, holder.getBlockPos(), holder.getUuid());
     }
     public static void observe(BlockEntity block) {
         if (!(block.getWorld() instanceof ServerWorld world) || !(block instanceof Inventory inventory)
@@ -327,7 +341,12 @@ public final class GuardianCores {
         var tag = stack.getNbt();
         if (tag.contains("BlockEntityTag")) tag = tag.getCompound("BlockEntityTag");
         var items = tag.getList("Items", NbtElement.COMPOUND_TYPE);
-        for (int i = 0; i < items.size(); i++) forEachCore(ItemStack.fromNbt(items.getCompound(i)), callback, depth + 1);
+        if (depth == 16) return;
+        for (int i = 0; i < items.size(); i++) {
+            var item = items.getCompound(i);
+            if (item.contains("tag", NbtElement.COMPOUND_TYPE))
+                forEachCore(ItemStack.fromNbt(item), callback, depth + 1);
+        }
     }
     public static void destroyed(ItemStack stack, MinecraftServer server) {
         if (server == null) return;
@@ -339,28 +358,40 @@ public final class GuardianCores {
         }, 0);
     }
     private static void destroyOwner(ServerPlayerEntity player) {
-        var state = RuneboundGuardian.state(player); var record = record(player);
-        if (record == null) return;
-        GuardianRitual.stopRecovery(player);
-        state.detached = false; state.coreId = null; state.ritualTicks = 0;
-        player.setCameraEntity(player); removeAnchor(player);
-        player.changeGameMode(GameMode.byName(record.previousMode, GameMode.SURVIVAL));
-        state.sync(); player.damage(player.getDamageSources().genericKill(), Float.MAX_VALUE);
+        var record = record(player); if (record == null) return;
+        restoreControl(player, record);
+        RuneboundGuardian.state(player).sync();
+        // Keep the destroyed record through ALLOW_DEATH so true core death cannot break another body.
+        player.damage(player.getDamageSources().genericKill(), Float.MAX_VALUE);
     }
     private static void invalidate(ServerPlayerEntity player) {
         GuardianRitual.stopRecovery(player);
-        var record = record(player); if (record != null) { record.destroyed = true; GuardianWorldState.get(player.getServer()).markDirty(); }
-        RuneboundGuardian.state(player).coreId = null;
+        var record = record(player);
+        if (record != null) {
+            record.destroyed = true; GuardianWorldState.get(player.getServer()).markDirty();
+            takeCore(player, record.id);
+        }
+        restoreControl(player, record);
+        var state = RuneboundGuardian.state(player);
+        state.coreId = null; state.guardianName = "";
+        state.sync(); refreshName(player);
+    }
+    private static void restoreControl(ServerPlayerEntity player, GuardianWorldState.Core record) {
+        var state = RuneboundGuardian.state(player);
+        if (state.detached) {
+            player.setCameraEntity(player); removeAnchor(player);
+            if (player.isSpectator()) player.changeGameMode(GameMode.byName(record == null ? "survival" : record.previousMode, GameMode.SURVIVAL));
+            player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
+        }
+        state.detached = false; state.deactivated = false; state.ritualTicks = 0; state.ritualGuideId = 0;
+        state.recoveryBlackout = 0; state.recoveryHintPending = false;
     }
     public static void revert(ServerPlayerEntity player) {
         var state = RuneboundGuardian.state(player); var record = record(player);
-        if (record == null) { state.guardianName = ""; return; }
         GuardianRitual.stopRecovery(player);
-        if (state.detached) {
-            player.setCameraEntity(player); removeAnchor(player); player.changeGameMode(GameMode.byName(record.previousMode, GameMode.SURVIVAL));
-            state.detached = false;
-        }
-        record.destroyed = true; state.coreId = null; state.guardianName = ""; state.ritualTicks = 0;
+        restoreControl(player, record);
+        if (record != null) record.destroyed = true;
+        state.coreId = null; state.guardianName = "";
         if (id(equipped(player)) != null) equip(player, ItemStack.EMPTY);
         GuardianWorldState.get(player.getServer()).markDirty(); state.sync(); refreshName(player);
     }
@@ -376,6 +407,16 @@ public final class GuardianCores {
         if (player.getWorld() != world) { player.setCameraEntity(player); removeAnchor(player); player.teleport(world, record.pos.getX() + .5, record.pos.getY() + .5, record.pos.getZ() + .5, player.getYaw(), player.getPitch()); }
         Entity holder = record.holder == null ? null : world.getEntity(record.holder);
         if (holder == null && record.location.equals("entity") && record.holder != null) holder = player.getServer().getPlayerManager().getPlayer(record.holder);
+        if (player.getUuid().equals(record.holder)) {
+            // A displaced core can arrive from Curios after detachment. The soul must not carry itself.
+            var physical = takeCore(player, record.id);
+            holder = null;
+            if (!physical.isEmpty()) {
+                var item = new ItemEntity(world, player.getX(), player.getY(), player.getZ(), physical);
+                item.setVelocity(Vec3d.ZERO); item.setNeverDespawn(); world.spawnEntity(item);
+                observe(item); holder = item;
+            }
+        }
         if (holder != null && holder.getWorld() instanceof ServerWorld holderWorld && holderWorld != world) { update(record, holderWorld, record.location, holder.getBlockPos(), holder.getUuid()); return; }
         Vec3d target = holder == null ? Vec3d.ofCenter(record.pos).add(0, record.location.equals("block") ? .7 : 0, 0)
                 : holder.getPos().add(0, holder instanceof LivingEntity ? holder.getStandingEyeHeight() : .25, 0);

@@ -52,10 +52,12 @@ public final class MountBuyerEntity extends PillagerEntity {
     public static MountBuyerEntity spawn(MountMerchantEntity merchant) {
         var world = (ServerWorld)merchant.getWorld();
         if (!world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)
-                || merchant.sellerId() != null && (!merchant.ready() || merchant.seller() == null)
-                || merchant.readySellers().isEmpty() && merchant.stock().isEmpty()) return null;
-        UUID first = !merchant.readySellers().isEmpty() ? merchant.readySellers().get(0).getUuid() : merchant.stock().get(0).getUuid();
-        if (!merchant.refreshDestination(first, merchant.readySellers().isEmpty() ? 2 : 1)) return null;
+                || merchant.sellerId() != null && (!merchant.ready() || merchant.seller() == null)) return null;
+        var sellers = merchant.readySellers();
+        var stock = sellers.isEmpty() ? merchant.stock() : List.<StableDrakeEntity>of();
+        if (sellers.isEmpty() && stock.isEmpty()) return null;
+        UUID first = !sellers.isEmpty() ? sellers.get(0).getUuid() : stock.get(0).getUuid();
+        if (!merchant.refreshDestination(first, sellers.isEmpty() ? 2 : 1)) return null;
         var buyer = MountMerchants.BUYER.create(world); buyer.visit(merchant);
         for (int attempt = 0; attempt < 24; attempt++) {
             double angle = world.random.nextDouble() * Math.PI * 2;
@@ -86,11 +88,21 @@ public final class MountBuyerEntity extends PillagerEntity {
     public static List<Integer> freeStalls(ServerWorld world, DrakeStablePiece stable, UUID first) {
         var free = new ArrayList<Integer>();
         for (int i = stable.stallCount() - 1; i >= 0; i--) {
-            if (DrakeOutpostOwnership.availableFor(world, stable, i, first)
-                    && world.getEntitiesByClass(LivingEntity.class, stable.stall(i), entity -> entity.isAlive() && !entity.isSpectator()
-                    && !(entity instanceof PillagerEntity) && !entity.getUuid().equals(first)).isEmpty()) free.add(i);
+            if (freeStall(world, stable, i, first)) free.add(i);
         }
         return free;
+    }
+    public static boolean hasFreeStalls(ServerWorld world, DrakeStablePiece stable, UUID first, int required) {
+        if (required <= 0) return true;
+        if (required > stable.stallCount()) return false;
+        for (int i = stable.stallCount() - 1; i >= 0; i--)
+            if (freeStall(world, stable, i, first) && --required == 0) return true;
+        return false;
+    }
+    private static boolean freeStall(ServerWorld world, DrakeStablePiece stable, int stall, UUID first) {
+        return DrakeOutpostOwnership.availableFor(world, stable, stall, first)
+                && world.getEntitiesByClass(LivingEntity.class, stable.stall(stall), entity -> entity.isAlive() && !entity.isSpectator()
+                && !(entity instanceof PillagerEntity) && !entity.getUuid().equals(first)).isEmpty();
     }
     public List<Purchase> purchases() { return List.copyOf(purchases); }
     public Vec3d directDestination() { return directDestination; }

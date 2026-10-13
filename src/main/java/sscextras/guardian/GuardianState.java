@@ -21,6 +21,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public int repairTicks;
     public String guardianName = "";
     public UUID coreId;
+    public UUID loadingCoreId;
     public int ritualTicks, weatherTicks, sleepTicks;
     public boolean pedestalSleeping, daySleep;
     public double foodRemainder;
@@ -37,7 +38,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public GuardianProtectBrain brain;
     public GuardianEscort escort;
     public int ritualGuideId;
-    private int lastEnergy = -1;
+    private int lastEnergy = -1, lastWeather = -1;
     private boolean lastDetached, lastProtecting, lastDeactivated;
 
     public GuardianState(PlayerEntity owner) { this.owner = owner; }
@@ -53,7 +54,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         GuardianEquipment.tick(player);
         GuardianOffering.standing(player);
         int stage = RuneboundGuardian.stage(player);
-        if (stage < 0 && lastStage < 0 && coreId == null && !flightGranted && !replacedHunger) return;
+        if (stage < 0 && lastStage < 0 && coreId == null && !detached && !flightGranted && !replacedHunger) return;
         if (stage != lastStage) {
             GuardianVillages.stopRepair(player);
             GuardianDialogue.stop(player);
@@ -83,7 +84,10 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
             lastStage = stage;
             sync();
         }
-        if (stage < 0) { GuardianBodyPower.flight(player, false); return; }
+        if (stage < 0) {
+            if (detached) GuardianCores.revert(player);
+            GuardianBodyPower.flight(player, false); return;
+        }
         if (!player.isAlive()) { GuardianDialogue.stop(player); return; }
         if (recoveryBlackout > 0) { recoveryBlackout--; if (recoveryBlackout == 0) sync(); }
         GuardianCores.tick(player);
@@ -138,8 +142,9 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     private void syncChanged(ServerPlayerEntity player) {
         int rounded = (int)(energy * 10);
         if (detached != lastDetached || protecting != lastProtecting || deactivated != lastDeactivated || player.age % 20 == 0
-                && (rounded != lastEnergy || ritualTicks > 0 || weatherTicks > 0)) {
-            lastEnergy = rounded; lastDetached = detached; lastProtecting = protecting; lastDeactivated = deactivated; sync();
+                && (rounded != lastEnergy || ritualTicks > 0 || weatherTicks != lastWeather)) {
+            lastEnergy = rounded; lastWeather = weatherTicks;
+            lastDetached = detached; lastProtecting = protecting; lastDeactivated = deactivated; sync();
         }
     }
 

@@ -13,9 +13,12 @@ import java.util.List;
 public final class GolemCoreItem extends AccessoryItem {
     public GolemCoreItem() { super(new Settings().maxCount(1)); }
     @Override public boolean canEquip(ItemStack stack, LivingEntity entity, SlotData slot) {
-        return entity instanceof PlayerEntity player && RuneboundGuardian.stage(player) == 3 && !GuardianCombat.locked(player)
-                && CollarSlots.isActive(slot) && (slot.slot().getPath().equals("core") || slot.slot().getPath().equals("chest/core"))
-                && GuardianCores.id(stack) != null;
+        var id = GuardianCores.id(stack);
+        return entity instanceof PlayerEntity player && id != null && CollarSlots.isActive(slot)
+                && (slot.slot().getPath().equals("core") || slot.slot().getPath().equals("chest/core"))
+                && (id.equals(RuneboundGuardian.state(player).loadingCoreId)
+                    || RuneboundGuardian.stage(player) == 3 && !GuardianCombat.locked(player)
+                        && (player.getWorld().isClient || GuardianCores.valid(player.getServer(), stack)));
     }
     @Override public boolean canUnequip(ItemStack stack, LivingEntity entity, SlotData slot) { return true; }
     @Override public Text getName(ItemStack stack) {

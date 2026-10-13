@@ -28,6 +28,7 @@ public final class MountRideSession {
             session = new MountRideSession(); state.sscExtras$rideSession(session);
         }
         session.sample(mount, mount.getServer().getOverworld().getTime());
+        if (!mount.hasPassengers()) state.sscExtras$rideSession(null);
     }
     public static void flush(ServerPlayerEntity mount) {
         var session = ((DrakeRiding.State)mount).sscExtras$rideSession();

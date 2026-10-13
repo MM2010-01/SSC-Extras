@@ -18,14 +18,27 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class InfusionInventory extends SimpleInventory implements AutoSyncedComponent, ServerTickingComponent {
+    private static final InfusionSlot[] SLOTS = InfusionSlot.values();
     private final PlayerEntity owner;
-    private final Map<UUID, Applied> applied = new HashMap<>();
-    private final ItemStack[] synced = new ItemStack[InfusionSlot.values().length];
+    private final Map<ModifierKey, Applied> applied = new HashMap<>();
+    private final ItemStack[] synced = new ItemStack[SLOTS.length];
     private boolean loading, dirty, snapshotHasItems;
-    private record Applied(EntityAttribute attribute, double value, EntityAttributeModifier.Operation operation) { }
+    private record ModifierKey(InfusionSlot slot, EntityAttribute attribute, UUID sourceId) {
+        UUID infusionId() {
+            return UUID.nameUUIDFromBytes(("ssc-extras:infusion/" + slot.name() + "/"
+                    + Registries.ATTRIBUTE.getId(attribute) + "/" + sourceId).getBytes(StandardCharsets.UTF_8));
+        }
+    }
+    private static final class Applied {
+        EntityAttributeModifier modifier;
+        boolean wanted, changed = true;
+        Applied(UUID id, EntityAttributeModifier source) {
+            modifier = new EntityAttributeModifier(id, "Feral infusion", source.getValue(), source.getOperation());
+        }
+    }
 
     public InfusionInventory(PlayerEntity owner) {
-        super(InfusionSlot.values().length);
+        super(SLOTS.length);
         this.owner = owner;
         java.util.Arrays.fill(synced, ItemStack.EMPTY);
     }
@@ -64,33 +77,41 @@ public final class InfusionInventory extends SimpleInventory implements AutoSync
 
     public void refreshAttributes() {
         if (owner.getWorld().isClient) return;
-        Map<UUID, Applied> wanted = new HashMap<>();
-        for (InfusionSlot slot : InfusionSlot.values()) {
+        applied.values().forEach(value -> value.wanted = false);
+        // Conditions and item-provided modifiers stay live; only their derived identities are cached.
+        for (InfusionSlot slot : SLOTS) {
             if (!slot.armor() && slot != InfusionSlot.WEAPON) continue;
             ItemStack stack = Infusions.active(owner, slot);
             if (stack.isEmpty()) continue;
             stack.getAttributeModifiers(slot.equipment).forEach((attribute, modifier) -> {
-                UUID id = UUID.nameUUIDFromBytes(("ssc-extras:infusion/" + slot.name() + "/"
-                        + Registries.ATTRIBUTE.getId(attribute) + "/" + modifier.getId())
-                        .getBytes(StandardCharsets.UTF_8));
-                wanted.put(id, new Applied(attribute, modifier.getValue(), modifier.getOperation()));
+                var key = new ModifierKey(slot, attribute, modifier.getId());
+                var value = applied.computeIfAbsent(key, entry -> new Applied(entry.infusionId(), modifier));
+                if (Double.compare(value.modifier.getValue(), modifier.getValue()) != 0
+                        || value.modifier.getOperation() != modifier.getOperation()) {
+                    value.modifier = new EntityAttributeModifier(value.modifier.getId(), "Feral infusion",
+                            modifier.getValue(), modifier.getOperation());
+                    value.changed = true;
+                }
+                value.wanted = true;
             });
         }
-        applied.forEach((id, old) -> {
-            if (!old.equals(wanted.get(id)) && owner.getAttributeInstance(old.attribute()) != null) {
-                owner.getAttributeInstance(old.attribute()).removeModifier(id);
+        var iterator = applied.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            var value = entry.getValue();
+            if (!value.wanted || value.changed) {
+                var instance = owner.getAttributeInstance(entry.getKey().attribute());
+                if (instance != null) instance.removeModifier(value.modifier.getId());
             }
-        });
-        wanted.forEach((id, value) -> {
-            var instance = owner.getAttributeInstance(value.attribute());
-            if (instance != null && (!value.equals(applied.get(id)) || !instance.hasModifier(new EntityAttributeModifier(
-                    id, "Feral infusion", value.value(), value.operation())))) {
-                instance.removeModifier(id);
-                instance.addTemporaryModifier(new EntityAttributeModifier(id, "Feral infusion", value.value(), value.operation()));
+            if (!value.wanted) iterator.remove();
+        }
+        applied.forEach((key, value) -> {
+            var instance = owner.getAttributeInstance(key.attribute());
+            if (instance != null && !instance.hasModifier(value.modifier)) {
+                instance.addTemporaryModifier(value.modifier);
             }
+            value.changed = false;
         });
-        applied.clear();
-        applied.putAll(wanted);
     }
 
     @Override public void readFromNbt(NbtCompound tag) {

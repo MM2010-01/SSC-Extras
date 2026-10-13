@@ -1,5 +1,7 @@
 package sscextras.drake;
 
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.decoration.LeashKnotEntity;
@@ -15,12 +17,16 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.chunk.ChunkStatus;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 
 public final class DrakeCaptureGoal extends Goal {
     public static final int RANGE = 128;
+    private static final Identifier OUTPOST = new Identifier("minecraft", "pillager_outpost");
+    private static final Identifier MANSION = new Identifier("minecraft", "mansion");
     public interface Captor { DrakeCaptureGoal sscExtras$captureGoal(); }
     private final PillagerEntity pillager;
     private DrakeStablePiece stable;
@@ -97,19 +103,41 @@ public final class DrakeCaptureGoal extends Goal {
 
     private static DrakeStablePiece findStable(ServerWorld world, BlockPos pos, int range, boolean useStableRange,
                                                java.util.function.Predicate<DrakeStablePiece> available) {
-        var outpost = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "pillager_outpost"));
-        var mansion = world.getRegistryManager().get(RegistryKeys.STRUCTURE).get(new Identifier("minecraft", "mansion"));
+        var structures = world.getRegistryManager().get(RegistryKeys.STRUCTURE);
+        var outpost = structures.get(OUTPOST);
+        var mansion = structures.get(MANSION);
+        var checkedOutposts = new LongOpenHashSet();
+        var checkedMansions = new LongOpenHashSet();
+        var pending = new LongLinkedOpenHashSet();
+        var starts = new ArrayList<net.minecraft.structure.StructureStart>();
         var checked = new HashSet<net.minecraft.structure.StructureStart>();
         var chunk = new ChunkPos(pos);
+        var center = Vec3d.ofCenter(pos);
+        var accessor = world.getStructureAccessor();
         DrakeStablePiece closest = null;
         double distance = Double.MAX_VALUE;
         int chunks = range / 16 + 1;
         for (int x = chunk.x - chunks; x <= chunk.x + chunks; x++) for (int z = chunk.z - chunks; z <= chunk.z + chunks; z++) {
             if (!world.isChunkLoaded(x, z)) continue;
-            for (var start : world.getStructureAccessor().getStructureStarts(new ChunkPos(x, z), structure -> structure == outpost || structure == mansion)) {
+            starts.clear();
+            var references = world.getChunk(x, z, ChunkStatus.STRUCTURE_REFERENCES).getStructureReferences();
+            // Deduplicate before resolving starts, retaining native reference order for equal-distance ties.
+            for (var entry : references.entrySet()) {
+                var structure = entry.getKey();
+                if (structure != outpost && structure != mansion) continue;
+                var seen = structure == outpost ? checkedOutposts : checkedMansions;
+                pending.clear();
+                var iterator = entry.getValue().iterator();
+                while (iterator.hasNext()) {
+                    long reference = iterator.nextLong();
+                    if (seen.add(reference)) pending.add(reference);
+                }
+                if (!pending.isEmpty()) accessor.acceptStructureStarts(structure, pending, starts::add);
+            }
+            for (var start : starts) {
                 if (!checked.add(start)) continue;
                 for (var piece : start.getChildren()) if (piece instanceof DrakeStablePiece candidate
-                        && (useStableRange ? near(candidate, Vec3d.ofCenter(pos)) : near(candidate.getBoundingBox(), Vec3d.ofCenter(pos), range))) {
+                        && (useStableRange ? near(candidate, center) : near(candidate.getBoundingBox(), center, range))) {
                     double next = candidate.getBoundingBox().getCenter().getSquaredDistance(pos);
                     if (next < distance && available.test(candidate)) { closest = candidate; distance = next; }
                 }

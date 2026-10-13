@@ -81,6 +81,7 @@
     "GuardianSleepWorldMixin",
     "GuardianPedestalSleepMixin",
     "GuardianCoreItemMixin",
+    "GuardianCoreLoadMixin",
     "GuardianCoreEntityMixin",
     "GuardianCoreContainerMixin",
     "GuardianMovementMixin",
