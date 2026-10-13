@@ -8,7 +8,7 @@ import sscextras.rituals.RitualStage;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ShoeFittingRitual extends AbstractRitual {
+public final class ShoeFittingRitual extends AbstractDrakeRitual {
     public ShoeFittingRitual(DrakeRitualCheckpoint checkpoint) { super(checkpoint, sequence()); }
     private static List<RitualStage<Context>> sequence() {
         var stages = new ArrayList<RitualStage<Context>>();

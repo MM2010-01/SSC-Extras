@@ -288,7 +288,7 @@ public final class DrakeSoulbinding {
             for (var id : claim.attendants) if (world.getEntity(id) instanceof LivingEntity actor) role(actor, 0);
             soulTicks(player, 0);
         }
-        var context = new AbstractRitual.Context(player, claim);
+        var context = new AbstractDrakeRitual.Context(player, claim);
         var result = run.advance(context, ready);
         if (ready) {
             ((State)player).sscExtras$soulAnimation(run.soulAnimation());
@@ -298,7 +298,7 @@ public final class DrakeSoulbinding {
         else if (result == sscextras.rituals.RitualStageRunner.Result.CANCELLED) cancel(player, claim);
     }
 
-    static AbstractRitual createRitual(DrakeOutpostOwnership.Claim claim, DrakeRituals.Type type) {
+    static AbstractDrakeRitual createRitual(DrakeOutpostOwnership.Claim claim, DrakeRituals.Type type) {
         if (claim.ritualCheckpoint == null || !claim.ritualCheckpoint.type.equals(type.command())) {
             if (claim.ritualRun != null) claim.ritualRun.finish();
             claim.ritualCheckpoint = new DrakeRitualCheckpoint(type.command());
@@ -394,7 +394,7 @@ public final class DrakeSoulbinding {
             }
         }
         pin(player, claim);
-        if (ready(player, claim)) claim.ritualRun.tickAction(new AbstractRitual.Context(player, claim));
+        if (ready(player, claim)) claim.ritualRun.tickAction(new AbstractDrakeRitual.Context(player, claim));
         else {
             claim.ritualRun.interruptAction();
             soulTicks(player, 0);
@@ -431,7 +431,7 @@ public final class DrakeSoulbinding {
     static ServerPlayerEntity attendee(PillagerEntity guard) {
         if (!(guard.getWorld() instanceof ServerWorld world)) return null;
         var owner = DrakeOutpostOwnership.get(world.getServer()).assignments().owner(guard.getUuid());
-        if (!(owner instanceof AbstractRitual run) || run.target() == null) return null;
+        if (!(owner instanceof AbstractDrakeRitual run) || run.target() == null) return null;
         return world.getEntity(run.target()) instanceof ServerPlayerEntity player ? player : null;
     }
 
@@ -446,7 +446,7 @@ public final class DrakeSoulbinding {
         releaseAttendance(player, claim);
     }
 
-    static void interruptEscort(ServerPlayerEntity player, AbstractRitual run) {
+    static void interruptEscort(ServerPlayerEntity player, AbstractDrakeRitual run) {
         var claim = DrakeOutpostOwnership.claim(player);
         if (claim == null || claim.ritualRun != run) return;
         claim.nextRitualAttempt = player.getServer().getOverworld().getTime() + 100;

@@ -8,7 +8,7 @@ import sscextras.rituals.RitualStage;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class SoulRitual extends AbstractRitual {
+public abstract class SoulRitual extends AbstractDrakeRitual {
     private final int bodyStage;
     private final String animationId;
     private final int returnAt, returnedAt;

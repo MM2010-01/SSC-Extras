@@ -5,20 +5,23 @@ import dev.onyxstudios.cca.api.v3.component.tick.ServerTickingComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import java.util.UUID;
+import java.util.Locale;
 
 /** Player-owned reserves and presentation; core identity and village service live in world saved data. */
 public final class GuardianState implements AutoSyncedComponent, ServerTickingComponent {
     public final PlayerEntity owner;
     public double energy = 100;
-    public boolean vision = true, overdrive, detached, protecting, flightGranted, deactivated;
+    public boolean vision = true, overdrive, detached, protecting, flightGranted, deactivated, statueMode;
     public float frozenYaw, frozenPitch;
     public int recoveryBlackout;
     public boolean recoveryHintPending;
-    public UUID repairer;
-    public int repairTicks;
+    public boolean traderRecoveryHint, canGiveUp, coreDeath;
+    GuardianRepairEvent repair;
     public String guardianName = "";
     public UUID coreId;
     public UUID loadingCoreId;
@@ -49,6 +52,37 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public void sync() { if (!owner.getWorld().isClient) GuardianComponents.KEY.sync(owner); }
     public boolean ritualRestrained() { return ritualTicks > 1 || ritualTicks == 1 && ritualGuideId != 0; }
 
+    public boolean toggleStatueMode() {
+        if (!(owner instanceof ServerPlayerEntity player) || RuneboundGuardian.stage(player) != 3
+                || !player.isAlive() || player.isSpectator() || player.isSleeping()
+                || detached || ritualTicks > 0 || player.hasVehicle() || player.hasPassengers()) return false;
+        if (!statueMode) {
+            var claim = GuardianVillages.claim(player);
+            if (claim == null || !claim.world.equals(player.getWorld().getRegistryKey())
+                    || !GuardianPedestal.standing(player) || !claim.pedestal.equals(GuardianPedestal.beneath(player))) return false;
+        }
+        statueMode = !statueMode;
+        if (statueMode) deactivate(player);
+        else if (energy >= 2 || player.isCreative()) deactivated = false;
+        systemMessage(player, statueMode ? "statue_on" : "statue_off");
+        if (!statueMode && deactivated) systemMessage(player, "power_empty");
+        sync();
+        return true;
+    }
+
+    private void deactivate(ServerPlayerEntity player) {
+        if (!deactivated) { frozenYaw = player.getYaw(); frozenPitch = player.getPitch(); }
+        deactivated = true; overdrive = false;
+        player.clearActiveItem(); player.closeHandledScreen(); player.setSprinting(false); player.setSneaking(false);
+        player.setVelocity(0, player.getVelocity().y, 0);
+        GuardianBodyPower.flight(player, false);
+        GuardianVillages.stopProtecting(player);
+    }
+
+    private void systemMessage(ServerPlayerEntity player, String line, Object... arguments) {
+        player.sendMessage(Text.translatable("message.ssc-extras.guardian." + line, arguments).formatted(Formatting.AQUA), false);
+    }
+
     @Override public void serverTick() {
         if (!(owner instanceof ServerPlayerEntity player)) return;
         GuardianEquipment.tick(player);
@@ -71,7 +105,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                 player.getHungerManager().setSaturationLevel(previousSaturation);
                 replacedHunger = false;
             }
-            if (stage < 3) { overdrive = false; deactivated = false; GuardianVillages.stopProtecting(player); }
+            if (stage < 3) { overdrive = false; deactivated = false; statueMode = false; GuardianVillages.stopProtecting(player); }
             if (stage < 2 && ritualTicks > 0) {
                 var village=GuardianVillages.claim(player);
                 if(village!=null) GuardianRitual.cancel(player,village);
@@ -96,6 +130,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
             if (village != null && village.ritualTicks > 0) GuardianRitual.tick(player, village);
             syncChanged(player); return;
         }
+        if (player.isSpectator()) statueMode = false;
         if (stage >= 2) {
             player.getHungerManager().setFoodLevel(20);
             player.getHungerManager().setSaturationLevel(0);
@@ -108,19 +143,20 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                 boolean pedestal = GuardianPedestal.standing(player);
                 if (!pedestal && !deactivated) spend(cost);
                 if (stage == 3 && energy <= 0 && !deactivated) {
-                    deactivated = true; overdrive = false;
-                    frozenYaw = player.getYaw(); frozenPitch = player.getPitch();
-                    player.clearActiveItem(); player.closeHandledScreen(); player.setSprinting(false);
-                    GuardianVillages.stopProtecting(player);
+                    deactivate(player);
+                    systemMessage(player, "power_empty");
                 }
                 if (GuardianBodyPower.sunlit(player) && (pedestal || stage == 3)) charge(pedestal ? .025 : .0125);
-                if (deactivated && energy >= 2) deactivated = false;
+                if (deactivated && !statueMode && energy >= 2) {
+                    deactivated = false;
+                    systemMessage(player, "power_online", (guardianName.isBlank() ? player.getName().getString() : guardianName).toUpperCase(Locale.ROOT));
+                }
                 if (energy <= 0) {
                     overdrive = false;
                     if (stage == 2 && !pedestal && player.age % 80 == 0 && player.getHealth() > 1)
                         player.setHealth(Math.max(1, player.getHealth() - 1));
                 }
-            } else deactivated = false;
+            } else deactivated = statueMode && !player.isSpectator();
             if (deactivated) {
                 player.setYaw(frozenYaw); player.setHeadYaw(frozenYaw); player.setPitch(frozenPitch);
                 player.bodyYaw = frozenYaw;
@@ -155,8 +191,11 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         vision = !nbt.contains("Vision") || nbt.getBoolean("Vision");
         overdrive = nbt.getBoolean("Overdrive"); detached = nbt.getBoolean("Detached");
         deactivated = nbt.getBoolean("Deactivated"); frozenYaw = nbt.getFloat("FrozenYaw"); frozenPitch = nbt.getFloat("FrozenPitch");
+        statueMode = nbt.getBoolean("StatueMode");
         recoveryBlackout = nbt.getInt("RecoveryBlackout");
         recoveryHintPending = nbt.getBoolean("RecoveryHintPending");
+        traderRecoveryHint = nbt.getBoolean("TraderRecoveryHint");
+        canGiveUp = nbt.getBoolean("CanGiveUp"); coreDeath = nbt.getBoolean("CoreDeath");
         flightGranted = nbt.getBoolean("FlightGranted");
         protecting = nbt.getBoolean("Protecting"); guardianName = nbt.getString("Name");
         coreId = nbt.containsUuid("Core") ? nbt.getUuid("Core") : null;
@@ -174,8 +213,11 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         nbt.putBoolean("FlightGranted", flightGranted);
         nbt.putBoolean("Detached", detached); nbt.putBoolean("Protecting", protecting); nbt.putString("Name", guardianName);
         nbt.putBoolean("Deactivated", deactivated); nbt.putFloat("FrozenYaw", frozenYaw); nbt.putFloat("FrozenPitch", frozenPitch);
+        nbt.putBoolean("StatueMode", statueMode);
         nbt.putInt("RecoveryBlackout", recoveryBlackout);
         nbt.putBoolean("RecoveryHintPending", recoveryHintPending);
+        nbt.putBoolean("TraderRecoveryHint", traderRecoveryHint);
+        nbt.putBoolean("CanGiveUp", canGiveUp); nbt.putBoolean("CoreDeath", coreDeath);
         if (coreId != null) nbt.putUuid("Core", coreId);
         nbt.putInt("RitualTicks", ritualTicks); nbt.putInt("WeatherTicks", weatherTicks);
         nbt.putInt("RitualGuide", ritualGuideId);

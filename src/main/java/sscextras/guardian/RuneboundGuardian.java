@@ -19,6 +19,7 @@ import net.onixary.shapeShifterCurseFabric.status_effects.transformative_effects
 import net.onixary.shapeShifterCurseFabric.status_effects.transformative_effects.TransformativeStatusPotion;
 
 public final class RuneboundGuardian {
+    public static final Identifier STATUE_TOGGLE = id("guardian_statue_toggle");
     public static final PlayerFormBase[] FORMS = new PlayerFormBase[4];
     public static final PlayerFormGroup GROUP;
     public static final BaseTransformativeStatusEffect CURSE;
@@ -53,6 +54,8 @@ public final class RuneboundGuardian {
     public static boolean construct(PlayerEntity player) { return stage(player) >= 2; }
 
     public static void register() {
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(STATUE_TOGGLE,
+                (server, player, handler, buffer, sender) -> server.execute(() -> state(player).toggleStatueMode()));
         var body = GuardianBodyPower.factory();
         Registry.register(ApoliRegistries.POWER_FACTORY, body.getSerializerId(), body);
         var ability = GuardianAbilityPower.factory();

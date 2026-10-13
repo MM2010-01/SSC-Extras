@@ -1,8 +1,8 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "SCS",
-    "BAB",
+    "SSS",
+    "ICI",
     "SSS"
   ],
   "key": {
@@ -10,13 +10,10 @@
       "item": "minecraft:stone_bricks"
     },
     "C": {
-      "item": "minecraft:chiseled_stone_bricks"
+      "item": "minecraft:copper_ingot"
     },
-    "B": {
-      "item": "minecraft:stone_brick_slab"
-    },
-    "A": {
-      "item": "minecraft:amethyst_shard"
+    "I": {
+      "item": "minecraft:iron_ingot"
     }
   },
   "result": {

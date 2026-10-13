@@ -5,6 +5,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public final class RitualProgress {
@@ -17,6 +18,24 @@ public final class RitualProgress {
     public int elapsed() { return elapsed; }
     public boolean finished() { return finished; }
     public boolean completed(String id) { return completed.contains(id); }
+
+    /** Import a legacy linear timeline whose crossed boundaries already committed their effects. */
+    public static RitualProgress fromTimeline(List<? extends RitualStage<?>> stages, int ticks) {
+        if (stages.isEmpty() || ticks < 0) throw new IllegalArgumentException("Invalid legacy ritual timeline");
+        var ids = new HashSet<String>();
+        for (var stage : stages)
+            if (stage.duration() <= 0 || !ids.add(stage.id())) throw new IllegalArgumentException("Timeline migration requires distinct, positive-duration stages");
+        var progress = new RitualProgress();
+        for (var stage : stages) {
+            progress.stage = stage.id();
+            progress.elapsed = Math.min(ticks, stage.duration());
+            if (ticks < stage.duration()) return progress;
+            progress.completed.add(stage.id());
+            ticks -= stage.duration();
+        }
+        progress.finished = true;
+        return progress;
+    }
 
     public NbtCompound write() {
         var tag = new NbtCompound();

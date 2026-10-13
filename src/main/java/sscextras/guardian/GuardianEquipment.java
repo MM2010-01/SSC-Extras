@@ -164,13 +164,19 @@ public final class GuardianEquipment {
     public static void rememberDeath(PlayerEntity player) {
         if (player instanceof ServerPlayerEntity server) GuardianVillages.stopRepair(server);
         var state = RuneboundGuardian.state(player);
-        state.soulboundStage = complete(player) ? -1 : -2;
+        state.soulboundStage = complete(player) || RuneboundGuardian.stage(player) >= 0 ? -1 : -2;
         if (complete(player)) enchantSet(player);
     }
     public static void respawn(ServerPlayerEntity oldPlayer, ServerPlayerEntity player, boolean alive) {
-        int stage = RuneboundGuardian.state(oldPlayer).soulboundStage;
-        if (alive || stage < -1) return;
+        var oldState = RuneboundGuardian.state(oldPlayer);
+        if (alive || oldState.soulboundStage < -1 && !oldState.coreDeath) return;
+        if (oldState.coreDeath) {
+            GuardianCores.revert(player);
+            var data = GuardianWorldState.get(player.getServer());
+            data.villages.remove(player.getUuid()); data.markDirty();
+        }
         FormAbilityManager.applyForm(player, RegPlayerForms.ORIGINAL_SHIFTER);
+        RuneboundGuardian.state(player).coreDeath = false;
         RuneboundGuardian.state(player).soulboundStage = -2;
         applyCurse(player);
         // The next player tick enforces the boundary after the connection points at the new player.

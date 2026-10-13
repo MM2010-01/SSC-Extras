@@ -4,16 +4,15 @@ import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Vec3d;
-import sscextras.events.EventAssignments;
-import sscextras.events.NpcEvent;
 import sscextras.rituals.RitualComposition;
 import sscextras.rituals.RitualStage;
 import sscextras.rituals.RitualStageRunner;
+import sscextras.rituals.AbstractRitual;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class AbstractRitual extends NpcEvent {
+public abstract class AbstractDrakeRitual extends AbstractRitual<AbstractDrakeRitual.Context> {
     public record Context(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim) {
         public PillagerEntity actor(int index) {
             return (PillagerEntity)player.getServerWorld().getEntity(claim.attendants.get(index));
@@ -21,13 +20,11 @@ public abstract class AbstractRitual extends NpcEvent {
     }
     private static final RitualComposition THREE_ENFORCERS = RitualComposition.threeEnforcers();
     protected final DrakeRitualCheckpoint checkpoint;
-    protected final RitualStageRunner<Context> stages;
-    private EventAssignments assignments;
     private UUID target;
 
-    protected AbstractRitual(DrakeRitualCheckpoint checkpoint, List<RitualStage<Context>> stages) {
+    protected AbstractDrakeRitual(DrakeRitualCheckpoint checkpoint, List<RitualStage<Context>> stages) {
+        super(stages, checkpoint.stages);
         this.checkpoint = checkpoint;
-        this.stages = new RitualStageRunner<>(stages, checkpoint.stages);
     }
     public RitualComposition composition() { return THREE_ENFORCERS; }
     public UUID target() { return target; }
@@ -50,15 +47,13 @@ public abstract class AbstractRitual extends NpcEvent {
         if (status() == Status.FINISHED || claim.attendants.size() != composition().size()) return false;
         var owners = DrakeOutpostOwnership.get(player.getServer()).assignments();
         var participants = new ArrayList<>(claim.attendants); participants.add(player.getUuid());
-        if (!owners.acquire(this, participants)) return false;
-        assignments = owners; target = player.getUuid(); stages.resume();
+        if (!reserve(owners, participants)) return false;
+        target = player.getUuid(); stages.resume();
         return true;
     }
     public boolean replace(UUID previous, UUID replacement) {
-        if (assignments == null || !assignments.acquire(this, List.of(replacement))) return false;
-        assignments.release(this, previous); return true;
+        return replaceParticipant(previous, replacement);
     }
-    @Override protected void release() { if (assignments != null) assignments.release(this); }
 
     public Vec3d position(DrakeOutpostOwnership.Claim claim, int index) {
         return composition().position(DrakeSoulbinding.hayPosition(claim), DrakeStableLayout.inward(claim.stable, claim.gate()), index);

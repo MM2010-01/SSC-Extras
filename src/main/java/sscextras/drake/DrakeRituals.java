@@ -9,8 +9,8 @@ import java.util.function.Function;
 
 public final class DrakeRituals {
     public record Type(String command, BiPredicate<ServerPlayerEntity, DrakeOutpostOwnership.Claim> due,
-            Function<DrakeRitualCheckpoint, AbstractRitual> factory) {
-        public AbstractRitual create(DrakeRitualCheckpoint checkpoint) { return factory.apply(checkpoint); }
+            Function<DrakeRitualCheckpoint, AbstractDrakeRitual> factory) {
+        public AbstractDrakeRitual create(DrakeRitualCheckpoint checkpoint) { return factory.apply(checkpoint); }
     }
     private static final Map<String, Type> TYPES = new LinkedHashMap<>();
     public static final Type IRON_DRAKE_SHOE_FITTING = register(new Type("irondrakeshoefitting", (p, c) -> c.shoeingDue, ShoeFittingRitual::new));

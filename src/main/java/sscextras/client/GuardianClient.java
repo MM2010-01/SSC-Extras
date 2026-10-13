@@ -65,6 +65,9 @@ public final class GuardianClient {
             var player = client.player;
             if (player == null) return;
             var state = RuneboundGuardian.state(player);
+            boolean giveUp = player.isAlive() && state.detached && state.canGiveUp && state.ritualTicks == 0;
+            if (giveUp && client.currentScreen == null) client.setScreen(new GuardianCoreScreen());
+            else if (!giveUp && client.currentScreen instanceof GuardianCoreScreen) client.setScreen(null);
             if (state.deactivated) {
                 player.setYaw(state.frozenYaw); player.setHeadYaw(state.frozenYaw); player.setPitch(state.frozenPitch);
                 player.bodyYaw = state.frozenYaw;

@@ -40,9 +40,9 @@ public final class GuardianVillages {
     public static void bind(ServerPlayerEntity player, BlockPos pos) {
         var data = GuardianWorldState.get(player.getServer());
         var world = player.getServerWorld();
-        if (!GuardianPedestal.intact(world, pos) || !world.isNearOccupiedPointOfInterest(pos) || villagers(world, pos).size() < 3) {
-            player.sendMessage(Text.translatable("message.ssc-extras.guardian.village_required"), true); return;
-        }
+        if (RuneboundGuardian.stage(player) < 0 || !player.isAlive() || player.isSpectator()
+                || GuardianCombat.locked(player) || !GuardianPedestal.intact(world, pos)
+                || world.getBlockState(pos).get(GuardianPedestal.OFFERING)) return;
         for (var entry : data.villages.entrySet()) if (!entry.getKey().equals(player.getUuid())
                 && entry.getValue().world.equals(world.getRegistryKey()) && entry.getValue().pedestal.equals(pos)) {
             player.sendMessage(Text.translatable("message.ssc-extras.guardian.pedestal_taken"), true); return;
@@ -51,11 +51,9 @@ public final class GuardianVillages {
         if (old != null && old.world.equals(world.getRegistryKey()) && old.pedestal.equals(pos)) {
             player.sendMessage(Text.translatable("message.ssc-extras.guardian.service", old.serviceTicks / 24000, 10), true); return;
         }
-        if (old != null && GuardianEquipment.confined(player)) {
-            player.sendMessage(Text.translatable("message.ssc-extras.guardian.cuffs_boundary", GuardianEquipment.RANGE), true); return;
-        }
         var village = new GuardianWorldState.Village(); village.world = world.getRegistryKey(); village.pedestal = pos.toImmutable();
         GuardianDialogue.stop(player);
+        if (old != null && old.ritualTicks > 0) GuardianRitual.cancel(player, old);
         data.villages.put(player.getUuid(), village); data.markDirty();
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.pedestal_bound"), true);
     }
@@ -109,7 +107,7 @@ public final class GuardianVillages {
             }
         }
         GuardianDialogue.tick(player);
-        repair(player);
+        GuardianRepairEvent.update(player);
         if (!InstinctTicker.isPausing && stage < 3 && !player.isCreative() && !player.isSpectator() && player.age % 100 == 0) {
             if (inVillage(player)) InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_GUARDIAN_VILLAGE", .1f);
             if (GuardianPedestal.standing(player)) InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_GUARDIAN_PEDESTAL", .2f);
@@ -140,6 +138,7 @@ public final class GuardianVillages {
                 && player.getWorld().getRegistryKey().equals(village.world) && GuardianEquipment.complete(player)
                 && player.squaredDistanceTo(GuardianPedestal.position(village.pedestal)) <= GuardianEquipment.RANGE * GuardianEquipment.RANGE
                 && GuardianPedestal.intact(player.getWorld(), village.pedestal)
+                && player.getServerWorld().isNearOccupiedPointOfInterest(village.pedestal)
                 && villagers(player.getServerWorld(), village.pedestal).size() >= 3;
     }
     public static void updateService(ServerPlayerEntity player, GuardianWorldState.Village village) {
@@ -165,42 +164,8 @@ public final class GuardianVillages {
         }
     }
     public static void stopRepair(ServerPlayerEntity player) {
-        var state = RuneboundGuardian.state(player);
-        if (state.repairer != null) for (var world : player.getServer().getWorlds())
-            if (world.getEntity(state.repairer) instanceof VillagerEntity worker) GuardianRitual.releaseWorker(worker);
-        state.repairer = null; state.repairTicks = 0;
-    }
-    private static void repair(ServerPlayerEntity player) {
-        var state = RuneboundGuardian.state(player);
-        var world = player.getServerWorld();
-        var worker = state.repairer == null ? null : world.getEntity(state.repairer) instanceof VillagerEntity v ? v : null;
-        boolean needed = RuneboundGuardian.stage(player) >= 1 && world.isDay() && player.isAlive()
-                && !state.detached && state.ritualTicks == 0 && player.getHealth() < player.getMaxHealth();
-        if (!needed || worker != null && (!worker.isAlive() || player.squaredDistanceTo(worker) > 32 * 32)) {
-            if (worker != null) GuardianRitual.releaseWorker(worker);
-            state.repairer = null; state.repairTicks = 0; return;
-        }
-        if (worker == null && player.age % 40 == 0) {
-            worker = world.getEntitiesByClass(VillagerEntity.class, player.getBoundingBox().expand(16),
-                    v -> v.isAlive() && !v.isBaby() && !v.isAiDisabled() && !v.isSleeping() && v.getMainHandStack().isEmpty() && !GuardianRitual.assigned(v))
-                    .stream().min(Comparator.comparingDouble(v -> v.squaredDistanceTo(player))).orElse(null);
-            if (worker != null) {
-                state.repairer = worker.getUuid(); worker.addCommandTag("ssc_extras_guardian_repair"); worker.addCommandTag("ssc_extras_guardian_worker");
-                var cobble = new net.minecraft.item.ItemStack(net.minecraft.item.Items.COBBLESTONE);
-                cobble.getOrCreateNbt().putBoolean("GuardianProp", true);
-                worker.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, cobble);
-                worker.setEquipmentDropChance(net.minecraft.entity.EquipmentSlot.MAINHAND, 0);
-            }
-        }
-        if (worker == null) return;
-        if (worker.squaredDistanceTo(player) > 6.25) { GuardianRitual.walk(worker, player.getPos(), .8); state.repairTicks = 0; return; }
-        worker.getNavigation().stop(); worker.getLookControl().lookAt(player);
-        if (++state.repairTicks % 40 == 0) {
-            worker.swingHand(net.minecraft.util.Hand.MAIN_HAND); player.heal(2);
-            world.playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_IRON_GOLEM_REPAIR,
-                    net.minecraft.sound.SoundCategory.NEUTRAL, .7f, 1);
-            world.spawnParticles(net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER, player.getX(), player.getY() + 1, player.getZ(), 4, .5, .5, .5, 0);
-        }
+        var event = RuneboundGuardian.state(player).repair;
+        if (event != null) event.finish();
     }
     private static void sendVision(ServerPlayerEntity player) {
         var entries = threats(player.getServerWorld()).stream().filter(t -> t.expires >= player.getWorld().getTime()).toList();
@@ -214,6 +179,11 @@ public final class GuardianVillages {
             if(entity instanceof VillagerEntity villager && villager.getCommandTags().contains("ssc_extras_guardian_worker"))
                 GuardianRitual.releaseWorker(villager);
         });
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            var event = sscextras.drake.DrakeOutpostOwnership.get(world.getServer()).assignments().owner(entity.getUuid());
+            if (event instanceof GuardianCoreRecoveryEvent recovery) recovery.suspend();
+            else if (event instanceof GuardianRepairEvent repair) repair.finish();
+        });
         ServerTickEvents.START_WORLD_TICK.register(world -> {
             if (world.getTime() % 20 != 0 || world.getPlayers().stream().noneMatch(p -> RuneboundGuardian.stage(p) >= 2)) return;
             threats(world).removeIf(threat -> threat.expires < world.getTime());
@@ -223,6 +193,12 @@ public final class GuardianVillages {
                     if (seen.add(mob.getUuid()) && mob.getTarget() instanceof VillagerEntity villager) harmed(villager, mob);
         });
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (entity instanceof ServerPlayerEntity player) {
+                var village = claim(player);
+                if (village != null && village.ritualTicks > 0) GuardianRitual.cancel(player, village);
+                GuardianRecovery.stop(player); stopRepair(player);
+                return;
+            }
             if (!(entity instanceof VillagerEntity) || !(entity.getWorld() instanceof ServerWorld world)) return;
             var data = GuardianWorldState.get(world.getServer());
             data.villages.forEach((owner, village) -> {
@@ -242,8 +218,7 @@ public final class GuardianVillages {
             stopProtecting(handler.player); GuardianRitual.stopEscort(handler.player);
             var village=claim(handler.player);
             var state = RuneboundGuardian.state(handler.player);
-            if (state.repairer != null && handler.player.getServerWorld().getEntity(state.repairer) instanceof VillagerEntity worker)
-                GuardianRitual.releaseWorker(worker);
+            stopRepair(handler.player);
             if (village != null) { village.lastServiceTick = Long.MIN_VALUE; village.eligible = false; }
             if(village!=null && (village.ritualTicks>0||village.rebuildTicks>0)) GuardianRitual.suspend(handler.player,village);
         });

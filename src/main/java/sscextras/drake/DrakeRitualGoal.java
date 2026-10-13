@@ -50,7 +50,7 @@ public final class DrakeRitualGoal extends Goal {
         var body = pillager.getRootVehicle();
         navigation.open(claim.gate());
         pillager.getLookControl().lookAt(player, 30, 30);
-        var context = new AbstractRitual.Context(player, claim);
+        var context = new AbstractDrakeRitual.Context(player, claim);
         ((DrakeFaction.EquipmentDisplay)pillager).sscExtras$showEquipment(DrakeSoulbinding.restrained(player)
                 ? run.displayedItem(context, index) : run.holds(index) ? new ItemStack(Items.LEAD) : ItemStack.EMPTY);
         if (DrakeSoulbinding.restrained(player)) {

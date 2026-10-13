@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRe
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.block.entity.BlockEntity;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public final class GuardianCores {
+    public static final net.minecraft.util.Identifier GIVE_UP = RuneboundGuardian.id("guardian_give_up");
     public static final Item INACTIVE_CORE = new Item(new Item.Settings().maxCount(16));
     public static final GolemCoreItem CORE = new GolemCoreItem();
     public static final EntityType<GuardianShellEntity> SHELL = FabricEntityTypeBuilder.create(SpawnGroup.MISC, GuardianShellEntity::new)
@@ -44,6 +46,8 @@ public final class GuardianCores {
     private GuardianCores() { }
 
     public static void register() {
+        ServerPlayNetworking.registerGlobalReceiver(GIVE_UP, (server, player, handler, buffer, sender) ->
+                server.execute(() -> GuardianRecovery.giveUp(player)));
         Registry.register(Registries.ITEM, RuneboundGuardian.id("inactive_golem_core"), INACTIVE_CORE);
         Registry.register(Registries.ITEM, RuneboundGuardian.id("golem_core"), CORE);
         Registry.register(Registries.ENTITY_TYPE, RuneboundGuardian.id("guardian_shell"), SHELL);
@@ -72,7 +76,7 @@ public final class GuardianCores {
             occupy(soul, shell, shell.core); return ActionResult.SUCCESS;
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            removeAnchor(handler.player); GuardianRitual.stopRecovery(handler.player);
+            removeAnchor(handler.player); GuardianRecovery.suspend(handler.player);
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> updateSlot(handler.player));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> updateSlot(newPlayer));
@@ -100,6 +104,14 @@ public final class GuardianCores {
             if (amount != 0) inventory.addPersistentModifier(new EntityAttributeModifier(SLOT_VISIBILITY,
                     "Guardian core slot", amount, EntityAttributeModifier.Operation.ADDITION));
             inventory.update();
+            if (player instanceof ServerPlayerEntity serverPlayer && serverPlayer.networkHandler != null) {
+                var buffer = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+                var updates = new NbtCompound(); updates.put("chest/core", inventory.getSyncTag());
+                buffer.writeInt(player.getId()); buffer.writeNbt(updates); buffer.writeNbt(new NbtCompound());
+                ServerPlayNetworking.send(serverPlayer, dev.emi.trinkets.TrinketsNetwork.SYNC_INVENTORY, buffer);
+            }
+            if (player.playerScreenHandler instanceof dev.emi.trinkets.TrinketPlayerScreenHandler handler)
+                handler.trinkets$updateTrinketSlots(false);
         });
     }
 
@@ -154,6 +166,7 @@ public final class GuardianCores {
     }
 
     public static void tick(ServerPlayerEntity player) {
+        if (!player.isAlive()) return;
         var state = RuneboundGuardian.state(player);
         if (state.detached && record(player) == null) {
             restoreControl(player, null);
@@ -186,7 +199,7 @@ public final class GuardianCores {
         }
         follow(player, record);
         var claim = GuardianVillages.claim(player);
-        if (claim == null || claim.ritualTicks == 0) GuardianRitual.rebuild(player, claim);
+        if (claim == null || claim.ritualTicks == 0) GuardianRecovery.tick(player, claim);
     }
 
     public static GuardianShellEntity detach(ServerPlayerEntity player, boolean broken) {
@@ -215,8 +228,10 @@ public final class GuardianCores {
                 var claim = GuardianVillages.claim(player);
                 if (claim != null) { claim.body = shell.getUuid(); claim.bodyPos = shell.getBlockPos(); claim.recoveryTicks = 0; }
             }
-            state.detached = true; state.overdrive = false; state.protecting = false; state.deactivated = false;
+            state.detached = true; state.overdrive = false; state.protecting = false; state.deactivated = false; state.statueMode = false;
             state.recoveryHintPending = false;
+            state.traderRecoveryHint = false; state.canGiveUp = false; state.coreDeath = false;
+            record.traderTicks = 0; record.traderReturned = false;
             record.previousMode = player.interactionManager.getGameMode().getName();
             player.setHealth(Math.max(1, player.getMaxHealth())); player.clearStatusEffects(); player.extinguish();
             player.changeGameMode(GameMode.SPECTATOR); player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
@@ -241,14 +256,15 @@ public final class GuardianCores {
                 || !shell.isAlive() || shell.work() != 0 || !shell.core.isEmpty() && !record.id.equals(id(shell.core))
                 || !TRANSFERRING.add(player.getUuid())) return false;
         try {
-            GuardianRitual.stopRecovery(player);
+            GuardianRecovery.stop(player);
             var state = RuneboundGuardian.state(player);
             player.setCameraEntity(player); removeAnchor(player);
             player.teleport((ServerWorld)shell.getWorld(), shell.getX(), shell.getY(), shell.getZ(), shell.getYaw(), 0);
             FormAbilityManager.applyForm(player, RuneboundGuardian.FORMS[3]);
             player.getInventory().readNbt(shell.inventory); restoreAccessories(player, shell.accessories);
             if (!equip(player, core.copyWithCount(1))) return false;
-            state.detached = false; state.deactivated = false; state.energy = Math.min(200, shell.energy); state.weatherTicks = shell.weatherTicks;
+            state.detached = false; state.deactivated = false; state.statueMode = false; state.energy = Math.min(200, shell.energy); state.weatherTicks = shell.weatherTicks;
+            state.canGiveUp = false;
             state.guardianName = record.name; state.ritualTicks = 0;
             player.changeGameMode(GameMode.byName(record.previousMode, GameMode.SURVIVAL));
             player.setHealth(Math.min(player.getMaxHealth(), Math.max(1, shell.getHealth()))); player.fallDistance = 0;
@@ -256,8 +272,10 @@ public final class GuardianCores {
             shell.inventory = new NbtList(); shell.accessories = new NbtList(); shell.core = ItemStack.EMPTY; shell.discard();
             if (state.recoveryHintPending) {
                 state.recoveryHintPending = false;
-                player.sendMessage(Text.translatable("message.ssc-extras.guardian.blackout_recovery"), false);
+                player.sendMessage(Text.translatable("message.ssc-extras.guardian."
+                        + (state.traderRecoveryHint ? "trader_village" : "blackout_recovery")), false);
             }
+            state.traderRecoveryHint = false;
             state.sync(); refreshName(player); player.currentScreenHandler.syncState(); player.sendAbilitiesUpdate();
             var claim = GuardianVillages.claim(player); if (claim != null) { claim.body = null; claim.bodyPos = null; claim.rebuildTicks = claim.recoveryTicks = 0; }
             return true;
@@ -357,15 +375,16 @@ public final class GuardianCores {
             var player = server.getPlayerManager().getPlayer(record.owner); if (player != null) destroyOwner(player);
         }, 0);
     }
-    private static void destroyOwner(ServerPlayerEntity player) {
+    static void destroyOwner(ServerPlayerEntity player) {
         var record = record(player); if (record == null) return;
         restoreControl(player, record);
+        RuneboundGuardian.state(player).coreDeath = true;
         RuneboundGuardian.state(player).sync();
         // Keep the destroyed record through ALLOW_DEATH so true core death cannot break another body.
         player.damage(player.getDamageSources().genericKill(), Float.MAX_VALUE);
     }
     private static void invalidate(ServerPlayerEntity player) {
-        GuardianRitual.stopRecovery(player);
+        GuardianRecovery.stop(player);
         var record = record(player);
         if (record != null) {
             record.destroyed = true; GuardianWorldState.get(player.getServer()).markDirty();
@@ -377,18 +396,22 @@ public final class GuardianCores {
         state.sync(); refreshName(player);
     }
     private static void restoreControl(ServerPlayerEntity player, GuardianWorldState.Core record) {
+        var village = GuardianVillages.claim(player);
+        if (village != null && village.ritualTicks > 0) GuardianRitual.cancel(player, village);
+        GuardianRecovery.stop(player);
         var state = RuneboundGuardian.state(player);
         if (state.detached) {
             player.setCameraEntity(player); removeAnchor(player);
             if (player.isSpectator()) player.changeGameMode(GameMode.byName(record == null ? "survival" : record.previousMode, GameMode.SURVIVAL));
             player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
         }
-        state.detached = false; state.deactivated = false; state.ritualTicks = 0; state.ritualGuideId = 0;
+        state.detached = false; state.deactivated = false; state.statueMode = false; state.ritualTicks = 0; state.ritualGuideId = 0;
         state.recoveryBlackout = 0; state.recoveryHintPending = false;
+        state.traderRecoveryHint = false; state.canGiveUp = false;
     }
     public static void revert(ServerPlayerEntity player) {
         var state = RuneboundGuardian.state(player); var record = record(player);
-        GuardianRitual.stopRecovery(player);
+        GuardianRecovery.stop(player);
         restoreControl(player, record);
         if (record != null) record.destroyed = true;
         state.coreId = null; state.guardianName = "";

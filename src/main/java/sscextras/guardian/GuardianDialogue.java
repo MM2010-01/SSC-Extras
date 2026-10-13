@@ -34,7 +34,8 @@ public final class GuardianDialogue {
         if ((!offer && !reminder) || village.serviceTicks >= GuardianWorldState.SERVICE_TICKS
                 || world != player.getWorld() || player.isSleeping()
                 || player.squaredDistanceTo(GuardianPedestal.position(village.pedestal)) > GuardianEquipment.RANGE * GuardianEquipment.RANGE
-                || !GuardianPedestal.intact(world, village.pedestal)) {
+                || !GuardianPedestal.intact(world, village.pedestal)
+                || !world.isNearOccupiedPointOfInterest(village.pedestal)) {
             stop(player); return;
         }
         var speaker = village.speaker == null ? null : world.getEntity(village.speaker) instanceof VillagerEntity v ? v : null;

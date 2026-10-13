@@ -56,7 +56,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         DrakeRituals.Type commandRitual;
         int shoeingStage;
         public DrakeRitualCheckpoint ritualCheckpoint;
-        AbstractRitual ritualRun;
+        AbstractDrakeRitual ritualRun;
         boolean ritualUnavailable;
         long nextRitualAttempt;
         public int soulboundStage = 3;
@@ -90,7 +90,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     private final Map<UUID, Claim> mounts = new LinkedHashMap<>();
     private final sscextras.events.EventAssignments assignments = new sscextras.events.EventAssignments();
-    sscextras.events.EventAssignments assignments() { return assignments; }
+    public sscextras.events.EventAssignments assignments() { return assignments; }
     private final Map<GlobalPos, String> pendingSigns = new LinkedHashMap<>();
     private final java.util.Set<GlobalPos> vacantResidents = new java.util.LinkedHashSet<>();
     private final Map<UUID, java.util.Set<GlobalPos>> introductions = new LinkedHashMap<>();

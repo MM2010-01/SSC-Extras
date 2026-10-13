@@ -22,11 +22,13 @@ public final class GolemCoreItem extends AccessoryItem {
     }
     @Override public boolean canUnequip(ItemStack stack, LivingEntity entity, SlotData slot) { return true; }
     @Override public Text getName(ItemStack stack) {
+        if (stack.hasNbt() && stack.getNbt().getBoolean("Abandoned")) return Text.translatable("item.ssc-extras.abandoned_golem_core");
         return stack.hasNbt() && stack.getNbt().contains("GuardianName")
                 ? Text.translatable("item.ssc-extras.named_golem_core", stack.getNbt().getString("GuardianName")) : super.getName(stack);
     }
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> lines, TooltipContext context) {
-        lines.add(Text.translatable("tooltip.ssc-extras.golem_core"));
+        lines.add(Text.translatable(stack.hasNbt() && stack.getNbt().getBoolean("Abandoned")
+                ? "tooltip.ssc-extras.abandoned_golem_core" : "tooltip.ssc-extras.golem_core"));
     }
-    @Override public boolean hasGlint(ItemStack stack) { return GuardianCores.id(stack) != null; }
+    @Override public boolean hasGlint(ItemStack stack) { return GuardianCores.id(stack) != null && !stack.getNbt().getBoolean("Abandoned"); }
 }
