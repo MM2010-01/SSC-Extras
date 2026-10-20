@@ -43,6 +43,7 @@ public final class GuardianShellEntity extends PathAwareEntity {
     public void work(int value) { dataTracker.set(WORK, value); }
     public boolean weathered() { return dataTracker.get(WEATHERED); }
     @Override public boolean isPushable() { return false; }
+    @Override public boolean isInsideWall() { return work() == 0 && super.isInsideWall(); }
     @Override public boolean canImmediatelyDespawn(double distance) { return false; }
     @Override public void tick() {
         super.tick();

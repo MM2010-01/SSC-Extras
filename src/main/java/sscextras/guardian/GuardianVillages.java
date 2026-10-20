@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -69,7 +70,38 @@ public final class GuardianVillages {
     }
     public static void harmed(VillagerEntity villager, Entity attacker) {
         if (!(villager.getWorld() instanceof ServerWorld world) || !(attacker instanceof LivingEntity)) return;
-        THREATS.computeIfAbsent(world, key -> new HashMap<>()).put(villager.getUuid(), new Threat(villager.getUuid(), attacker.getUuid(), world.getTime() + 100));
+        rememberThreat(world, villager, attacker);
+        if (attacker instanceof MobEntity mob) {
+            var target = redirectTarget(mob, villager);
+            if (target != villager) {
+                mob.setTarget(target);
+                if (mob.getBrain().hasMemoryModuleWithValue(MemoryModuleType.ATTACK_TARGET, villager))
+                    mob.getBrain().remember(MemoryModuleType.ATTACK_TARGET, target);
+            }
+        }
+    }
+    public static boolean activeGuardian(ServerPlayerEntity player) {
+        return RuneboundGuardian.stage(player) == 3 && player.isAlive() && !player.isCreative()
+                && !player.isSpectator() && !player.isSleeping() && !GuardianCombat.locked(player)
+                && RuneboundGuardian.state(player).energy > 0;
+    }
+    public static LivingEntity redirectTarget(MobEntity attacker, LivingEntity target) {
+        if (!(target instanceof VillagerEntity villager) || !villager.isAlive() || !attacker.isAlive()
+                || !(attacker.getWorld() instanceof ServerWorld world)) return target;
+        var guardian = world.getPlayers().stream().filter(player -> activeGuardian(player)
+                && player.squaredDistanceTo(villager) <= RADIUS * RADIUS
+                && player.squaredDistanceTo(attacker) <= RADIUS * RADIUS
+                && !attacker.isTeammate(player) && attacker.canTarget(player)
+                && player.canSee(villager) && attacker.canSee(player))
+                .min(Comparator.comparingDouble((ServerPlayerEntity player) -> player.squaredDistanceTo(attacker))
+                        .thenComparing(Entity::getUuid)).orElse(null);
+        if (guardian == null) return target;
+        rememberThreat(world, villager, attacker);
+        return guardian;
+    }
+    private static void rememberThreat(ServerWorld world, VillagerEntity villager, Entity attacker) {
+        THREATS.computeIfAbsent(world, key -> new HashMap<>()).put(villager.getUuid(),
+                new Threat(villager.getUuid(), attacker.getUuid(), world.getTime() + 100));
     }
     private static Collection<Threat> threats(ServerWorld world) {
         return THREATS.computeIfAbsent(world, key -> new HashMap<>()).values();
@@ -190,7 +222,15 @@ public final class GuardianVillages {
             Set<UUID> seen = new HashSet<>();
             for (var player : world.getPlayers()) if (RuneboundGuardian.stage(player) >= 2)
                 for (var mob : world.getEntitiesByClass(MobEntity.class, player.getBoundingBox().expand(64), Entity::isAlive))
-                    if (seen.add(mob.getUuid()) && mob.getTarget() instanceof VillagerEntity villager) harmed(villager, mob);
+                    if (seen.add(mob.getUuid())) {
+                        var target = mob.getTarget();
+                        if (target == null && mob.getBrain().hasMemoryModule(MemoryModuleType.ATTACK_TARGET))
+                            target = mob.getBrain().getOptionalMemory(MemoryModuleType.ATTACK_TARGET).orElse(null);
+                        if (target instanceof VillagerEntity villager) harmed(villager, mob);
+                    }
+            for (var player : world.getPlayers()) if (RuneboundGuardian.stage(player) == 3)
+                for (var villager : villagers(world, player.getBlockPos()))
+                    GuardianVillagerProtection.get(villager).sample(villager, player);
         });
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayerEntity player) {

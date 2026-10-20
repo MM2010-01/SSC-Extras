@@ -38,6 +38,9 @@ public final class MountMerchants {
     public static void register() {
         FabricDefaultAttributeRegistry.register(MERCHANT, net.minecraft.entity.mob.PillagerEntity.createPillagerAttributes());
         FabricDefaultAttributeRegistry.register(BUYER, net.minecraft.entity.mob.PillagerEntity.createPillagerAttributes());
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_WORLD_TICK.register(world -> {
+            if (world.getServer().getTicks() % 20 == 0) MountMarket.get(world.getServer()).tickVacancies(world);
+        });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
             if (entity instanceof MountMerchantEntity merchant) merchant.interrupt();
             if (entity instanceof MountBuyerEntity buyer) buyer.interrupt();

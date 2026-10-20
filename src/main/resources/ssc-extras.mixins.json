@@ -4,6 +4,8 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "GuardianVillagerTradeMixin",
+    "GuardianTargetMixin",
     "GuardianSpawnerAccessor",
     "GuardianFormRespawnMixin",
     "DrakeShoesPlayerMixin",
@@ -44,6 +46,7 @@
     "DrakeClawEnchantingTableMixin",
     "DrakeStableStructureMixin",
     "MountMerchantLocateMixin",
+    "MountMerchantPlaceMixin",
     "DrakeViewMixin",
     "DrakeEatingMixin",
     "CursePotionMixin",
@@ -102,6 +105,8 @@
     "GuardianCoreSpawnMixin"
   ],
   "client": [
+    "FormTailDataAccessor",
+    "FormTailStateAccessor",
     "PowerAnimationPacketMixin",
     "DrakeMorphscaleArmorMixin",
     "DrakeLeawindCameraMixin",

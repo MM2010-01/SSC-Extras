@@ -13,6 +13,11 @@ import java.util.Optional;
 public final class MountMerchantStructure extends Structure {
     public static final Codec<MountMerchantStructure> CODEC = createCodec(MountMerchantStructure::new);
     public MountMerchantStructure(Config config) { super(config); }
+    public net.minecraft.structure.StructureStart commandStart(net.minecraft.server.world.ServerWorld world, BlockPos pos) {
+        var stable = DrakeCaptureGoal.findStable(world, pos, 384);
+        return new net.minecraft.structure.StructureStart(this, new ChunkPos(pos), 0,
+                new net.minecraft.structure.StructurePiecesList(java.util.List.of(new MountMerchantPiece(pos, stable))));
+    }
     @Override protected Optional<StructurePosition> getStructurePosition(Context context) {
         var sourceChunk = new ChunkPos(context.chunkPos().x - MountMerchantPlacement.OFFSET_CHUNKS, context.chunkPos().z);
         var sets = context.dynamicRegistryManager().get(RegistryKeys.STRUCTURE_SET);

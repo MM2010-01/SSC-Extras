@@ -5,6 +5,7 @@
     "ssc-extras:guardian/head_and_feet_restrictions",
     "ssc-extras:guardian/villager_sight",
     "ssc-extras:guardian/flight",
+    "ssc-extras:guardian/flight_speed",
     "ssc-extras:guardian/claw_swipe"
   ],
   "icon": {

@@ -8,7 +8,6 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import sscextras.rituals.RitualComposition;
 import sscextras.rituals.RitualProgress;
@@ -30,13 +29,13 @@ final class GuardianAwakening extends AbstractGuardianRitual<GuardianAwakening> 
             RitualStage.afterAndWhen("binding", SOUL_START - 1, r -> true, GuardianAwakening::beginSoul),
             RitualStage.afterAndWhen("extraction", SOUL_SEALED - SOUL_START, r -> true, GuardianAwakening::sealSoul),
             RitualStage.afterAndWhen("encasing", ENCASED - SOUL_SEALED, r -> true, GuardianAwakening::beginCarving),
-            RitualStage.afterAndWhen("carving", SCULPTED - ENCASED, r -> true, GuardianAwakening::returnSoul),
+            RitualStage.afterAndWhen("carving", SCULPTED - ENCASED, r -> r.village.stoneCast.finished(), GuardianAwakening::returnSoul),
             RitualStage.afterAndWhen("release", COMPLETE - SCULPTED, r -> true, r -> {
                 r.player.sendMessage(Text.translatable("message.ssc-extras.guardian.ritual_complete", r.state().guardianName), false);
                 return true;
             }));
 
-    private boolean failed;
+    private boolean failed, spaceHint;
 
     GuardianAwakening(ServerPlayerEntity player, GuardianWorldState.Village village) {
         super(player, village, COMPOSITION, STAGES, progress(village));
@@ -50,7 +49,10 @@ final class GuardianAwakening extends AbstractGuardianRitual<GuardianAwakening> 
     static RitualProgress legacyProgress(int nextTick) {
         return RitualProgress.fromTimeline(STAGES, Math.max(0, Math.min(COMPLETE, nextTick - 1)));
     }
-    int ticks() { return village.awakening.finished() ? 0 : stages.timeline() + 1; }
+    int ticks() {
+        if (village.awakening.finished()) return 0;
+        return stages.current().id().equals("carving") ? Math.min(SCULPTED, stages.timeline() + 1) : stages.timeline() + 1;
+    }
     private GuardianShellEntity shell() {
         return village.body != null && world.getEntity(village.body) instanceof GuardianShellEntity body && body.isAlive() ? body : null;
     }
@@ -61,7 +63,13 @@ final class GuardianAwakening extends AbstractGuardianRitual<GuardianAwakening> 
         if ((stage.equals("encasing") || stage.equals("carving")) && shell() == null) return RitualStageRunner.Result.CANCELLED;
         boolean ready = assign();
         if (ready) ready = stage.equals("escort") ? approach() : positionActors();
-        if (ready) { resume(); present(stage); } else pause();
+        if (ready && (stage.equals("carving") || stage.equals("encasing") && village.awakening.elapsed() >= ENCASED - SOUL_SEALED - 1)) {
+            ready = village.stoneCast.harden(world, village.pedestal, shell());
+            if (!ready && !spaceHint) player.sendMessage(Text.translatable("message.ssc-extras.guardian.ritual_space"), false);
+            spaceHint = !ready;
+        }
+        if (ready) { resume(); present(stage); }
+        else { village.stoneCast.clearCracks(world); pause(); }
         var result = stages.tick(this, 1, ready);
         return failed ? RitualStageRunner.Result.CANCELLED : result;
     }
@@ -113,16 +121,8 @@ final class GuardianAwakening extends AbstractGuardianRitual<GuardianAwakening> 
                         net.minecraft.block.Blocks.STONE.getDefaultState()), center.x, center.y + 2.7, center.z, 18, .45, .1, .45, .02);
             }
             case "carving" -> {
-                shell().work(100 - (time - ENCASED) * 99 / (SCULPTED - ENCASED));
-                for (int i = 1; i < villagers.size(); i++) {
-                    prop(villagers.get(i), CHISEL);
-                    if (time % 15 == 0) villagers.get(i).swingHand(Hand.MAIN_HAND);
-                }
-                if (time % 10 == 0) {
-                    sound(world, center, SoundEvents.BLOCK_STONE_BREAK, .5f);
-                    world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, net.minecraft.block.Blocks.STONE.getDefaultState()),
-                            center.x, center.y + 1.3, center.z, 10, .7, 1, .7, .05);
-                }
+                for (int i = 1; i < villagers.size(); i++) prop(villagers.get(i), CHISEL);
+                village.stoneCast.carve(world, villagers.subList(1, villagers.size()));
             }
         }
     }
@@ -145,8 +145,14 @@ final class GuardianAwakening extends AbstractGuardianRitual<GuardianAwakening> 
         return true;
     }
     private boolean beginCarving() {
+        if (!village.stoneCast.harden(world, village.pedestal, shell())) return false;
         shell().stage(3); shell().work(100);
+        player.sendMessage(Text.translatable("message.ssc-extras.guardian.ritual_carving"), false);
         return true;
+    }
+    @Override protected void releaseParticipants() {
+        if (world != null) village.stoneCast.clearCracks(world);
+        super.releaseParticipants();
     }
     private boolean returnSoul() {
         var body = shell(); body.work(0); body.energy = 200; body.setHealth(26);

@@ -74,7 +74,13 @@ public final class GuardianClient {
             }
             if (detached) client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
         });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { restore(client); THREATS.clear(); owner = null; });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            restore(client); THREATS.clear(); owner = null; FormTailPhysics.clear();
+        });
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            if (entity instanceof net.minecraft.entity.player.PlayerEntity player && RuneboundGuardian.stage(player) >= 0)
+                FormTailPhysics.reset(player);
+        });
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             if (context.consumers() == null) return;
             for (var player : context.world().getPlayers()) {

@@ -56,7 +56,7 @@ public final class MountMerchantScreen extends HandledScreen<MountMerchantScreen
             button.visible = handler.phase() == 0; button.active = handler.canBuy(index);
             button.setY(y + rowTop + (i - scroll) * rowHeight + (rowHeight - 20) / 2);
         }
-        offer.visible = handler.phase() == 0 && !handler.merchandise(); offer.active = handler.canOffer();
+        offer.visible = handler.phase() == 0 && !handler.merchandise() && !handler.villageFaction(); offer.active = handler.canOffer();
         next.visible = handler.phase() == 1; back.visible = handler.phase() == 1 || handler.phase() == 3 || handler.phase() == 4;
         confirm.forEach(button -> button.visible = handler.confirming());
     }

@@ -198,6 +198,10 @@ public final class GuardianRitual {
         stopEscort(player);
         var world = player.getServer().getWorld(village.world);
         release(world, village); village.awakening = null;
+        if (world != null) {
+            village.stoneCast.clear(world);
+            if (village.body != null && world.getEntity(village.body) instanceof GuardianShellEntity body) body.work(0);
+        }
         village.ritualTicks = 0; RuneboundGuardian.state(player).ritualTicks = 0; RuneboundGuardian.state(player).sync();
         GuardianWorldState.get(player.getServer()).markDirty();
     }

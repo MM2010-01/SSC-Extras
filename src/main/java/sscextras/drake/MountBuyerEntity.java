@@ -61,20 +61,9 @@ public final class MountBuyerEntity extends PillagerEntity {
         UUID first = !sellers.isEmpty() ? sellers.get(0).getUuid() : stock.get(0).getUuid();
         if (!merchant.refreshDestination(first, sellers.isEmpty() ? 2 : 1)) return null;
         var buyer = MountMerchants.BUYER.create(world); buyer.visit(merchant);
-        for (int attempt = 0; attempt < 24; attempt++) {
-            double angle = world.random.nextDouble() * Math.PI * 2;
-            var column = BlockPos.ofFloored(merchant.customerPosition().add(Math.cos(angle) * 32, 0, Math.sin(angle) * 32));
-            if (!world.isChunkLoaded(column) || !world.shouldTick(column)) continue;
-            var pos = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, column);
-            if (world.getBlockState(pos.down()).getCollisionShape(world, pos.down()).isEmpty()
-                    || !world.getFluidState(pos.down()).isEmpty() || !world.getFluidState(pos).isEmpty()) continue;
-            buyer.refreshPositionAndAngles(pos, 0, 0);
-            buyer.setOnGround(true);
-            if (!world.isSpaceEmpty(buyer) || !world.getOtherEntities(buyer, buyer.getBoundingBox()).isEmpty()) continue;
-            if (world.spawnEntity(buyer)) {
-                buyer.visitCounter(merchant);
-                MountMarket.get(world.getServer()).buyer(merchant.getUuid(), buyer.getUuid()); return buyer;
-            }
+        if (MountMarketVisitors.spawn(buyer, merchant.customerPosition())) {
+            buyer.visitCounter(merchant);
+            MountMarket.get(world.getServer()).buyer(merchant.getUuid(), buyer.getUuid()); return buyer;
         }
         return null;
     }
@@ -85,7 +74,16 @@ public final class MountBuyerEntity extends PillagerEntity {
             return purchases.stream().anyMatch(purchase -> getWorld() instanceof ServerWorld world && world.getEntity(purchase.mount()) != null
                     && pen.contains(world.getEntity(purchase.mount()).getPos()));
         }
-        return destination != null && gate.equals(destination.gate(purchases.get(0).stall()));
+        if (destination == null) return false;
+        if (gate.equals(destination.gate(purchases.get(0).stall()))) return true;
+        for (int stall = 0; stall < destination.stallCount(); stall++) {
+            if (!gate.equals(destination.gate(stall))) continue;
+            var area = destination.stall(stall);
+            if (area.contains(getRootVehicle().getPos())) return true;
+            return purchases.stream().anyMatch(purchase -> getWorld() instanceof ServerWorld world
+                    && world.getEntity(purchase.mount()) != null && area.contains(world.getEntity(purchase.mount()).getPos()));
+        }
+        return false;
     }
     public static List<Integer> freeStalls(ServerWorld world, DrakeStablePiece stable, UUID first) {
         var free = new ArrayList<Integer>();
@@ -199,12 +197,11 @@ public final class MountBuyerEntity extends PillagerEntity {
             @Override protected void release() { DrakeOutpostOwnership.get(getServer()).assignments().release(this); }
         };
         var participants = new ArrayList<UUID>(); participants.add(getUuid()); purchases.forEach(p -> participants.add(p.mount()));
-        if (!DrakeOutpostOwnership.get(getServer()).assignments().acquire(run, participants)) { getNavigation().stop(); return; }
+        if (!DrakeOutpostOwnership.get(getServer()).assignments().acquire(run, participants)) { waitForPurchases(); return; }
         run.resume();
-        if (elapsed > 24000) { depart(); return; }
         for (var member : List.copyOf(purchases)) {
             var entity = world.getEntity(member.mount());
-            if (entity == null) { getNavigation().stop(); return; }
+            if (entity == null) { waitForPurchases(); return; }
             if (!entity.isAlive()) { abandon(member); finishPurchase(member); return; }
             if (entity instanceof ServerPlayerEntity player) {
                 var entry = MountMarket.get(getServer()).seller(player.getUuid());
@@ -215,7 +212,10 @@ public final class MountBuyerEntity extends PillagerEntity {
                 }
             }
         }
-        if (collected < purchases.size()) { collect(world); return; }
+        if (collected < purchases.size()) {
+            if (keepPurchasesTogether(world)) collect(world);
+            return;
+        }
         var purchase = purchases.get(0);
         var target = (LivingEntity)world.getEntity(purchase.mount());
         var navigation = (DrakeStableNavigation)getNavigation();
@@ -223,7 +223,7 @@ public final class MountBuyerEntity extends PillagerEntity {
         if (target.squaredDistanceTo(Vec3d.ofCenter(gate)) < 64) {
             var slots = freeStalls(world, destination, purchase.mount());
             if (!slots.contains(purchase.stall())) {
-                if (slots.isEmpty()) { navigation.stop(); return; }
+                if (slots.isEmpty()) { waitForPurchases(); return; }
                 purchase = new Purchase(purchase.mount(), slots.get(0), purchase.player(), purchase.price());
                 purchases.set(0, purchase); atDestinationGate = false; gate = destination.gate(purchase.stall());
             }
@@ -246,10 +246,20 @@ public final class MountBuyerEntity extends PillagerEntity {
                 drake.setStableHome(destination, purchase.stall());
                 DrakeOutpostOwnership.restoreSign(world, destination, destination.sign(purchase.stall()));
             }
-            navigation.close(gate); finishPurchase(purchase); return;
+            finishPurchase(purchase);
+            if (!holdsOpen(gate)) navigation.close(gate);
+            return;
         }
         if (getVehicle() != target) {
-            if (target.hasPassengers() || target.hasVehicle()) { getNavigation().stop(); return; }
+            if (target.hasPassengers() || target.hasVehicle()) { waitForPurchases(); return; }
+            if (!keepPurchasesTogether(world)) return;
+            var sourceGate = destination.gateAt(getPos());
+            if (sourceGate != null && !sourceGate.equals(gate)) {
+                navigation.open(sourceGate);
+                boolean aligned = Math.abs(getX() - sourceGate.getX() - 1) < .2;
+                var exit = DrakeStableLayout.gatePoint(destination.getBoundingBox(), sourceGate, aligned ? -3 : 2.5);
+                move(exit, true); return;
+            }
             if (!DrakeRiding.inInteractionReach(this, target)) { move(target.getPos(), false); return; }
             if (target instanceof ServerPlayerEntity player) DrakeLeashing.detach(player, false);
             else if (target instanceof StableDrakeEntity drake) drake.detachLeash(true, false);
@@ -260,20 +270,7 @@ public final class MountBuyerEntity extends PillagerEntity {
             }
             getNavigation().stop();
         }
-        for (var member : purchases) {
-            var other = world.getEntity(member.mount());
-            if (other == target) continue;
-            if (target.squaredDistanceTo(other) > 24 * 24) { depart(); return; }
-            if (other instanceof ServerPlayerEntity player) {
-                if (DrakeLeashing.holder(player) != this && !DrakeLeashing.attachPillager(player, this)) { depart(); return; }
-                var recovery = DrakeLeashing.recoveryDestination(player, this);
-                if (recovery != null) { move(recovery, false); return; }
-            } else if (other instanceof StableDrakeEntity drake) {
-                if (drake.getHoldingEntity() != this) drake.attachLeash(this, true);
-                if (age % 10 == 0 && target.squaredDistanceTo(drake) > 9) drake.getNavigation().startMovingTo(target, 1.3);
-            }
-            if (target.squaredDistanceTo(other) > 36) { getNavigation().stop(); return; }
-        }
+        if (!keepPurchasesTogether(world)) return;
         if (marketSite != null && purchases.stream().anyMatch(member -> {
             var entity = world.getEntity(member.mount());
             return entity != null && entity.getBoundingBox().maxZ > marketSite.getZ() + 2.5
@@ -291,8 +288,41 @@ public final class MountBuyerEntity extends PillagerEntity {
         if (Math.abs(target.getX() - approach.x) < .2 && Math.abs(target.getZ() - approach.z) < .45) atDestinationGate = true;
         var inside = Vec3d.ofBottomCenter(destination.bed(purchase.stall())).add(.5, 0, 0);
         var point = waypoint(world, atDestinationGate ? inside : approach);
-        if (point == null) { getNavigation().stop(); return; }
+        if (point == null) { waitForPurchases(); return; }
         move(point, atDestinationGate || target.squaredDistanceTo(approach) < 2.25);
+    }
+    private boolean keepPurchasesTogether(ServerWorld world) {
+        Vec3d regroup = null, unlinked = null;
+        boolean waiting = false;
+        for (int index = 0; index < collected; index++) {
+            var other = world.getEntity(purchases.get(index).mount());
+            if (other == getVehicle()) continue;
+            boolean attached = other instanceof ServerPlayerEntity player ? DrakeLeashing.holder(player) == this
+                    : other instanceof StableDrakeEntity drake && drake.getHoldingEntity() == this;
+            if (!attached) {
+                if (!DrakeRiding.inInteractionReach(this, other)) { if (unlinked == null) unlinked = other.getPos(); continue; }
+                if (other instanceof ServerPlayerEntity player) attached = DrakeLeashing.attachPillager(player, this);
+                else if (other instanceof StableDrakeEntity drake) { drake.attachLeash(this, true); attached = true; }
+                if (!attached) waiting = true;
+            }
+            double separation = (other instanceof ServerPlayerEntity ? getRootVehicle() : this).squaredDistanceTo(other);
+            if (attached && separation > 36) waiting = true;
+            if (other instanceof ServerPlayerEntity player) {
+                var recovery = DrakeLeashing.recoveryDestination(player, this);
+                if (recovery != null && regroup == null) regroup = recovery;
+            } else if (other instanceof StableDrakeEntity drake && attached
+                    && (separation > 81 || separation > 36 && drake.horizontalCollision) && regroup == null)
+                regroup = drake.getPos();
+        }
+        if (regroup != null) { atDestinationGate = false; move(regroup, false); return false; }
+        if (waiting) { waitForPurchases(); return false; }
+        if (unlinked != null) { atDestinationGate = false; move(unlinked, false); return false; }
+        return true;
+    }
+    private void waitForPurchases() {
+        directDestination = null; travelling = false;
+        getNavigation().stop();
+        if (hasVehicle()) DrakeRiding.tickPillager(this);
     }
     private void collect(ServerWorld world) {
         var navigation = (DrakeStableNavigation)getNavigation(); navigation.open(marketSite.add(8, 1, 3));
@@ -374,7 +404,9 @@ public final class MountBuyerEntity extends PillagerEntity {
         return Vec3d.ofBottomCenter(world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, column));
     }
     private void finishPurchase(Purchase purchase) {
-        purchases.remove(purchase); collected = Math.min(collected, purchases.size()); atDestinationGate = false;
+        int index = purchases.indexOf(purchase);
+        if (index >= 0 && index < collected) collected--;
+        purchases.remove(purchase); atDestinationGate = false;
         if (run != null) DrakeOutpostOwnership.get(getServer()).assignments().release(run, purchase.mount());
     }
     private void abandon(Purchase purchase) {
@@ -439,5 +471,6 @@ public final class MountBuyerEntity extends PillagerEntity {
             if (entry.containsUuid("Mount") && destination != null && entry.getInt("Stall") >= 0 && entry.getInt("Stall") < destination.stallCount())
                 purchases.add(new Purchase(entry.getUuid("Mount"), entry.getInt("Stall"), entry.getBoolean("Player"), entry.contains("Price") ? entry.getInt("Price") : MountMerchants.PRICE));
         }
+        collected = Math.max(0, Math.min(collected, purchases.size()));
     }
 }

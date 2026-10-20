@@ -42,7 +42,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public GuardianEscort escort;
     public int ritualGuideId;
     private int lastEnergy = -1, lastWeather = -1;
-    private boolean lastDetached, lastProtecting, lastDeactivated;
+    private boolean lastDetached, lastProtecting, lastDeactivated, lastFlying, syncedFlying;
 
     public GuardianState(PlayerEntity owner) { this.owner = owner; }
     public double capacity() { return RuneboundGuardian.stage(owner) == 3 ? 200 : 100; }
@@ -51,6 +51,11 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public void spend(double amount) { charge(-amount * (overdrive ? 2 : 1)); }
     public void sync() { if (!owner.getWorld().isClient) GuardianComponents.KEY.sync(owner); }
     public boolean ritualRestrained() { return ritualTicks > 1 || ritualTicks == 1 && ritualGuideId != 0; }
+    public boolean flying() {
+        return RuneboundGuardian.stage(owner) >= 2 && energy > 0 && !GuardianCombat.locked(owner)
+                && !owner.isSleeping() && !pedestalSleeping && !owner.isSpectator()
+                && (owner.getWorld().isClient ? syncedFlying : owner.getAbilities().flying);
+    }
 
     public boolean toggleStatueMode() {
         if (!(owner instanceof ServerPlayerEntity player) || RuneboundGuardian.stage(player) != 3
@@ -177,10 +182,11 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
 
     private void syncChanged(ServerPlayerEntity player) {
         int rounded = (int)(energy * 10);
-        if (detached != lastDetached || protecting != lastProtecting || deactivated != lastDeactivated || player.age % 20 == 0
+        boolean flying = flying();
+        if (flying != lastFlying || detached != lastDetached || protecting != lastProtecting || deactivated != lastDeactivated || player.age % 20 == 0
                 && (rounded != lastEnergy || ritualTicks > 0 || weatherTicks != lastWeather)) {
             lastEnergy = rounded; lastWeather = weatherTicks;
-            lastDetached = detached; lastProtecting = protecting; lastDeactivated = deactivated; sync();
+            lastDetached = detached; lastProtecting = protecting; lastDeactivated = deactivated; lastFlying = flying; sync();
         }
     }
 
@@ -197,6 +203,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         traderRecoveryHint = nbt.getBoolean("TraderRecoveryHint");
         canGiveUp = nbt.getBoolean("CanGiveUp"); coreDeath = nbt.getBoolean("CoreDeath");
         flightGranted = nbt.getBoolean("FlightGranted");
+        syncedFlying = owner.getWorld().isClient && nbt.getBoolean("Flying");
         protecting = nbt.getBoolean("Protecting"); guardianName = nbt.getString("Name");
         coreId = nbt.containsUuid("Core") ? nbt.getUuid("Core") : null;
         ritualTicks = nbt.getInt("RitualTicks"); weatherTicks = MathHelper.clamp(nbt.getInt("WeatherTicks"), 0, 72000);
@@ -211,6 +218,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     @Override public void writeToNbt(NbtCompound nbt) {
         nbt.putDouble("Energy", energy); nbt.putBoolean("Vision", vision); nbt.putBoolean("Overdrive", overdrive);
         nbt.putBoolean("FlightGranted", flightGranted);
+        nbt.putBoolean("Flying", flying());
         nbt.putBoolean("Detached", detached); nbt.putBoolean("Protecting", protecting); nbt.putString("Name", guardianName);
         nbt.putBoolean("Deactivated", deactivated); nbt.putFloat("FrozenYaw", frozenYaw); nbt.putFloat("FrozenPitch", frozenPitch);
         nbt.putBoolean("StatueMode", statueMode);

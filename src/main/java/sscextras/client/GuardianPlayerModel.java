@@ -19,6 +19,7 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
     private AbstractClientPlayerEntity player;
     private VertexConsumerProvider buffers;
     private GuardianMesh.Motion motion;
+    private FormTailPhysics.Drag tailDrag = FormTailPhysics.Drag.NONE;
 
     public GuardianPlayerModel(int stage) {
         super(PlayerEntityModel.getTexturedModelData(Dilation.NONE, false).getRoot().createPart(64, 64), false);
@@ -30,7 +31,15 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
         this.buffers = buffers;
     }
 
-    public void clear() { player = null; buffers = null; }
+    public void animateTail(float tickDelta) {
+        var state = RuneboundGuardian.state(player);
+        if (state.pedestalSleeping || state.deactivated || state.detached) {
+            FormTailPhysics.reset(player);
+            tailDrag = FormTailPhysics.Drag.NONE;
+        } else tailDrag = FormTailPhysics.sample(player, tickDelta);
+    }
+
+    public void clear() { player = null; buffers = null; tailDrag = FormTailPhysics.Drag.NONE; }
     public GuardianMesh mesh() { return GuardianMesh.get(stage); }
     public int stage() { return stage; }
 
@@ -86,7 +95,7 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
         var client = MinecraftClient.getInstance();
         boolean hideHead = player == client.getCameraEntity() && client.options.getPerspective().isFirstPerson()
                 && client.currentScreen == null;
-        motion = new GuardianMesh.Motion(stage < 3 || state.coreId != null, hideHead, age, limbAngle, limbDistance, statue);
+        motion = new GuardianMesh.Motion(stage < 3 || state.coreId != null, hideHead, age, limbAngle, limbDistance, statue, tailDrag, state.flying());
     }
 
     public void transform(MatrixStack matrices, String name) {

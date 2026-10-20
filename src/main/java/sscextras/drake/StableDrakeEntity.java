@@ -267,6 +267,7 @@ public final class StableDrakeEntity extends PathAwareEntity implements GeoEntit
     @Override public void onDeath(DamageSource source) {
         if (getWorld() instanceof net.minecraft.server.world.ServerWorld world) {
             if (merchant != null && world.getEntity(merchant) instanceof MountMerchantEntity keeper) keeper.removeStock(this);
+            MountMarket.get(getServer()).stockDied(getUuid());
             if (homeStable != null) {
                 var stable = new DrakeStablePiece(homeStable.getMinX(), homeStable.getMinY(), homeStable.getMinZ(),
                         DrakeStableLayout.stallCount(homeStable), DrakeStableLayout.facingRows(homeStable));

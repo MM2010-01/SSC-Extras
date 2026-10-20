@@ -43,6 +43,8 @@ public final class GuardianCores {
     private static final Map<ServerPlayerEntity, GuardianAnchorEntity> ANCHORS = new WeakHashMap<>();
     private static final Set<UUID> TRANSFERRING = new HashSet<>();
     private static final UUID SLOT_VISIBILITY = UUID.fromString("eadf266f-0e09-4370-951b-6ab1ebc42ad1");
+    private static final boolean NATIVE_TRINKETS = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")
+            && !net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("tclayer");
     private GuardianCores() { }
 
     public static void register() {
@@ -88,7 +90,8 @@ public final class GuardianCores {
 
     public static void beforeSpawn(ServerPlayerEntity player) {
         updateSlot(player);
-        if (CuriosCompat.instance == null && player.playerScreenHandler instanceof dev.emi.trinkets.TrinketPlayerScreenHandler handler)
+        if (CuriosCompat.instance == null && NATIVE_TRINKETS
+                && player.playerScreenHandler instanceof dev.emi.trinkets.TrinketPlayerScreenHandler handler)
             handler.trinkets$updateTrinketSlots(false);
     }
 
@@ -110,6 +113,8 @@ public final class GuardianCores {
             if (amount != 0) inventory.addPersistentModifier(new EntityAttributeModifier(SLOT_VISIBILITY,
                     "Guardian core slot", amount, EntityAttributeModifier.Operation.ADDITION));
             inventory.update();
+            // TCLayer's modifiers already notify Accessories, which owns its packets and screens.
+            if (!NATIVE_TRINKETS) return;
             if (player instanceof ServerPlayerEntity serverPlayer && serverPlayer.networkHandler != null) {
                 var buffer = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
                 var updates = new NbtCompound(); updates.put("chest/core", inventory.getSyncTag());
@@ -152,6 +157,10 @@ public final class GuardianCores {
         var slots = io.getEntitySlot(player, group, "core");
         if (slots == null || slots.isEmpty()) return false;
         io.setEntitySlot(player, group, "core", 0, stack);
+        // A same-tick stack write can consume Accessories' pending resize notification.
+        if (CuriosCompat.instance == null && !NATIVE_TRINKETS)
+            TrinketsApi.getTrinketComponent(player).ifPresent(component ->
+                    component.getInventory().get("chest").get("core").markUpdate());
         player.currentScreenHandler.sendContentUpdates(); return true;
     }
     public static GuardianWorldState.Core create(ServerPlayerEntity player) {

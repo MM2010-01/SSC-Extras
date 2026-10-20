@@ -24,6 +24,55 @@ public final class MountMarket extends PersistentState {
     private final Map<GlobalPos, Stall> stalls = new HashMap<>();
     private final Map<UUID, UUID> buyers = new HashMap<>();
     private final Map<UUID, UUID> customers = new HashMap<>();
+    private final Map<GlobalPos, Vacancy> vacancies = new HashMap<>();
+    private static final class Vacancy {
+        final UUID keeper;
+        final UUID buyer;
+        final DrakeStablePiece destination;
+        final java.util.List<UUID> stock;
+        int elapsed;
+        Vacancy(UUID keeper, UUID buyer, DrakeStablePiece destination, java.util.List<UUID> stock, int elapsed) {
+            this.keeper = keeper; this.buyer = buyer; this.destination = destination;
+            this.stock = new java.util.ArrayList<>(stock); this.elapsed = elapsed;
+        }
+    }
+
+    public void vacateMerchant(MountMerchantEntity merchant, java.util.List<UUID> stock) {
+        if (merchant.site() == null) return;
+        var key = GlobalPos.create(merchant.getWorld().getRegistryKey(), merchant.site());
+        vacancies.putIfAbsent(key, new Vacancy(merchant.getUuid(), buyers.get(merchant.getUuid()), merchant.destination(), stock, 0));
+        markDirty();
+    }
+
+    public void stockDied(UUID mount) {
+        for (var vacancy : vacancies.values()) if (vacancy.stock.remove(mount)) markDirty();
+    }
+
+    public void tickVacancies(ServerWorld world) {
+        var entries = vacancies.entrySet().iterator();
+        while (entries.hasNext()) {
+            var entry = entries.next(); var site = entry.getKey().getPos(); var vacancy = entry.getValue();
+            if (!entry.getKey().getDimension().equals(world.getRegistryKey()) || !world.shouldTick(site)
+                    || !world.shouldTick(site.add(12, 0, 10)) || !world.isRegionLoaded(site, site.add(12, 6, 10))) continue;
+            if (!world.getEntitiesByClass(MountMerchantEntity.class, new net.minecraft.util.math.Box(site).expand(64),
+                    merchant -> merchant.isAlive() && site.equals(merchant.site())).isEmpty()) {
+                entries.remove(); markDirty(); continue;
+            }
+            vacancy.elapsed += 20; markDirty();
+            if (vacancy.elapsed % MountMarketVisitors.INTERVAL != 0) continue;
+            boolean attempt = vacancy.elapsed >= MountMarketVisitors.DEADLINE || world.random.nextInt(4) == 0;
+            vacancy.elapsed = Math.min(vacancy.elapsed, MountMarketVisitors.DEADLINE);
+            if (!attempt) continue;
+            var merchant = MountMerchants.MERCHANT.create(world);
+            if (merchant == null) continue;
+            merchant.setSite(site, vacancy.destination);
+            if (!MountMarketVisitors.spawn(merchant, merchant.customerPosition())) continue;
+            UUID buyer = vacancy.buyer != null && buyers.containsValue(vacancy.buyer) ? vacancy.buyer : null;
+            if (buyer != null) buyer(merchant.getUuid(), buyer);
+            merchant.inheritShop(vacancy.stock, buyer);
+            entries.remove(); markDirty();
+        }
+    }
     public static boolean playerOwned(PlayerEntity player) {
         return player.getServer() != null && get(player.getServer()).customers.containsKey(player.getUuid());
     }
@@ -32,7 +81,9 @@ public final class MountMarket extends PersistentState {
 
     public boolean buyerActive(UUID merchant, UUID buyer) { return buyer.equals(buyers.get(merchant)); }
     public void buyer(UUID merchant, UUID buyer) { buyers.put(merchant, buyer); markDirty(); }
-    public void finishBuyer(UUID merchant, UUID buyer) { if (buyers.remove(merchant, buyer)) markDirty(); }
+    public void finishBuyer(UUID merchant, UUID buyer) {
+        if (buyer.equals(buyers.get(merchant))) { buyers.values().removeIf(buyer::equals); markDirty(); }
+    }
 
     public static MountMarket get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(MountMarket::read, MountMarket::new, "ssc_extras_mount_market");
@@ -90,6 +141,16 @@ public final class MountMarket extends PersistentState {
     }
     public static MountMarket read(NbtCompound tag) {
         var state = new MountMarket();
+        for (var element : tag.getList("VacantShops", NbtElement.COMPOUND_TYPE)) {
+            var entry = (NbtCompound)element;
+            if (!entry.containsUuid("Keeper")) continue;
+            var stock = new java.util.ArrayList<UUID>();
+            for (var id : entry.getList("Stock", NbtElement.INT_ARRAY_TYPE)) stock.add(net.minecraft.nbt.NbtHelper.toUuid(id));
+            int elapsed = Math.max(0, Math.min(MountMarketVisitors.DEADLINE + MountMarketVisitors.INTERVAL - 20, entry.getInt("Elapsed"))) / 20 * 20;
+            state.vacancies.put(GlobalPos.create(dimension(entry), BlockPos.fromLong(entry.getLong("Site"))),
+                    new Vacancy(entry.getUuid("Keeper"), entry.containsUuid("Buyer") ? entry.getUuid("Buyer") : null,
+                            readStable(entry.getCompound("Destination")), stock, elapsed));
+        }
         for (var element : tag.getList("Customers", NbtElement.COMPOUND_TYPE)) {
             var entry = (NbtCompound)element;
             if (entry.containsUuid("Mount") && entry.containsUuid("Owner")) state.customers.put(entry.getUuid("Mount"), entry.getUuid("Owner"));
@@ -112,6 +173,16 @@ public final class MountMarket extends PersistentState {
     }
     private static RegistryKey<World> dimension(NbtCompound tag) { return RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("World"))); }
     @Override public NbtCompound writeNbt(NbtCompound tag) {
+        var shops = new NbtList();
+        vacancies.forEach((pos, vacancy) -> {
+            var entry = new NbtCompound(); entry.putString("World", pos.getDimension().getValue().toString());
+            entry.putLong("Site", pos.getPos().asLong()); entry.putUuid("Keeper", vacancy.keeper);
+            if (vacancy.buyer != null) entry.putUuid("Buyer", vacancy.buyer);
+            entry.put("Destination", writeStable(vacancy.destination)); entry.putInt("Elapsed", vacancy.elapsed);
+            var stock = new NbtList(); vacancy.stock.forEach(id -> stock.add(net.minecraft.nbt.NbtHelper.fromUuid(id)));
+            entry.put("Stock", stock); shops.add(entry);
+        });
+        tag.put("VacantShops", shops);
         var owners = new NbtList();
         customers.forEach((mount, owner) -> {
             var entry = new NbtCompound(); entry.putUuid("Mount", mount); entry.putUuid("Owner", owner); owners.add(entry);

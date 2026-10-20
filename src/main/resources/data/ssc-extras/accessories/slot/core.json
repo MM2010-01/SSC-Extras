@@ -1,5 +1,6 @@
 {
   "amount": 1,
+  "operation": "set",
   "order": 95,
   "icon": "ssc-extras:slot/core",
   "validators": [

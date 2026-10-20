@@ -16,13 +16,31 @@ import java.util.*;
 /** Rigid armor and a continuous, articulated tail core preserve the authored topology and UVs. */
 public final class GuardianMesh {
     public static final List<String> PLAYER_JOINTS = List.of("bipedBody", "bipedHead", "bipedLeftArm", "bipedRightArm", "bipedLeftLeg", "bipedRightLeg");
-    public record Motion(boolean corePresent, boolean hideHead, float age, float limbAngle, float limbDistance, boolean statue) {
+    public record Motion(boolean corePresent, boolean hideHead, float age, float limbAngle, float limbDistance, boolean statue,
+            FormTailPhysics.Drag drag, boolean flying) {
+        public Motion(boolean corePresent, boolean hideHead, float age, float limbAngle, float limbDistance, boolean statue) {
+            this(corePresent, hideHead, age, limbAngle, limbDistance, statue, FormTailPhysics.Drag.NONE);
+        }
+        public Motion(boolean corePresent, boolean hideHead, float age, float limbAngle, float limbDistance, boolean statue,
+                FormTailPhysics.Drag drag) {
+            this(corePresent, hideHead, age, limbAngle, limbDistance, statue, drag, false);
+        }
+        float wingRoll() { return flying && !statue ? -.1f + .25f * (float)Math.sin(age * .3f) : 0; }
+        float wingYaw(int side) {
+            if (statue) return 0;
+            float fold = (float)Math.sin(age * .06f) * .018f
+                    + (float)Math.sin(limbAngle * .6662f) * Math.min(limbDistance, 1) * .02f
+                    + drag.vertical() * .075f;
+            return drag.horizontal() * .075f + side * fold;
+        }
         float tailYaw(int joint) {
             return statue ? 0 : (float)Math.sin(age * .075f - joint * .55f) * (joint == 0 ? .12f : .07f)
-                    + (float)Math.sin(limbAngle * .6662f - joint * .55f) * Math.min(limbDistance, 1) * (joint == 0 ? .06f : .035f);
+                    + (float)Math.sin(limbAngle * .6662f - joint * .55f) * Math.min(limbDistance, 1) * (joint == 0 ? .06f : .035f)
+                    + drag.horizontal() * (joint == 0 ? .18f : .10f / (1 + joint * .15f));
         }
         float tailPitch(int joint) {
-            return statue ? 0 : (float)Math.sin(age * .045f - joint * .45f) * (joint == 0 ? .025f : .018f);
+            return statue ? 0 : (float)Math.sin(age * .045f - joint * .45f) * (joint == 0 ? .025f : .018f)
+                    - drag.vertical() * (joint == 0 ? .12f : .07f / (1 + joint * .15f));
         }
     }
     private static final GuardianMesh[] MODELS = new GuardianMesh[4];
@@ -80,6 +98,7 @@ public final class GuardianMesh {
             if (!model.joint(owner).visible || motion.hideHead && owner.equals("bipedHead")) continue;
             matrices.push();
             model.transform(matrices, owner);
+            rotateWing(bone, matrices, motion);
             MatrixStack.Entry[] tailTransforms = null;
             if (bone.tailIndex >= 0) {
                 for (int i = 0; i <= bone.tailIndex; i++) rotateTail(tailBones.get(i), matrices, motion);
@@ -199,6 +218,7 @@ public final class GuardianMesh {
             matrices.translate(-p[0], -p[1], -p[2]);
         }
         MatrixStack.Entry[] tailTransforms = null;
+        rotateWing(bone, matrices, motion);
         if (bone.tailIndex >= 0) {
             rotateTail(bone, matrices, motion);
             if (bone.tailIndex == 0) {
@@ -234,6 +254,14 @@ public final class GuardianMesh {
         if (wrist || ankle || collar) {
             GuardianAdornmentMesh.render("stage_" + stage + "/" + (collar ? "collar" : bone.name), matrices, buffers, light);
         }
+    }
+    private static void rotateWing(Bone bone, MatrixStack matrices, Motion motion) {
+        if (!bone.name.equals("wing_left_0") && !bone.name.equals("wing_right_0")) return;
+        var p = bone.pivot;
+        matrices.translate(p[0], p[1], p[2]);
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotation(motion.wingYaw(bone.name.equals("wing_left_0") ? 1 : -1)));
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotation(motion.wingRoll() * (bone.name.equals("wing_left_0") ? 1 : -1)));
+        matrices.translate(-p[0], -p[1], -p[2]);
     }
     private static void rotateTail(Bone bone, MatrixStack matrices, Motion motion) {
         var p = bone.pivot; matrices.translate(p[0], p[1], p[2]);

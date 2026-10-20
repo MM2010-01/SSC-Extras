@@ -46,8 +46,10 @@ public final class MountMerchantScreenHandler extends ScreenHandler {
     public boolean confirming() { return phase() == 2; }
     public int dialogue() { return state.get(3); }
     public boolean merchandise() { return dialogue() == MERCHANDISE_DIALOGUE; }
+    public boolean villageFaction() { return dialogue() == MountMerchantForms.VILLAGE_DIALOGUE; }
     public Text greeting() {
         return merchandise() ? Text.translatable("message.ssc-extras.merchant.greeting.waiting", MountMerchantForms.name(customer))
+                : villageFaction() ? Text.translatable("message.ssc-extras.merchant.greeting.village")
                 : Text.translatable("message.ssc-extras.merchant.greeting." + new String[]{"human", "other", "drake", "drake", "feral"}[dialogue()]);
     }
     public boolean present(int row) { return state.get(4 + row) != 0; }
@@ -57,12 +59,13 @@ public final class MountMerchantScreenHandler extends ScreenHandler {
         if (merchant == null) return;
         state.set(0, MountMerchantEntity.emeralds(customer)); state.set(1, merchant.canOffer(customer) ? 1 : 0);
         state.set(3, merchant.isMerchandise(customer) ? MERCHANDISE_DIALOGUE : MountMerchantForms.dialogue(customer));
-        if (merchandise()) state.set(2, 0);
+        if (merchandise() || villageFaction()) state.set(2, 0);
         var available = merchant.listings();
         for (int i = 0; i < listings.size(); i++) {
             var id = listings.get(i).id();
             state.set(4 + i, available.stream().noneMatch(row -> row.id().equals(id)) ? 0 : merchant.purchasable(id, customer) ? 2 : 1);
-            state.set(4 + listings.size() + i, available.stream().filter(row -> row.id().equals(id)).findFirst().map(MountMerchantEntity.Listing::price).orElse(listings.get(i).price()));
+            int basePrice = available.stream().filter(row -> row.id().equals(id)).findFirst().map(MountMerchantEntity.Listing::price).orElse(listings.get(i).price());
+            state.set(4 + listings.size() + i, MountMerchantForms.customerPrice(basePrice, customer));
         }
     }
     @Override public void sendContentUpdates() { refresh(); super.sendContentUpdates(); }

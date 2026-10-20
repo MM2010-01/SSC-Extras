@@ -39,7 +39,10 @@ public abstract class GuardianModelMixin extends LivingEntityRenderer<AbstractCl
         var guardian = sscExtras$guardian(stage);
         model = guardian;
         guardian.prepare(player, buffers);
-        try { original.call(player, yaw, delta, matrices, buffers, light); }
+        try {
+            guardian.animateTail(delta);
+            original.call(player, yaw, delta, matrices, buffers, light);
+        }
         finally { model = previous; guardian.clear(); }
     }
 

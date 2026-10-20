@@ -45,7 +45,9 @@ public final class GuardianProtectBrain extends PathAwareEntity {
         if (flying) {
             player.getAbilities().flying = true;
             if (!player.getWorld().isSpaceEmpty(player, player.getBoundingBox().stretch(delta))) { GuardianVillages.stopProtecting(player); return; }
-            double speed = player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) * 2;
+            double speed = io.github.apace100.apoli.component.PowerHolderComponent.modify(player,
+                    io.github.apace100.apoli.power.ModifyAirSpeedPower.class,
+                    player.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) * 2);
             player.setVelocity(delta.normalize().multiply(Math.min(speed, delta.length())));
             player.fallDistance = 0; input = Vec3d.ZERO;
         } else {

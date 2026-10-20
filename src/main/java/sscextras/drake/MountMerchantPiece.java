@@ -52,7 +52,7 @@ public final class MountMerchantPiece extends StructurePiece {
         addBlock(world, Blocks.WATER_CAULDRON.getDefaultState(), 11, 1, 9, chunkBox);
         addBlock(world, Blocks.DARK_OAK_FENCE.getDefaultState(), 6, 1, 7, chunkBox);
         BlockPos pos = new BlockPos(boundingBox.getMinX() + 3, boundingBox.getMinY() + 1, boundingBox.getMinZ() + 2);
-        if (!spawned && stable != null && chunkBox.contains(pos)) {
+        if (!spawned && chunkBox.contains(pos)) {
             var merchant = MountMerchants.MERCHANT.create(world.toServerWorld());
             if (merchant != null) {
                 merchant.refreshPositionAndAngles(pos, 180, 0);

@@ -28,6 +28,7 @@ public final class GuardianWorldState extends PersistentState {
         public int speakerTicks;
         public int ritualTicks, rebuildTicks, recoveryTicks;
         public RitualProgress awakening;
+        final GuardianStoneCast stoneCast = new GuardianStoneCast();
         GuardianAwakening awakeningRun;
         public final List<UUID> attendants = new ArrayList<>();
         public UUID body;
@@ -66,6 +67,7 @@ public final class GuardianWorldState extends PersistentState {
         for (int i = 0; i < villages.size(); i++) {
             var nbt = villages.getCompound(i); if (!nbt.containsUuid("Owner")) continue;
             var village = new Village(); village.world = world(nbt); village.pedestal = BlockPos.fromLong(nbt.getLong("Pedestal"));
+            village.stoneCast.read(nbt.getCompound("StoneCast"), village.pedestal);
             village.serviceTicks = Math.max(0, Math.min(SERVICE_TICKS, nbt.getLong("Service")));
             village.readyDay = nbt.contains("ReadyDay") ? nbt.getLong("ReadyDay") : -1;
             village.serviceOffered = nbt.getBoolean("ServiceOffered");
@@ -106,6 +108,7 @@ public final class GuardianWorldState extends PersistentState {
             nbt.putLong("ServiceHintDay", village.serviceHintDay);
             nbt.putInt("Ritual", village.ritualTicks); nbt.putInt("Rebuild", village.rebuildTicks);
             if (village.awakening != null) nbt.put("Awakening", village.awakening.write());
+            nbt.put("StoneCast", village.stoneCast.write());
             nbt.putInt("RecoveryTicks", village.recoveryTicks);
             if (village.body != null) nbt.putUuid("Body", village.body);
             if (village.bodyPos != null) nbt.putLong("BodyPos", village.bodyPos.asLong());

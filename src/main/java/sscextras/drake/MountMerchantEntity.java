@@ -38,10 +38,13 @@ import java.util.UUID;
 
 public final class MountMerchantEntity extends PillagerEntity {
     public static final double MOVE_SPEED = 1.2;
-    private static final int BUYER_INTERVAL = 200, BUYER_DEADLINE = 1200;
+    private static final int VILLAGE_AGGRO_TICKS = 24000;
+    private final java.util.Map<UUID, Long> villageAggressors = new java.util.HashMap<>();
+    private static final int BUYER_INTERVAL = MountMarketVisitors.INTERVAL, BUYER_DEADLINE = MountMarketVisitors.DEADLINE;
     private BlockPos site;
     private DrakeStablePiece destination;
     private final List<UUID> stock = new ArrayList<>();
+    private final List<UUID> inheritedStock = new ArrayList<>();
     private UUID seller, buyer;
     private final List<UUID> waiting = new ArrayList<>();
     private final java.util.Map<UUID, Integer> escapes = new java.util.HashMap<>();
@@ -61,7 +64,7 @@ public final class MountMerchantEntity extends PillagerEntity {
         var player = seller();
         for (var mount : readySellers()) if (!mount.getUuid().equals(seller))
             result.add(new Listing(mount.getUuid(), mount.getId(), Text.literal(MountMerchantForms.name(mount)), quote(mount), true));
-        if (listed && player != null && player.isAlive() && pen().contains(player.getPos()))
+        if (listed && player != null && player.isAlive() && !BondOfTheBeastCompat.hasOwner(player) && pen().contains(player.getPos()))
             result.add(new Listing(player.getUuid(), player.getId(), Text.literal(MountMerchantForms.name(player)), quote(player), true));
         return result;
     }
@@ -77,8 +80,8 @@ public final class MountMerchantEntity extends PillagerEntity {
         signs.update(world, site, listings());
     }
     private RitualProgress conversion = new RitualProgress();
-    private boolean pretend, stocked;
-    private int nextBuyer = BUYER_INTERVAL, buyerWait, restockTicks;
+    private boolean pretend, stocked, arriving;
+    private int nextBuyer = BUYER_INTERVAL, buyerWait;
     private MountConversionRitual ritual;
     private DrakeStableRepairGoal repairGoal;
 
@@ -100,6 +103,12 @@ public final class MountMerchantEntity extends PillagerEntity {
     public void setSite(BlockPos site, DrakeStablePiece destination) { this.site = site.toImmutable(); this.destination = destination; }
     public BlockPos site() { return site; }
     public DrakeStablePiece destination() { return destination; }
+    void inheritShop(List<UUID> stock, UUID buyer) {
+        this.stock.addAll(stock); inheritedStock.addAll(stock); stocked = true; arriving = true;
+        this.buyer = buyer;
+        recoverStock();
+        getNavigation().startMovingTo(counter().x, counter().y, counter().z, MOVE_SPEED);
+    }
     public boolean refreshDestination(UUID mount, int requiredStalls) {
         if (!(getWorld() instanceof ServerWorld world) || site == null) return false;
         java.util.function.Predicate<DrakeStablePiece> available = stable -> MountBuyerEntity.hasFreeStalls(world, stable, mount, requiredStalls);
@@ -142,7 +151,7 @@ public final class MountMerchantEntity extends PillagerEntity {
         var bounds = site == null ? null : pen();
         return ids.stream().map(world::getEntity).filter(entity -> entity instanceof ServerPlayerEntity)
                 .map(entity -> (ServerPlayerEntity)entity).filter(player -> player.isAlive() && EarthenDrake.stage(player) >= 2
-                        && bounds.contains(player.getPos())).toList();
+                        && !BondOfTheBeastCompat.hasOwner(player) && bounds.contains(player.getPos())).toList();
     }
     private void beginOffer(ServerPlayerEntity player, boolean pretend) {
         if (ready()) { waiting.add(seller); interrupt(); }
@@ -169,18 +178,20 @@ public final class MountMerchantEntity extends PillagerEntity {
     boolean hasStock() { return firstStock() != null; }
     public void addStock(StableDrakeEntity drake) {
         if (!stock.contains(drake.getUuid())) stock.add(drake.getUuid());
+        inheritedStock.remove(drake.getUuid());
         drake.clearStableHome(); drake.setMerchant(getUuid(), tie());
         if (getWorld().getBlockState(tie()).isIn(net.minecraft.registry.tag.BlockTags.FENCES))
             drake.attachLeash(LeashKnotEntity.getOrCreate(getWorld(), tie()), true);
         updateSigns();
     }
-    public void removeStock(StableDrakeEntity drake) { stock.remove(drake.getUuid()); updateSigns(); }
+    public void removeStock(StableDrakeEntity drake) { stock.remove(drake.getUuid()); inheritedStock.remove(drake.getUuid()); updateSigns(); }
     public boolean isMerchandise(PlayerEntity player) {
         var entry = MountMarket.get(getServer()).seller(player.getUuid());
         return entry != null && !entry.sold() && entry.keeper().equals(getUuid());
     }
     public boolean canOffer(PlayerEntity player) {
-        return site != null && player.isAlive() && !player.isSpectator() && MountMerchantForms.dialogue(player) != 4 && !isMerchandise(player);
+        return site != null && !arriving && player.isAlive() && !player.isSpectator() && MountMerchantForms.dialogue(player) != 4
+                && !MountMerchantForms.villageFaction(player) && !isMerchandise(player);
     }
     private boolean canAccept(PlayerEntity player) {
         return canOffer(player) && MountMerchantForms.convertible(player) && (seller == null || ready()) && buyer == null
@@ -195,8 +206,8 @@ public final class MountMerchantEntity extends PillagerEntity {
     public boolean offer(ServerPlayerEntity player, boolean pretend) {
         if (!canAccept(player) || squaredDistanceTo(player) > 64 || !getVisibilityCache().canSee(player)) return false;
         if (!hasDemand(player)) { say(player, "offer.no_demand"); return false; }
+        if (EarthenDrake.stage(player) < 0 && !hasStock()) { say(player, "offer.no_stock"); return false; }
         beginOffer(player, pretend);
-        if (EarthenDrake.stage(player) < 2 && !hasStock()) restock();
         MountMarket.get(getServer()).offer(player, getUuid(), site, false);
         say(player, pretend ? "pretend" : "accepted");
         return true;
@@ -208,18 +219,21 @@ public final class MountMerchantEntity extends PillagerEntity {
     public boolean buy(ServerPlayerEntity player, UUID id) {
         if (site == null || squaredDistanceTo(player) > 64 || !getVisibilityCache().canSee(player) || !purchasable(id, player)) return false;
         var listing = listings().stream().filter(row -> row.id().equals(id)).findFirst().orElse(null);
-        if (listing == null || emeralds(player) < listing.price()) return false;
+        if (listing == null) return false;
+        int price = MountMerchantForms.customerPrice(listing.price(), player);
+        if (emeralds(player) < price) return false;
         if (listing.player()) {
             var mount = ((ServerWorld)getWorld()).getEntity(id) instanceof ServerPlayerEntity target ? target : null;
-            if (mount == null || !DrakeLeashing.attach(mount, player)) return false;
+            if (mount == null || BondOfTheBeastCompat.hasOwner(mount) || !DrakeLeashing.attach(mount, player)) return false;
             MountMarket.get(getServer()).sellTo(id, player.getUuid());
+            BondOfTheBeastCompat.registerPurchasedPlayer(mount, player, listing.name().getString());
             say(mount, "sold"); removeSeller(id);
         } else {
             var drake = (StableDrakeEntity)((ServerWorld)getWorld()).getEntity(id);
             drake.setMerchant(null, null); drake.setCustomer(player.getUuid()); drake.setTarget(null);
             drake.attachLeash(player, true); removeStock(drake);
         }
-        int cost = listing.price();
+        int cost = price;
         for (int slot = 0; slot < player.getInventory().size() && cost > 0; slot++) {
             var stack = player.getInventory().getStack(slot);
             if (!stack.isOf(Items.EMERALD)) continue;
@@ -227,7 +241,7 @@ public final class MountMerchantEntity extends PillagerEntity {
         }
         ((DrakeStableNavigation)getNavigation()).open(gate()); updateSigns();
         player.getInventory().markDirty();
-        player.sendMessage(Text.translatable("message.ssc-extras.merchant.purchase", listing.name(), listing.price()), false); return true;
+        player.sendMessage(Text.translatable("message.ssc-extras.merchant.purchase", listing.name(), price), false); return true;
     }
     private void recoverStock() {
         var world = (ServerWorld)getWorld();
@@ -235,7 +249,8 @@ public final class MountMerchantEntity extends PillagerEntity {
                 && entity.customer() == null && !entity.hasPassengers())) {
             var holder = drake.getHoldingEntity();
             if (holder instanceof MountBuyerEntity || holder instanceof PlayerEntity) continue;
-            if (drake.merchant() != null && !getUuid().equals(drake.merchant())) continue;
+            if (drake.merchant() != null && !getUuid().equals(drake.merchant()) && !inheritedStock.contains(drake.getUuid())) continue;
+            if (inheritedStock.contains(drake.getUuid())) addStock(drake);
             if (getUuid().equals(drake.merchant()) || buyer == null && (holder == null
                     || holder instanceof LeashKnotEntity knot && knot.getDecorationBlockPos().equals(tie()))) {
                 if (!stock.contains(drake.getUuid()) || !(holder instanceof LeashKnotEntity knot) || !knot.getDecorationBlockPos().equals(tie())) addStock(drake);
@@ -247,11 +262,10 @@ public final class MountMerchantEntity extends PillagerEntity {
         for (var player : ((ServerWorld)getWorld()).getPlayers(player -> squaredDistanceTo(player) <= 256
                 && !player.isCreative() && canAccept(player) && getVisibilityCache().canSee(player))) {
             var line = MountMerchantForms.recruit(player);
-            if (line == null || !hasDemand(player)) continue;
+            if (line == null || !hasDemand(player) || EarthenDrake.stage(player) < 0 && !hasStock()) continue;
             beginOffer(player, false);
             captured = true;
             MountMarket.get(getServer()).offer(player, getUuid(), site, false);
-            if (EarthenDrake.stage(player) < 2 && !hasStock()) restock();
             player.sendMessage(Text.translatable("message.ssc-extras.merchant." + line, MountMerchantForms.name(player)), false); break;
         }
     }
@@ -355,20 +369,54 @@ public final class MountMerchantEntity extends PillagerEntity {
     public void interrupt() { if (ritual != null) { ritual.finish(); ritual = null; } }
     boolean canRepairStructure() {
         return site != null && isAlive() && !isRemoved() && !isAiDisabled() && !hasVehicle() && !hasPassengers()
-                && !DrakeFaction.fighting(this) && buyer == null && runaway == null && (seller == null || ready());
+                && !arriving && !DrakeFaction.fighting(this) && buyer == null && runaway == null && (seller == null || ready());
     }
     @Override protected void initGoals() {
         super.initGoals(); goalSelector.clear(goal -> true); targetSelector.clear(goal -> true);
         goalSelector.add(0, new SwimGoal(this)); goalSelector.add(1, new CrossbowAttackGoal<>(this, MOVE_SPEED, 16));
         goalSelector.add(3, repairGoal = new DrakeStableRepairGoal(this));
         goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8)); goalSelector.add(7, new LookAroundGoal(this));
-        targetSelector.add(0, new RevengeGoal(this));
-        targetSelector.add(1, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false, this::canTarget));
+        targetSelector.add(0, new RevengeGoal(this) {
+            @Override public void start() {
+                super.start();
+                if (villageAggressor(getTarget())) setMaxTimeWithoutVisibility(VILLAGE_AGGRO_TICKS);
+            }
+        });
+        targetSelector.add(1, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false, this::canTarget) {
+            @Override public void start() {
+                super.start();
+                setMaxTimeWithoutVisibility(villageAggressor(getTarget()) ? VILLAGE_AGGRO_TICKS : 60);
+            }
+        });
     }
     @Override public boolean canTarget(LivingEntity target) {
         return super.canTarget(target) && !DrakeFaction.member(target) && !isTeammate(target)
-                && (target == getAttacker() || site != null && pen().expand(16).contains(target.getPos())
+                && (villageAggressor(target) || target == getAttacker() || site != null && pen().expand(16).contains(target.getPos())
                 && DrakeFaction.hostileThreat(target));
+    }
+    private boolean villageAggressor(LivingEntity target) {
+        if (!(target instanceof PlayerEntity)) return false;
+        Long seen = villageAggressors.get(target.getUuid());
+        return seen != null && getWorld().getTime() - seen < VILLAGE_AGGRO_TICKS;
+    }
+    @Override public boolean damage(DamageSource source, float amount) {
+        boolean damaged = super.damage(source, amount);
+        if (damaged && isAlive() && !getWorld().isClient && source.getAttacker() instanceof PlayerEntity player
+                && MountMerchantForms.villageFaction(player)) villageAggressors.put(player.getUuid(), getWorld().getTime());
+        return damaged;
+    }
+    private void tickVillageAggressors(ServerWorld world) {
+        long now = world.getTime();
+        var iterator = villageAggressors.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            var player = world.getPlayerByUuid(entry.getKey());
+            if (now - entry.getValue() >= VILLAGE_AGGRO_TICKS || player != null && !player.isAlive()) {
+                if (getTarget() != null && entry.getKey().equals(getTarget().getUuid())) setTarget(null);
+                if (getAttacker() != null && entry.getKey().equals(getAttacker().getUuid())) setAttacker(null);
+                iterator.remove();
+            } else if (player != null && DrakeRoaming.canSee(this, player)) entry.setValue(now);
+        }
     }
     @Override public void tickMovement() {
         double x = getX(), z = getZ();
@@ -379,14 +427,23 @@ public final class MountMerchantEntity extends PillagerEntity {
         }
     }
     @Override protected void mobTick() {
+        if (getWorld() instanceof ServerWorld world) tickVillageAggressors(world);
         super.mobTick();
-        if (!(getWorld() instanceof ServerWorld world) || site == null || destination == null) return;
-        if (!stocked && world.isChunkLoaded(site.add(12, 0, 10))) { recoverStock(); restock(); stocked = true; }
+        if (!(getWorld() instanceof ServerWorld world) || site == null) return;
+        if (!stocked && world.isRegionLoaded(site, site.add(12, 6, 10))) { recoverStock(); restock(); stocked = true; }
         if (age % 40 == 0) { recoverStock(); updateSigns(); }
         if (DrakeFaction.fighting(this)) {
             interrupt();
             ((DrakeFaction.EquipmentDisplay)(Object)this).sscExtras$showEquipment(ItemStack.EMPTY);
             ((DrakeStableNavigation)getNavigation()).open(gate());
+            return;
+        }
+        if (arriving) {
+            returnToCounter();
+            if (atCounter()) {
+                arriving = false;
+                for (var player : world.getPlayers(player -> pen().contains(player.getPos()))) say(player, "new_keeper");
+            }
             return;
         }
         if (age % 20 == 0) { releaseWithoutDemand(); recruit(); }
@@ -413,18 +470,7 @@ public final class MountMerchantEntity extends PillagerEntity {
             }
         }
         if ((seller == null || ready()) && getTarget() == null && !repairGoal.active()) {
-            if (!atCounter()) {
-                ((DrakeStableNavigation)getNavigation()).open(gate());
-                double gateX = site.getX() + 9;
-                if (pen().contains(getPos()) || Math.abs(getX() - gateX) < 1 && getZ() > site.getZ() + 2) {
-                    var point = new Vec3d(gateX, site.getY() + 1,
-                            Math.abs(getX() - gateX) < .2 ? site.getZ() + 1.5 : site.getZ() + 5.5);
-                    getNavigation().stop(); getMoveControl().moveTo(point.x, point.y, point.z, MOVE_SPEED);
-                } else if (age % 10 == 0 || getNavigation().isIdle()) getNavigation().startMovingAlong(getNavigation().findPathTo(counter().x, counter().y, counter().z, 0), MOVE_SPEED);
-            } else {
-                getNavigation().stop();
-                if (buyer == null) getLookControl().lookAt(customerPosition().x, customerPosition().y + 1, customerPosition().z);
-            }
+            returnToCounter();
         }
         if (buyer != null) {
             if (!MountMarket.get(getServer()).buyerActive(getUuid(), buyer)) buyerFinished(buyer);
@@ -438,13 +484,30 @@ public final class MountMerchantEntity extends PillagerEntity {
                 if (spawned != null) { buyer = spawned.getUuid(); buyerWait = 0; }
             }
         }
-        if (seller == null && !hasStock() && ++restockTicks >= 12000) restock();
+        if (age % 20 == 0 && seller == null && waiting.isEmpty() && !hasStock()) restock();
+    }
+    private void returnToCounter() {
+        if (!atCounter()) {
+            ((DrakeStableNavigation)getNavigation()).open(gate());
+            double gateX = site.getX() + 9;
+            if (pen().contains(getPos()) || Math.abs(getX() - gateX) < 1 && getZ() > site.getZ() + 2) {
+                var point = new Vec3d(gateX, site.getY() + 1,
+                        Math.abs(getX() - gateX) < .2 ? site.getZ() + 1.5 : site.getZ() + 5.5);
+                getNavigation().stop(); getMoveControl().moveTo(point.x, point.y, point.z, MOVE_SPEED);
+            } else if (age % 10 == 0 || getNavigation().isIdle()) getNavigation().startMovingAlong(getNavigation().findPathTo(counter().x, counter().y, counter().z, 0), MOVE_SPEED);
+        } else {
+            getNavigation().stop();
+            if (buyer == null) getLookControl().lookAt(customerPosition().x, customerPosition().y + 1, customerPosition().z);
+        }
     }
     private void restock() {
         var world = (ServerWorld)getWorld();
-        if (hasStock() || !world.isChunkLoaded(site.add(12, 0, 10))) return;
+        if (hasStock() || !world.isRegionLoaded(site, site.add(12, 6, 10))
+                || stocked && world.getPlayers().stream().anyMatch(player -> player.squaredDistanceTo(counter()) <= 64 * 64)) return;
         // Missing UUIDs may be unloaded, so only retire stock known to be dead or sold.
-        stock.removeIf(id -> world.getEntity(id) instanceof StableDrakeEntity drake && (!drake.isAlive() || !getUuid().equals(drake.merchant())));
+        stock.removeIf(id -> world.getEntity(id) instanceof StableDrakeEntity drake
+                && (!drake.isAlive() || !inheritedStock.contains(id) && !getUuid().equals(drake.merchant())));
+        inheritedStock.retainAll(stock);
         if (!stock.isEmpty()) return;
         int count = 1 + random.nextInt(2);
         for (int i = 0; i < count; i++) {
@@ -453,7 +516,6 @@ public final class MountMerchantEntity extends PillagerEntity {
             drake.setCustomName(Text.literal(DrakeMountNames.choose(random)));
             if (world.spawnEntity(drake)) addStock(drake);
         }
-        restockTicks = 0;
     }
     @Override public ActionResult interactMob(PlayerEntity player, Hand hand) {
         if (!isAlive() || player.isSpectator() || getTarget() != null) return ActionResult.PASS;
@@ -474,6 +536,7 @@ public final class MountMerchantEntity extends PillagerEntity {
     }
     @Override public void onDeath(DamageSource source) {
         if (!getWorld().isClient) {
+            MountMarket.get(getServer()).vacateMerchant(this, stock);
             cancelOffer();
             for (var id : waiting) {
                 MountMarket.get(getServer()).release(id);
@@ -489,6 +552,9 @@ public final class MountMerchantEntity extends PillagerEntity {
     @Override public boolean isDisallowedInPeaceful() { return false; }
     @Override public void writeCustomDataToNbt(NbtCompound tag) {
         super.writeCustomDataToNbt(tag);
+        var aggressors = new NbtList();
+        villageAggressors.forEach((id, seen) -> { var entry = new NbtCompound(); entry.putUuid("Player", id); entry.putLong("LastSeen", seen); aggressors.add(entry); });
+        tag.put("MarketVillageAggressors", aggressors);
         if (site != null) tag.putLong("MarketSite", site.asLong());
         tag.put("MarketDestination", MountMarket.writeStable(destination));
         if (seller != null) tag.putUuid("MarketSeller", seller);
@@ -503,12 +569,18 @@ public final class MountMerchantEntity extends PillagerEntity {
         tag.put("MarketQuotes", prices);
         signs.write(tag);
         tag.put("MarketConversion", conversion.write()); tag.putBoolean("MarketPretend", pretend);
-        tag.putBoolean("MarketStocked", stocked); tag.putInt("MarketRestockTicks", restockTicks); tag.putInt("MarketNextBuyer", nextBuyer);
+        tag.putBoolean("MarketStocked", stocked); tag.putBoolean("MarketArriving", arriving); tag.putInt("MarketNextBuyer", nextBuyer);
         tag.putInt("MarketBuyerWait", buyerWait);
         var ids = new NbtList(); stock.forEach(id -> ids.add(NbtHelper.fromUuid(id))); tag.put("MarketStock", ids);
+        var inherited = new NbtList(); inheritedStock.forEach(id -> inherited.add(NbtHelper.fromUuid(id))); tag.put("MarketInheritedStock", inherited);
     }
     @Override public void readCustomDataFromNbt(NbtCompound tag) {
         super.readCustomDataFromNbt(tag);
+        villageAggressors.clear();
+        for (var element : tag.getList("MarketVillageAggressors", NbtElement.COMPOUND_TYPE)) {
+            var entry = (NbtCompound)element;
+            if (entry.containsUuid("Player")) villageAggressors.put(entry.getUuid("Player"), entry.getLong("LastSeen"));
+        }
         arm();
         site = tag.contains("MarketSite") ? BlockPos.fromLong(tag.getLong("MarketSite")) : null;
         destination = MountMarket.readStable(tag.getCompound("MarketDestination"));
@@ -527,10 +599,13 @@ public final class MountMerchantEntity extends PillagerEntity {
             if (entry.containsUuid("Player")) quotes.put(entry.getUuid("Player"), Math.max(141, Math.min(256, entry.getInt("Price"))));
         }
         signs.read(tag);
-        stocked = tag.getBoolean("MarketStocked"); restockTicks = tag.getInt("MarketRestockTicks");
+        stocked = tag.getBoolean("MarketStocked"); arriving = tag.getBoolean("MarketArriving");
         int savedNextBuyer = tag.contains("MarketNextBuyer") ? Math.max(1, Math.min(BUYER_DEADLINE, tag.getInt("MarketNextBuyer"))) : BUYER_DEADLINE;
         nextBuyer = (savedNextBuyer - 1) % BUYER_INTERVAL + 1;
         buyerWait = tag.contains("MarketBuyerWait") ? Math.max(0, Math.min(BUYER_DEADLINE, tag.getInt("MarketBuyerWait"))) : BUYER_DEADLINE - savedNextBuyer;
         stock.clear(); for (var id : tag.getList("MarketStock", NbtElement.INT_ARRAY_TYPE)) stock.add(NbtHelper.toUuid(id));
+        inheritedStock.clear(); for (var id : tag.getList("MarketInheritedStock", NbtElement.INT_ARRAY_TYPE)) {
+            var uuid = NbtHelper.toUuid(id); if (stock.contains(uuid)) inheritedStock.add(uuid);
+        }
     }
 }

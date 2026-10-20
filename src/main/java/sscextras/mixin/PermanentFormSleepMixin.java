@@ -1,5 +1,6 @@
 package sscextras.mixin;
 
+import com.bawnorton.mixinsquared.TargetHandler;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -12,13 +13,12 @@ import sscextras.drake.DrakeSoulbinding;
 
 @Mixin(value = World.class, priority = 1100)
 public abstract class PermanentFormSleepMixin {
-    // SSC's tickEntity callback is renamed by Mixin. Match its named, intermediary, or Connector signature.
+    // Select SSC's own merged callback, independently of other mods' same-signature handlers.
     @Dynamic("CursedMoonWorldMixin.tickEntity")
-    @WrapOperation(method = {
-            "(Ljava/util/function/Consumer;Lnet/minecraft/entity/Entity;Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V",
-            "(Ljava/util/function/Consumer;Lnet/minecraft/class_1297;Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V",
-            "(Ljava/util/function/Consumer;Lnet/minecraft/world/entity/Entity;Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V"},
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;wakeUp()V"))
+    @TargetHandler(mixin = "net.onixary.shapeShifterCurseFabric.mixin.CursedMoonWorldMixin", name = "tickEntity")
+    @WrapOperation(method = "@MixinSquared:Handler", remap = false,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;wakeUp()V", remap = true),
+            require = 1, allow = 1)
     private void sscExtras$allowPermanentSleep(ServerPlayerEntity player, Operation<Void> original) {
         if (FormAbilityManager.getForm(player).getIndex() != 3 && !DrakeSoulbinding.bound(player)
                 && sscextras.guardian.RuneboundGuardian.stage(player) < 1) original.call(player);
