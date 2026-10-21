@@ -146,25 +146,20 @@ public final class Collars {
         if (TamingCollar.worn(player)) return true;
         var slots = CollarSlots.get(player);
         if (slots.isEmpty()) return false;
-        var destination = slots.stream().filter(slot -> slot.stack().isOf(CURSED)).findFirst().orElse(slots.get(0));
-        if (!destination.get(player).isOf(CURSED)) {
+        if (slots.stream().noneMatch(slot -> slot.get(player).isOf(CURSED))) {
             for (var slot : CollarSlots.includingLegacy(player)) {
-                var displaced = slot.get(player);
-                if (displaced.isEmpty()) continue;
-                slot.set(player, ItemStack.EMPTY);
-                if (slot.get(player).isEmpty()) player.getInventory().offerOrDrop(displaced);
+                if (!slot.clear(player, player.getInventory()::offerOrDrop)) return false;
             }
-            if (!destination.get(player).isEmpty()) return false;
-            destination.set(player, new ItemStack(CURSED));
         }
-        var stack = destination.get(player);
-        if (!stack.isOf(CURSED)) return false;
+        var fit = AccessoryEquipment.forceEquip(player, slots.get(0).group(), "necklace", new ItemStack(CURSED));
+        if (fit == null) return false;
+        var stack = fit.stack();
         stack.getOrCreateNbt().remove(INFUSION_FORM);
         stack.getOrCreateNbt().putString(INFUSION, Registries.STATUS_EFFECT.getId(sscextras.drake.EarthenDrake.CURSE).toString());
         stack.setCustomName(Text.translatable("item.ssc-extras.named_cursed_feralizing_collar", name));
         CURSED.onEquip(stack, player, new net.onixary.shapeShifterCurseFabric.items.accessory.AccessoryItem.SlotData(
                 new Identifier(CuriosCompat.instance == null ? "trinkets" : "curios",
-                        CuriosCompat.instance == null ? "chest/necklace" : "necklace"), destination.index()));
+                        CuriosCompat.instance == null ? "chest/necklace" : "necklace"), fit.index()));
         player.getInventory().markDirty(); player.currentScreenHandler.sendContentUpdates();
         return true;
     }

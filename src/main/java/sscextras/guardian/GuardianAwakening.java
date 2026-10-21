@@ -21,9 +21,10 @@ import static sscextras.guardian.GuardianRitual.*;
 /** Villager/core adapter; the shared runner owns advancement and committed effects. */
 final class GuardianAwakening extends AbstractGuardianRitual<GuardianAwakening> {
     static final RitualComposition COMPOSITION = new RitualComposition(List.of(
-            new RitualComposition.Participant("guide", new Vec3d(.5, -.75, -2.5), true),
-            new RitualComposition.Participant("left_carver", new Vec3d(-2.5, -.75, -.5), false),
-            new RitualComposition.Participant("right_carver", new Vec3d(2.5, -.75, -.5), false)));
+            // Allow the navigator's arrival radius without leaving workers inside the 4x4 cast.
+            new RitualComposition.Participant("guide", new Vec3d(.5, -.75, -3.5), true),
+            new RitualComposition.Participant("left_carver", new Vec3d(-3.5, -.75, -.5), false),
+            new RitualComposition.Participant("right_carver", new Vec3d(3.5, -.75, -.5), false)));
     private static final List<RitualStage<GuardianAwakening>> STAGES = List.of(
             RitualStage.afterAndWhen("escort", 1, r -> true, GuardianAwakening::arrive),
             RitualStage.afterAndWhen("binding", SOUL_START - 1, r -> true, GuardianAwakening::beginSoul),

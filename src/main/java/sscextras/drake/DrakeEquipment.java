@@ -16,6 +16,7 @@ import net.minecraft.util.Hand;
 import net.onixary.shapeShifterCurseFabric.util.Accessory.AccessoryUtils;
 import net.onixary.shapeShifterCurseFabric.items.accessory.AccessoryItem;
 import sscextras.collar.Collars;
+import sscextras.collar.AccessoryEquipment;
 import sscextras.collar.CuriosCompat;
 import java.util.List;
 
@@ -73,7 +74,7 @@ public final class DrakeEquipment {
     }
 
     public static AccessoryUtils.AccessoryIO slots() {
-        return CuriosCompat.instance != null ? CuriosCompat.instance : AccessoryUtils.nowAccessoryMod;
+        return AccessoryEquipment.slots();
     }
 
     public static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume) {
@@ -81,6 +82,24 @@ public final class DrakeEquipment {
                 || DrakeShoes.tryEquip(player, source, true, consume);
         return tryEquip(player, source, consume, false)
                 || source.isOf(CLAW_TIPS) && tryEquip(player, source, consume, true);
+    }
+
+    /** NPC fitting preserves a matching harness and returns any displaced accessory intact. */
+    public static boolean equipHarnessPiece(PlayerEntity player, DrakeAccessoryItem item) {
+        if (player.getWorld().isClient || !player.isAlive() || player.isSpectator() || item != REINS && item != SADDLE) return false;
+        String group = CuriosCompat.instance == null ? item.group : "";
+        String name = CuriosCompat.instance == null ? item.slot : item.curiosSlot();
+        var fit = AccessoryEquipment.forceEquip(player, group, name, item.getDefaultStack(),
+                item == SADDLE ? DrakeEquipment::isSaddle : DrakeEquipment::isReins, player.getInventory()::offerOrDrop);
+        if (fit == null) return false;
+        if (fit.changed()) {
+            item.onEquip(fit.stack(), player, new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
+                    CuriosCompat.instance == null ? "trinkets" : "curios",
+                    CuriosCompat.instance == null ? group + "/" + name : name), fit.index()));
+            player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.ENTITY_HORSE_SADDLE, SoundCategory.PLAYERS, 1, 1);
+        }
+        return true;
     }
 
     private static boolean tryEquip(PlayerEntity player, ItemStack source, boolean consume, boolean feet) {

@@ -26,9 +26,9 @@ public abstract class DrakeFeralStateMixin implements DrakeFeralization.State, s
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_INT_POINTS = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_EFFECTIVE_INT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public sscextras.player.PlayerMind.Runtime sscExtras$mind() { return sscExtras$mind; }
-    public int sscExtras$intUnits() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_INT_POINTS) : 50000; }
+    public int sscExtras$intUnits() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_INT_POINTS) : sscextras.player.PlayerMind.MAX_POINTS * 100; }
     public void sscExtras$intUnits(int value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_INT_POINTS, value); }
-    public int sscExtras$effectiveInt() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_EFFECTIVE_INT) : 5; }
+    public int sscExtras$effectiveInt() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_EFFECTIVE_INT) : sscextras.player.IntLevel.REGULAR.ordinal(); }
     public void sscExtras$effectiveInt(int value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_EFFECTIVE_INT, value); }
     public DrakeFeralization.Control sscExtras$feralRuntime() { return sscExtras$feralRuntime; }
     @Unique private static final TrackedData<Boolean> SSC_EXTRAS_FERAL = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -39,7 +39,7 @@ public abstract class DrakeFeralStateMixin implements DrakeFeralization.State, s
         var tracker = ((PlayerEntity)(Object)this).getDataTracker();
         tracker.startTracking(SSC_EXTRAS_FERAL, false); tracker.startTracking(SSC_EXTRAS_FERAL_CONTROL, false);
         tracker.startTracking(SSC_EXTRAS_SENTIENCE, 0);
-        tracker.startTracking(SSC_EXTRAS_INT_POINTS, 50000); tracker.startTracking(SSC_EXTRAS_EFFECTIVE_INT, 5);
+        tracker.startTracking(SSC_EXTRAS_INT_POINTS, sscextras.player.PlayerMind.MAX_POINTS * 100); tracker.startTracking(SSC_EXTRAS_EFFECTIVE_INT, sscextras.player.IntLevel.REGULAR.ordinal());
         tracker.startTracking(SSC_EXTRAS_QUADRUPED_REQUEST, false);
         sscExtras$feralDataReady = true;
     }

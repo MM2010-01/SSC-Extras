@@ -20,7 +20,10 @@ public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         MentalPerception.register();
         var intelligenceBar = new IntelligenceBarRenderer();
-        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register((context, delta) -> intelligenceBar.render(context));
+        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register(intelligenceBar::render);
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player == null || client.options.hudHidden) intelligenceBar.reset();
+        });
         PetrificationClient.register();
         ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.TRANSFORMATION_BLACKOUT_SYNC, (client, handler, buf, sender) -> {
             boolean removeBlackout = buf.readBoolean();

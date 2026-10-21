@@ -38,11 +38,12 @@ public final class Infusions {
                 .anyMatch(power -> power.isActive() && !power.canEquip(stack, slot.equipment));
         if (powers.getPowers(PreventItemUsePower.class).stream().anyMatch(power -> power.isActive() && power.doesPrevent(stack))) return true;
         if (IsMorphScaleItemCondition.MSI_condition(null, stack)) return false;
-        boolean dropWeapon = powers.getPowers().stream().anyMatch(power -> power.isActive() && DROP_WEAPON.equals(power.getType().getIdentifier()));
+        // Unrelated conditions (including bare_claws) may query infusions themselves.
+        boolean dropWeapon = powers.getPowers().stream().anyMatch(power -> DROP_WEAPON.equals(power.getType().getIdentifier()) && power.isActive());
         if (slot == InfusionSlot.WEAPON) return dropWeapon && (stack.isIn(TagKey.of(RegistryKeys.ITEM,
                 new Identifier("origins", "melee_weapons"))) || stack.isIn(TagKey.of(RegistryKeys.ITEM, new Identifier("origins", "tools"))));
         return stack.getItem() instanceof ToolItem tool && tool.getMaterial().getMiningLevel() >= 1
-                && powers.getPowers().stream().anyMatch(power -> power.isActive() && DROP_TOOL.equals(power.getType().getIdentifier()));
+                && powers.getPowers().stream().anyMatch(power -> DROP_TOOL.equals(power.getType().getIdentifier()) && power.isActive());
     }
 
     public static boolean available(PlayerEntity player, InfusionSlot slot) {

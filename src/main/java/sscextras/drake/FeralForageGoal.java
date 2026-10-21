@@ -47,10 +47,21 @@ final class FeralForageGoal extends Goal {
     }
 
     static void eatHeldFood(MobEntity mob, ServerPlayerEntity player) {
-        if (!player.canConsume(false) || player.isUsingItem() || player.isSleeping()) return;
-        for (var hand : Hand.values()) if (edible(mob, player.getStackInHand(hand))) {
+        eatHeldFood(player, stack -> edible(mob, stack));
+    }
+
+    /** Held food is an immediate Feral reflex; ground foraging retains species diets. */
+    static void eatHeldFood(ServerPlayerEntity player) {
+        eatHeldFood(player, DrakeFeralization::edible);
+    }
+
+    private static void eatHeldFood(ServerPlayerEntity player, java.util.function.Predicate<ItemStack> edible) {
+        if (!player.isAlive() || !player.canConsume(false) || player.isUsingItem() || player.isSleeping()
+                || sscextras.guardian.GuardianCombat.locked(player) || sscextras.petrification.Petrification.frozen(player)) return;
+        for (var hand : Hand.values()) if (edible.test(player.getStackInHand(hand))
+                && !FormItemRestrictions.prevents(player, player.getStackInHand(hand))) {
             player.setCurrentHand(hand);
-            return;
+            if (player.isUsingItem()) return;
         }
     }
 

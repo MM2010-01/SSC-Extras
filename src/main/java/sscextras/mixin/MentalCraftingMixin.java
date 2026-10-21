@@ -21,7 +21,7 @@ public abstract class MentalCraftingMixin {
     @Inject(method = "updateResult", at = @At("HEAD"), cancellable = true)
     private static void sscExtras$recipeInt(ScreenHandler handler, World world, PlayerEntity player,
             RecipeInputInventory input, CraftingResultInventory result, CallbackInfo ci) {
-        if (world.isClient || PlayerMind.permits(player, IntLevel.FUTURISTIC)) return;
+        if (world.isClient || PlayerMind.permits(player, IntLevel.REGULAR)) return;
         var recipe = world.getRecipeManager().getFirstMatch(RecipeType.CRAFTING, input, world);
         if (recipe.isEmpty() || MentalCrafting.allowed(player, recipe.get())) return;
         result.setStack(0, ItemStack.EMPTY);

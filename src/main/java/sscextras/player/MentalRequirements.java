@@ -32,7 +32,7 @@ public final class MentalRequirements {
     public static void registerAdapter(Identifier id, Function<MentalContext, IntLevel> adapter) {
         if (ADAPTERS.putIfAbsent(id, adapter) != null) throw new IllegalArgumentException("Duplicate mental adapter: " + id);
     }
-    public static IntLevel modLevel(String namespace) { return rules.mods.getOrDefault(namespace, IntLevel.REGULAR); }
+    public static IntLevel modLevel(String namespace) { return rules.mods.getOrDefault(namespace, IntLevel.SUB_PAR); }
     public static IntLevel screen(Identifier id) { return rules.screens.getOrDefault(id, modLevel(id.getNamespace())); }
     public static IntLevel screen(net.minecraft.screen.ScreenHandler handler) {
         var type = ((sscextras.mixin.MentalScreenHandlerAccessor)handler).sscExtras$nullableType();
@@ -62,6 +62,8 @@ public final class MentalRequirements {
         if (context.recipe() != null) return recipe(context);
         if (context.block() != null) return block(context.block());
         if (context.entity() != null) {
+            if (context.entity() instanceof net.minecraft.entity.passive.VillagerEntity
+                    || context.entity() instanceof net.minecraft.entity.passive.WanderingTraderEntity) return IntLevel.SIMPLE;
             return context.entity() instanceof AnimalEntity || context.entity() instanceof BoatEntity
                     || context.entity() instanceof ItemFrameEntity || context.entity() instanceof ArmorStandEntity
                     ? IntLevel.DUMB : modLevel(context.id().getNamespace());
@@ -75,7 +77,7 @@ public final class MentalRequirements {
         if (context.action() != Action.CRAFT && (item.getClass() == PickaxeItem.class || item.getClass() == AxeItem.class
                 || item.getClass() == ShovelItem.class || item.getClass() == HoeItem.class || item.getClass() == SwordItem.class))
             return IntLevel.DUMB;
-        if (mod.ordinal() > IntLevel.REGULAR.ordinal()) return mod;
+        if (mod == IntLevel.REGULAR) return mod;
         if (context.action() == Action.CRAFT) return craftItem(stack);
         if (item instanceof ToolItem || item instanceof SwordItem || item instanceof ShieldItem || item instanceof ShearsItem
                 || item instanceof FishingRodItem || item instanceof BucketItem || item instanceof LeadItem
@@ -88,9 +90,12 @@ public final class MentalRequirements {
         String action = context.action().name().toLowerCase(Locale.ROOT);
         for (int index = IntLevel.values().length - 1; index >= 0; index--) {
             var level = IntLevel.values()[index];
-            var id = new Identifier("ssc-extras", "mental/" + group + "/" + action + "/" + level.id());
-            if (!context.stack().isEmpty() && context.stack().isIn(TagKey.of(RegistryKeys.ITEM, id))) return level;
-            if (context.block() != null && context.block().isIn(TagKey.of(RegistryKeys.BLOCK, id))) return level;
+            String[] names = level == IntLevel.REGULAR ? new String[]{"regular", "steam_age", "futuristic"} : new String[]{level.id()};
+            for (String name : names) {
+                var id = new Identifier("ssc-extras", "mental/" + group + "/" + action + "/" + name);
+                if (!context.stack().isEmpty() && context.stack().isIn(TagKey.of(RegistryKeys.ITEM, id))) return level;
+                if (context.block() != null && context.block().isIn(TagKey.of(RegistryKeys.BLOCK, id))) return level;
+            }
         }
         return null;
     }
@@ -99,7 +104,7 @@ public final class MentalRequirements {
         Identifier id = Registries.BLOCK.getId(block);
         IntLevel mod = modLevel(id.getNamespace());
         if (state.isIn(TagKey.of(RegistryKeys.BLOCK, new Identifier("ssc-extras", "mental/simple_building")))) return IntLevel.DUMB;
-        if (mod.ordinal() > IntLevel.REGULAR.ordinal()) return mod;
+        if (mod == IntLevel.REGULAR) return mod;
         if (block instanceof DoorBlock || block instanceof TrapdoorBlock || block instanceof FenceGateBlock
                 || block instanceof ChestBlock || block instanceof BarrelBlock || block instanceof BedBlock
                 || block instanceof ButtonBlock || block instanceof LeverBlock || block instanceof CampfireBlock
@@ -113,6 +118,7 @@ public final class MentalRequirements {
     private static IntLevel craftItem(ItemStack stack) {
         if (stack.isFood()) return IntLevel.SIMPLE;
         Item item = stack.getItem();
+        if (item instanceof ArmorItem armor && armor.getMaterial() == ArmorMaterials.LEATHER) return IntLevel.SIMPLE;
         if (item instanceof ToolItem tool && (tool.getMaterial() == ToolMaterials.WOOD || tool.getMaterial() == ToolMaterials.STONE)) return IntLevel.SIMPLE;
         if (stack.isIn(TagKey.of(RegistryKeys.ITEM, new Identifier("ssc-extras", "mental/simple_crafts")))) return IntLevel.SIMPLE;
         return modLevel(Registries.ITEM.getId(item).getNamespace());
@@ -122,10 +128,18 @@ public final class MentalRequirements {
         Identifier type = Registries.RECIPE_TYPE.getId(recipe.getType());
         IntLevel output = craftItem(context.stack());
         IntLevel machine = recipe instanceof AbstractCookingRecipe
-                ? recipe.getType() == RecipeType.CAMPFIRE_COOKING ? IntLevel.DUMB : context.stack().isFood() ? IntLevel.SIMPLE : IntLevel.REGULAR
+                ? recipe.getType() == RecipeType.CAMPFIRE_COOKING ? IntLevel.DUMB : context.stack().isFood() ? IntLevel.SIMPLE : IntLevel.SUB_PAR
                 : type.getNamespace().equals("minecraft") ? IntLevel.SIMPLE : modLevel(type.getNamespace());
         IntLevel origin = modLevel(context.id().getNamespace());
-        if (origin.ordinal() > IntLevel.REGULAR.ordinal()) machine = IntLevel.higher(machine, origin);
+        if (origin == IntLevel.REGULAR) machine = IntLevel.higher(machine, origin);
+        if (recipe instanceof CraftingRecipe && recipe.getIngredients().stream().anyMatch(ingredient -> ingredient.test(Items.REDSTONE.getDefaultStack()))) {
+            // Only the native nine-dust packing recipe is exempt; a changed recipe must still qualify.
+            boolean packing = context.id().equals(new Identifier("minecraft", "redstone_block")) && context.stack().isOf(Items.REDSTONE_BLOCK)
+                    && context.stack().getCount() == 1 && recipe.getIngredients().size() == 9
+                    && recipe.getIngredients().stream().allMatch(ingredient -> ingredient.getMatchingStacks().length == 1
+                        && ingredient.getMatchingStacks()[0].isOf(Items.REDSTONE));
+            if (!packing) return IntLevel.REGULAR;
+        }
         if (recipe.getType() == RecipeType.CAMPFIRE_COOKING && context.stack().isFood()) return IntLevel.DUMB;
         return IntLevel.higher(machine, output);
     }

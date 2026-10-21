@@ -401,9 +401,8 @@
   "int.ssc-extras.feral": "Дикий",
   "int.ssc-extras.dumb": "Глупый",
   "int.ssc-extras.simple": "Простой",
+  "int.ssc-extras.sub_par": "Ниже нормы",
   "int.ssc-extras.regular": "Обычный",
-  "int.ssc-extras.steam_age": "Паровой век",
-  "int.ssc-extras.futuristic": "Футуристический",
   "message.ssc-extras.int.required": "Требуется уровень интеллекта: %s.",
   "message.ssc-extras.sentient_catalyst.1": "Разум начинает возвращаться: глупый. Можно пользоваться обычными инструментами и простыми блоками.",
   "message.ssc-extras.sentient_catalyst.2": "Разум проясняется: простой. Можно создавать простые предметы и готовить еду.",
@@ -428,5 +427,6 @@
   "death.attack.ssc_extras_shatter.player": "%2$s разбил статую %1$s",
   "death.attack.ssc_extras_shatter": "%2$s разбил статую %1$s",
   "message.ssc-extras.int.decreased": "Интеллект снизился до уровня «%s».",
-  "hud.ssc-extras.int": "ИНТ %s / %s"
+  "hud.ssc-extras.int.loss": "- ИНТ",
+  "hud.ssc-extras.int.gain": "+ ИНТ"
 }

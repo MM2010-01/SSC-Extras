@@ -15,7 +15,7 @@ import sscextras.player.*;
 public abstract class MentalItemTickMixin {
     @Inject(method = "inventoryTick", at = @At("HEAD"), cancellable = true)
     private void sscExtras$activeEquipmentInt(World world, Entity entity, int slot, boolean selected, CallbackInfo ci) {
-        if (!(entity instanceof PlayerEntity player) || PlayerMind.permits(player, IntLevel.FUTURISTIC)) return;
+        if (!(entity instanceof PlayerEntity player) || PlayerMind.permits(player, IntLevel.REGULAR)) return;
         var stack = (ItemStack)(Object)this;
         boolean active = selected;
         if (!active) for (var equipment : EquipmentSlot.values()) if (player.getEquippedStack(equipment) == stack) { active = true; break; }

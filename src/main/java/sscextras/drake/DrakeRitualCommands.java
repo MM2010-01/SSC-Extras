@@ -84,7 +84,7 @@ public final class DrakeRitualCommands {
                         .styled(style -> style.withInsertion("ssc-extras:mental_hint")), false);
                 return 1;
             }));
-            var points = CommandManager.argument("points", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, sscextras.player.PlayerMind.MAX_POINTS));
+            var points = CommandManager.argument("points", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(sscextras.player.PlayerMind.MIN_POINTS, sscextras.player.PlayerMind.MAX_POINTS));
             points.executes(context -> setPoints(context.getSource(), defaultPlayer(context.getSource()),
                     com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "points")))
                     .then(CommandManager.argument("player", EntityArgumentType.player()).executes(context ->

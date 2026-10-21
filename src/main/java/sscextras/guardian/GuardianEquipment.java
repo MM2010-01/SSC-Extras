@@ -22,6 +22,7 @@ import net.onixary.shapeShifterCurseFabric.items.accessory.AccessoryItem;
 import sscextras.collar.CollarSlots;
 import sscextras.collar.Collars;
 import sscextras.collar.CuriosCompat;
+import sscextras.collar.AccessoryEquipment;
 import sscextras.drake.DrakeEquipment;
 import sscextras.drake.SoulboundEquipment;
 import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
@@ -89,9 +90,8 @@ public final class GuardianEquipment {
         for (var location : LOCATIONS) {
             var stacks = io.getEntitySlot(player, group(location), slot(location));
             for (int i = 0; i < stacks.size(); i++) {
-                var stack = stacks.get(i).copy();
-                io.setEntitySlot(player, group(location), slot(location), i, ItemStack.EMPTY);
-                if (!stack.isEmpty()) player.dropItem(stack, true, false);
+                if (!AccessoryEquipment.clear(player, io, group(location), slot(location), i,
+                        stack -> player.dropItem(stack, true, false))) return false;
             }
         }
         for (var slot : EquipmentSlot.values()) if (slot.getType() == EquipmentSlot.Type.ARMOR) {
@@ -103,7 +103,8 @@ public final class GuardianEquipment {
         for (var location : LOCATIONS) {
             var stack = (location.equals("necklace") ? COLLAR : CUFFS).getDefaultStack();
             SoulboundEquipment.enchant(stack);
-            io.setEntitySlot(player, group(location), slot(location), 0, stack);
+            if (AccessoryEquipment.forceEquip(player, group(location), slot(location), stack,
+                    worn -> worn.isOf(stack.getItem()), displaced -> player.dropItem(displaced, true, false)) == null) return false;
         }
         var village = new GuardianWorldState.Village();
         village.world = player.getWorld().getRegistryKey(); village.pedestal = pedestal.toImmutable();

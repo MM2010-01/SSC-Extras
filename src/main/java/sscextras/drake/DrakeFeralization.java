@@ -54,6 +54,7 @@ public final class DrakeFeralization {
     public static boolean temporary(PlayerEntity player) { return player.hasStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED); }
     public static boolean edible(ItemStack stack) { return stack.isFood(); }
     public static boolean restricted(PlayerEntity player) { return PlayerMind.feral(player) && !player.isCreative() && !player.isSpectator(); }
+    public static boolean wantsHeldFood(PlayerEntity player) { return restricted(player) && player.canConsume(false); }
     public static boolean controlled(PlayerEntity player) { return PlayerControl.active(player); }
 
     public static boolean forcedQuadruped(PlayerEntity player) {
@@ -198,7 +199,10 @@ public final class DrakeFeralization {
         sync(player, claim);
         if (!canTakeOver(player, claim)) return;
         var control = ((State)player).sscExtras$feralRuntime();
-        if (!selectBrain(player, control, net.minecraft.util.math.MathHelper.clamp(ticks, MIN_CONTROL_TICKS, MAX_CONTROL_TICKS))) return;
+        int duration = net.minecraft.util.math.MathHelper.clamp(ticks, MIN_CONTROL_TICKS, MAX_CONTROL_TICKS);
+        // Negative INT adds 20% per 100 points, capped at +200%; cadence is unchanged.
+        double multiplier = PlayerMind.enabled(player) ? 1 + Math.min(2, Math.max(0, -PlayerMind.points(player)) / 500) : 1;
+        if (!selectBrain(player, control, (int)Math.round(duration * multiplier))) return;
         player.sendMessage(takeoverMessage(player), true);
     }
 
@@ -247,6 +251,7 @@ public final class DrakeFeralization {
     public static void tick(ServerPlayerEntity player) {
         PlayerMind.refresh(player);
         tickPolicy(player);
+        if (wantsHeldFood(player)) FeralForageGoal.eatHeldFood(player);
         boolean wasFeral = PlayerControl.owns(player, FERAL_CONTROL);
         PlayerControl.tick(player);
         if (wasFeral && !PlayerControl.owns(player, FERAL_CONTROL)) ((State)player).sscExtras$feralRuntime().next = nextTakeover(player);

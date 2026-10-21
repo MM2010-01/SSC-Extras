@@ -9,6 +9,8 @@ public final class SscExtras implements ModInitializer {
         SscExtrasGameRules.register();
         ConfiguredLootChance.register();
         sscextras.drake.EarthenDrake.register();
+        // Explicit block interactions precede the empty-hand infused-tool fallback.
+        sscextras.drake.DrakeHaySleep.register();
         sscextras.effigy.FeralEffigy.register();
         sscextras.collar.Collars.register();
         sscextras.cuffs.MetalCuffs.register();
@@ -16,7 +18,6 @@ public final class SscExtras implements ModInitializer {
         sscextras.drake.DrakeStable.register();
         sscextras.drake.MountMerchants.register();
         sscextras.drake.DrakeOutpostOwnership.register();
-        sscextras.drake.DrakeHaySleep.register();
         sscextras.drake.DrakeRitualCommands.register();
         sscextras.guardian.RuneboundGuardian.register();
         sscextras.player.PlayerAspects.register();

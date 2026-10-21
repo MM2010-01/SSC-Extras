@@ -184,9 +184,9 @@ public final class DrakeFaction {
                 && (!Collars.isCursed(player) || (cursedPiece || pendingDrake) && FormAbilityManager.getForm(player).getIndex() < 0);
         if (!drakeRecruiting && !uncursedRecruiting) return null;
         if (upgrade) return DrakeEquipment.BLINDING_REIN;
-        if (!reins && DrakeEquipment.stacks(player, DrakeEquipment.REINS).stream().anyMatch(ItemStack::isEmpty))
+        if (!reins && !DrakeEquipment.stacks(player, DrakeEquipment.REINS).isEmpty())
             return DrakeEquipment.REINS;
-        if (!saddle && DrakeEquipment.stacks(player, DrakeEquipment.SADDLE).stream().anyMatch(ItemStack::isEmpty))
+        if (!saddle && !DrakeEquipment.stacks(player, DrakeEquipment.SADDLE).isEmpty())
             return DrakeEquipment.SADDLE;
         return null;
     }
@@ -262,7 +262,7 @@ public final class DrakeFaction {
             if (pillager.age < nextEquip || !DrakeRiding.inInteractionReach(pillager, wearer) || !pillager.getVisibilityCache().canSee(wearer)) return;
             var missing = missingPiece(wearer);
             if (missing != null && (missing == DrakeEquipment.BLINDING_REIN ? BlindingRein.upgrade(wearer)
-                    : DrakeEquipment.tryEquip(wearer, new ItemStack(missing), false))) {
+                    : DrakeEquipment.equipHarnessPiece(wearer, missing))) {
                 wearer.sendMessage(Text.translatable("message.ssc-extras.drake.pillager_equipped",
                         new ItemStack(missing).getName()).formatted(Formatting.YELLOW), false);
                 var next = missingPiece(wearer);

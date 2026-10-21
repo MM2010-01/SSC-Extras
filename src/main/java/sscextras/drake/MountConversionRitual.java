@@ -43,7 +43,7 @@ public final class MountConversionRitual extends NpcEvent {
     private boolean transforming() { return TransformManager.getPlayerTransformData(player).isTransforming; }
     private boolean harness() {
         for (var item : List.of(DrakeEquipment.REINS, DrakeEquipment.SADDLE))
-            if (DrakeEquipment.equipped(player, item).isEmpty() && !DrakeEquipment.tryEquip(player, item.getDefaultStack(), false)) return false;
+            if (!DrakeEquipment.equipHarnessPiece(player, item)) return false;
         if (sscextras.collar.CollarSlots.includingLegacy(player).stream().noneMatch(slot -> slot.stack().getItem() instanceof sscextras.collar.CollarItem)) {
             if (!sscextras.collar.Collars.equipNamedDrake(player, DrakeMountNames.choose(player.getRandom()))) return false;
             MountMerchantEntity.say(player, "collar");

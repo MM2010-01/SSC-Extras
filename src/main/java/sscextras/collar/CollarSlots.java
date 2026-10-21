@@ -14,6 +14,9 @@ public final class CollarSlots {
     public record Slot(AccessoryUtils.AccessoryIO io, String group, int index, ItemStack stack) {
         public ItemStack get(PlayerEntity player) { return io.getEntitySlot(player, group, "necklace", index); }
         public void set(PlayerEntity player, ItemStack value) { io.setEntitySlot(player, group, "necklace", index, value); }
+        public boolean clear(PlayerEntity player, java.util.function.Consumer<ItemStack> displaced) {
+            return AccessoryEquipment.clear(player, io, group, "necklace", index, displaced);
+        }
         public boolean visible(PlayerEntity player) {
             return !(io instanceof CuriosCompat curios) || curios.visible(player, "necklace", index);
         }

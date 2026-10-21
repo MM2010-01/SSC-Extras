@@ -32,21 +32,18 @@ public final class TamingCollar {
         var slots = CollarSlots.get(player);
         if (slots.isEmpty()) return false;
         if (!worn(player)) {
-            var destination = slots.get(0);
             for (var slot : CollarSlots.includingLegacy(player)) {
-                ItemStack displaced = slot.get(player);
-                if (displaced.isEmpty()) continue;
-                slot.set(player, ItemStack.EMPTY);
-                if (slot.get(player).isEmpty() && !displaced.isOf(Collars.CURSED)) player.getInventory().offerOrDrop(displaced);
+                if (!slot.clear(player, displaced -> {
+                    if (!displaced.isOf(Collars.CURSED)) player.getInventory().offerOrDrop(displaced);
+                })) return false;
             }
-            if (!destination.get(player).isEmpty()) return false;
             var stack = Collars.TAMING.getDefaultStack();
             name(player, stack);
-            destination.set(player, stack);
-            if (!destination.get(player).isOf(Collars.TAMING)) return false;
-            Collars.TAMING.onEquip(destination.get(player), player, new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
+            var fit = AccessoryEquipment.forceEquip(player, slots.get(0).group(), "necklace", stack);
+            if (fit == null) return false;
+            Collars.TAMING.onEquip(fit.stack(), player, new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
                     CuriosCompat.instance == null ? "trinkets" : "curios",
-                    CuriosCompat.instance == null ? "chest/necklace" : "necklace"), destination.index()));
+                    CuriosCompat.instance == null ? "chest/necklace" : "necklace"), fit.index()));
             player.sendMessage(Text.translatable("message.ssc-extras.drake.taming_collar").formatted(Formatting.DARK_PURPLE), false);
         }
         restore(player, DrakeEquipment.REINS);
@@ -65,19 +62,7 @@ public final class TamingCollar {
     }
 
     private static void restore(PlayerEntity player, DrakeAccessoryItem item) {
-        if (!DrakeEquipment.equipped(player, item).isEmpty()) return;
-        var io = DrakeEquipment.slots();
-        if (io == null) return;
-        var stacks = DrakeEquipment.stacks(player, item);
-        if (stacks.isEmpty()) return;
-        if (stacks.stream().noneMatch(ItemStack::isEmpty)) {
-            String group = CuriosCompat.instance == null ? item.group : "";
-            String name = CuriosCompat.instance == null ? item.slot : item.curiosSlot();
-            var displaced = stacks.get(0);
-            io.setEntitySlot(player, group, name, 0, ItemStack.EMPTY);
-            if (io.getEntitySlot(player, group, name, 0).isEmpty()) player.getInventory().offerOrDrop(displaced);
-        }
-        DrakeEquipment.tryEquip(player, new ItemStack(item), false);
+        DrakeEquipment.equipHarnessPiece(player, item);
     }
 
     public static ActionResult struggle(PlayerEntity player, Hand hand) {

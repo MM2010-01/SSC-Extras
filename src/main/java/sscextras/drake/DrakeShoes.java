@@ -17,6 +17,7 @@ import net.minecraft.util.Identifier;
 import net.onixary.shapeShifterCurseFabric.items.accessory.AccessoryItem;
 import java.util.List;
 import sscextras.collar.CuriosCompat;
+import sscextras.collar.AccessoryEquipment;
 
 public final class DrakeShoes {
     public static final int PAW_TICKS = 100, RITUAL_TICKS = 4 * PAW_TICKS;
@@ -56,19 +57,16 @@ public final class DrakeShoes {
     }
 
     public static boolean equipPair(PlayerEntity player, boolean feet) {
-        if (feet ? feet(player) : hands(player)) return true;
-        var io = DrakeEquipment.slots();
-        var stacks = stacks(player, feet);
-        if (io == null || stacks.isEmpty()) return false;
-        if (stacks.stream().noneMatch(ItemStack::isEmpty)) {
-            String group = CuriosCompat.instance == null ? feet ? "feet" : "hand" : "";
-            String slot = CuriosCompat.instance == null ? feet ? "shoes" : "glove" : feet ? "feet" : "hands";
-            var displaced = stacks.get(0).copy();
-            io.setEntitySlot(player, group, slot, 0, ItemStack.EMPTY);
-            if (!io.getEntitySlot(player, group, slot, 0).isEmpty()) return false;
-            player.getInventory().offerOrDrop(displaced);
+        String group = CuriosCompat.instance == null ? feet ? "feet" : "hand" : "";
+        String slot = CuriosCompat.instance == null ? feet ? "shoes" : "glove" : feet ? "feet" : "hands";
+        var fit = AccessoryEquipment.forceEquip(player, group, slot, DrakeEquipment.SHOES.getDefaultStack());
+        if (fit == null) return false;
+        if (fit.changed()) {
+            DrakeEquipment.SHOES.onEquip(fit.stack(), player, new AccessoryItem.SlotData(new Identifier(
+                    CuriosCompat.instance == null ? "trinkets" : "curios", CuriosCompat.instance == null ? group + "/" + slot : slot), fit.index()));
+            player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_ARMOR_EQUIP_IRON, SoundCategory.PLAYERS, 1, 1);
         }
-        return tryEquip(player, DrakeEquipment.SHOES.getDefaultStack(), feet, false);
+        return true;
     }
 
     public static boolean tryEquip(PlayerEntity player, ItemStack source, boolean feet, boolean consume) {

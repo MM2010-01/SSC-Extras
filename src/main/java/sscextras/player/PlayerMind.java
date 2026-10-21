@@ -9,8 +9,9 @@ import net.minecraft.util.Identifier;
 import sscextras.drake.BeastizationCatalyst;
 
 public final class PlayerMind {
-    public static final int POINTS_PER_LEVEL = 100, MAX_POINTS = 500;
+    public static final int POINTS_PER_LEVEL = 100, MAX_POINTS = 400;
     private static final int UNITS_PER_POINT = 100, MAX_UNITS = MAX_POINTS * UNITS_PER_POINT;
+    public static final double MIN_POINTS = Integer.MIN_VALUE / (double)UNITS_PER_POINT;
     public interface State {
         Runtime sscExtras$mind();
         int sscExtras$intUnits();
@@ -31,16 +32,17 @@ public final class PlayerMind {
     public static boolean enabled(PlayerEntity player) { return sscextras.SscExtrasGameRules.intSystemEnabled(player); }
     public static double points(PlayerEntity player) { return state(player).sscExtras$intUnits() / (double)UNITS_PER_POINT; }
     public static double effectivePoints(PlayerEntity player) {
-        return Math.min(points(player), effectiveInt(player).ordinal() * POINTS_PER_LEVEL);
+        return Math.max(0, Math.min(points(player), effectiveInt(player).ordinal() * POINTS_PER_LEVEL));
     }
     public static IntLevel baseInt(PlayerEntity player) { return level(state(player).sscExtras$intUnits()); }
     private static IntLevel level(int units) {
+        if (units <= 0) return IntLevel.FERAL;
         int step = POINTS_PER_LEVEL * UNITS_PER_POINT;
         return IntLevel.fromOrdinal((units + step - 1) / step);
     }
     private static int units(double points) {
         if (!Double.isFinite(points)) throw new IllegalArgumentException("INT points must be finite");
-        return (int)Math.round(Math.max(0, Math.min(MAX_POINTS, points)) * UNITS_PER_POINT);
+        return (int)Math.round(Math.max(MIN_POINTS, Math.min(MAX_POINTS, points)) * UNITS_PER_POINT);
     }
     public static IntLevel effectiveInt(PlayerEntity player) {
         if (player.hasStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED)) return IntLevel.FERAL;
@@ -102,10 +104,10 @@ public final class PlayerMind {
     }
     /** Commit a completed server action. Returns the actual loss; never changes instinct or body state. */
     public static double losePoints(ServerPlayerEntity player, double amount) {
-        int loss = units(amount);
+        int loss = units(Math.max(0, amount));
         if (loss == 0 || !enabled(player) || !player.isAlive() || player.isCreative() || player.isSpectator()) return 0;
         int previous = state(player).sscExtras$intUnits();
-        loss = Math.min(loss, previous);
+        loss = (int)Math.min(loss, (long)previous - Integer.MIN_VALUE);
         if (loss == 0) return 0;
         var before = effectiveInt(player);
         setPoints(player, (previous - loss) / (double)UNITS_PER_POINT);
@@ -148,6 +150,7 @@ public final class PlayerMind {
     }
 
     public static void write(PlayerEntity player, NbtCompound nbt) {
+        nbt.putInt("SscExtrasIntVersion", 2);
         nbt.putString("SscExtrasInt", baseInt(player).id());
         nbt.putDouble("SscExtrasIntPoints", points(player));
         nbt.putString("SscExtrasIntBeforeFeral", level(state(player).sscExtras$mind().beforeFeral).id());
@@ -156,18 +159,25 @@ public final class PlayerMind {
     public static void read(PlayerEntity player, NbtCompound nbt) {
         var value = state(player); var runtime = value.sscExtras$mind();
         runtime.limits.clear();
-        IntLevel level = IntLevel.FUTURISTIC;
+        IntLevel level = IntLevel.REGULAR;
         if (nbt.contains("SscExtrasInt")) level = saved(nbt.getString("SscExtrasInt"));
         else if (nbt.getBoolean("SscExtrasFeralMind")) level = legacy(nbt.getInt("SscExtrasSentience"));
-        IntLevel previous = nbt.contains("SscExtrasIntBeforeFeral") ? saved(nbt.getString("SscExtrasIntBeforeFeral")) : IntLevel.FUTURISTIC;
+        IntLevel previous = nbt.contains("SscExtrasIntBeforeFeral") ? saved(nbt.getString("SscExtrasIntBeforeFeral")) : IntLevel.REGULAR;
         runtime.beforeFeral = savedUnits(nbt, "SscExtrasIntPointsBeforeFeral", previous);
         runtime.loaded = nbt.contains("SscExtrasIntPoints") || nbt.contains("SscExtrasInt") || nbt.getBoolean("SscExtrasFeralMind");
         value.sscExtras$intUnits(savedUnits(nbt, "SscExtrasIntPoints", level));
         value.sscExtras$effectiveInt(baseInt(player).ordinal());
     }
     private static int savedUnits(NbtCompound nbt, String key, IntLevel fallback) {
-        return units(nbt.contains(key, net.minecraft.nbt.NbtElement.NUMBER_TYPE) && Double.isFinite(nbt.getDouble(key))
-                ? nbt.getDouble(key) : fallback.ordinal() * POINTS_PER_LEVEL);
+        if (!nbt.contains(key, net.minecraft.nbt.NbtElement.NUMBER_TYPE) || !Double.isFinite(nbt.getDouble(key)))
+            return fallback.ordinal() * POINTS_PER_LEVEL * UNITS_PER_POINT;
+        double points = nbt.getDouble(key);
+        if (nbt.getInt("SscExtrasIntVersion") < 2 && points > 200) {
+            // Merge all three old upper tiers without dropping access or their partial bar.
+            long oldUnits = Math.round(Math.min(500, points) * UNITS_PER_POINT);
+            return 300 * UNITS_PER_POINT + (int)((oldUnits - 1) % (POINTS_PER_LEVEL * UNITS_PER_POINT) + 1);
+        }
+        return units(points);
     }
     private static IntLevel saved(String name) {
         try { return IntLevel.fromId(name); }

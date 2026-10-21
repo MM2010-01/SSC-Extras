@@ -15,7 +15,7 @@ public final class MentalEnergy {
             Method present = Class.forName("net.minecraftforge.common.util.LazyOptional").getMethod("isPresent");
             MentalRequirements.registerAdapter(new Identifier("ssc-extras", "forge_energy"), context -> {
                 if (has(provider, get, present, energy, context.stack()) || has(provider, get, present, energy, context.blockEntity()))
-                    return IntLevel.FUTURISTIC;
+                    return IntLevel.REGULAR;
                 return null;
             });
         } catch (ClassNotFoundException absent) {

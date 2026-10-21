@@ -15,7 +15,7 @@ public abstract class DrakeAutomaticEatingMixin {
     @WrapWithCondition(method = "handleInputEvents", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;stopUsingItem(Lnet/minecraft/entity/player/PlayerEntity;)V"))
     private boolean sscExtras$finishAutomaticMeal(ClientPlayerInteractionManager manager, PlayerEntity player) {
-        return !(DrakeFeralization.controlled(player) && player.getActiveItem().isFood())
+        return !((DrakeFeralization.controlled(player) || DrakeFeralization.wantsHeldFood(player)) && player.getActiveItem().isFood())
                 && (player.getActiveHand() != Hand.MAIN_HAND || !EarthenDrake.wantsMouthMeat(player));
     }
 }
