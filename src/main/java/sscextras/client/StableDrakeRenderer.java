@@ -46,16 +46,23 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
 
     private static final class Model extends GeoModel<StableDrakeEntity> {
         @Override public Identifier getModelResource(StableDrakeEntity drake) { return EarthenDrake.id("geo/entity/stable_drake.geo.json"); }
-        @Override public Identifier getTextureResource(StableDrakeEntity drake) { return EarthenDrake.id("textures/form/earthen_drake.png"); }
+        @Override public Identifier getTextureResource(StableDrakeEntity drake) { return sscextras.petrification.Petrification.replaceTexture(drake)
+                ? PetrificationClient.texture(EarthenDrake.id("textures/form/earthen_drake.png")) : EarthenDrake.id("textures/form/earthen_drake.png"); }
         @Override public Identifier getAnimationResource(StableDrakeEntity drake) { return EarthenDrake.id("animations/stable_drake.animation.json"); }
 
         @Override public void setCustomAnimations(StableDrakeEntity drake, long instanceId, AnimationState<StableDrakeEntity> state) {
             float time = drake.age + state.getPartialTick();
             float swing = MathHelper.sin(state.getLimbSwing() * .65f) * Math.min(.5f, state.getLimbSwingAmount()) * .7f;
-            getBone("bipedLeftArm").ifPresent(bone -> bone.setRotX(swing));
-            getBone("bipedRightArm").ifPresent(bone -> bone.setRotX(-swing));
-            getBone("bipedLeftLeg").ifPresent(bone -> bone.setRotX(-swing));
-            getBone("bipedRightLeg").ifPresent(bone -> bone.setRotX(swing));
+            if (sscextras.petrification.Petrification.frozen(drake)) {
+                var frozen = sscextras.petrification.Petrification.state(drake);
+                time = frozen.animationAge;
+                swing = MathHelper.sin(frozen.limbPos * .65f) * Math.min(.5f, frozen.limbSpeed) * .7f;
+            }
+            final float limbSwing = swing;
+            getBone("bipedLeftArm").ifPresent(bone -> bone.setRotX(limbSwing));
+            getBone("bipedRightArm").ifPresent(bone -> bone.setRotX(-limbSwing));
+            getBone("bipedLeftLeg").ifPresent(bone -> bone.setRotX(-limbSwing));
+            getBone("bipedRightLeg").ifPresent(bone -> bone.setRotX(limbSwing));
             for (int i = 0; i < 5; i++) {
                 float yaw = DrakeAttention.beingPetted(drake) ? DrakeAttention.wag(time, i)
                         : MathHelper.sin(time * .04f - i * .55f) * .035f;

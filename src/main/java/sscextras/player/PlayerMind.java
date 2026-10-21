@@ -9,17 +9,19 @@ import net.minecraft.util.Identifier;
 import sscextras.drake.BeastizationCatalyst;
 
 public final class PlayerMind {
+    public static final int POINTS_PER_LEVEL = 100, MAX_POINTS = 500;
+    private static final int UNITS_PER_POINT = 100, MAX_UNITS = MAX_POINTS * UNITS_PER_POINT;
     public interface State {
         Runtime sscExtras$mind();
-        int sscExtras$baseInt();
-        void sscExtras$baseInt(int value);
+        int sscExtras$intUnits();
+        void sscExtras$intUnits(int value);
         int sscExtras$effectiveInt();
         void sscExtras$effectiveInt(int value);
     }
 
     public static final class Runtime {
         private final Map<Identifier, IntLevel> limits = new LinkedHashMap<>();
-        private IntLevel beforeFeral = IntLevel.FUTURISTIC;
+        private int beforeFeral = MAX_UNITS;
         private boolean loaded;
         long nextHint;
     }
@@ -27,7 +29,19 @@ public final class PlayerMind {
     private PlayerMind() { }
     private static State state(PlayerEntity player) { return (State)player; }
     public static boolean enabled(PlayerEntity player) { return sscextras.SscExtrasGameRules.intSystemEnabled(player); }
-    public static IntLevel baseInt(PlayerEntity player) { return IntLevel.fromOrdinal(state(player).sscExtras$baseInt()); }
+    public static double points(PlayerEntity player) { return state(player).sscExtras$intUnits() / (double)UNITS_PER_POINT; }
+    public static double effectivePoints(PlayerEntity player) {
+        return Math.min(points(player), effectiveInt(player).ordinal() * POINTS_PER_LEVEL);
+    }
+    public static IntLevel baseInt(PlayerEntity player) { return level(state(player).sscExtras$intUnits()); }
+    private static IntLevel level(int units) {
+        int step = POINTS_PER_LEVEL * UNITS_PER_POINT;
+        return IntLevel.fromOrdinal((units + step - 1) / step);
+    }
+    private static int units(double points) {
+        if (!Double.isFinite(points)) throw new IllegalArgumentException("INT points must be finite");
+        return (int)Math.round(Math.max(0, Math.min(MAX_POINTS, points)) * UNITS_PER_POINT);
+    }
     public static IntLevel effectiveInt(PlayerEntity player) {
         if (player.hasStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED)) return IntLevel.FERAL;
         if (player.getWorld().isClient) return IntLevel.fromOrdinal(state(player).sscExtras$effectiveInt());
@@ -79,9 +93,26 @@ public final class PlayerMind {
         return allow(player, MentalContext.item(MentalContext.Action.USE, inventory.main.get(inventory.selectedSlot)));
     }
     public static void setBaseInt(ServerPlayerEntity player, IntLevel level) {
-        state(player).sscExtras$baseInt(level.ordinal());
+        setPoints(player, level.ordinal() * POINTS_PER_LEVEL);
+    }
+    public static void setPoints(ServerPlayerEntity player, double points) {
+        state(player).sscExtras$intUnits(units(points));
         state(player).sscExtras$mind().loaded = true;
         refresh(player);
+    }
+    /** Commit a completed server action. Returns the actual loss; never changes instinct or body state. */
+    public static double losePoints(ServerPlayerEntity player, double amount) {
+        int loss = units(amount);
+        if (loss == 0 || !enabled(player) || !player.isAlive() || player.isCreative() || player.isSpectator()) return 0;
+        int previous = state(player).sscExtras$intUnits();
+        loss = Math.min(loss, previous);
+        if (loss == 0) return 0;
+        var before = effectiveInt(player);
+        setPoints(player, (previous - loss) / (double)UNITS_PER_POINT);
+        if (effectiveInt(player) != before) player.sendMessage(net.minecraft.text.Text.translatable(
+                "message.ssc-extras.int.decreased", effectiveInt(player).text())
+                .styled(style -> style.withInsertion("ssc-extras:mental_hint")), true);
+        return loss / (double)UNITS_PER_POINT;
     }
     public static void limitInt(ServerPlayerEntity player, Identifier source, IntLevel level) {
         state(player).sscExtras$mind().limits.put(source, level);
@@ -93,13 +124,13 @@ public final class PlayerMind {
     }
     public static void feralize(ServerPlayerEntity player) {
         var runtime = state(player).sscExtras$mind();
-        if (!((sscextras.drake.DrakeFeralization.State)player).sscExtras$feral()) runtime.beforeFeral = baseInt(player);
+        if (!((sscextras.drake.DrakeFeralization.State)player).sscExtras$feral()) runtime.beforeFeral = state(player).sscExtras$intUnits();
         setBaseInt(player, IntLevel.FERAL);
     }
     public static void recover(ServerPlayerEntity player, int dose) {
-        IntLevel restored = state(player).sscExtras$mind().beforeFeral;
-        setBaseInt(player, dose >= 4 ? restored : IntLevel.lower(restored,
-                switch (dose) { case 0 -> IntLevel.FERAL; case 1 -> IntLevel.DUMB; case 2 -> IntLevel.SIMPLE; default -> IntLevel.REGULAR; }));
+        int restored = state(player).sscExtras$mind().beforeFeral;
+        int recovered = dose >= 4 ? restored : Math.min(restored, Math.max(0, dose) * POINTS_PER_LEVEL * UNITS_PER_POINT);
+        setPoints(player, recovered / (double)UNITS_PER_POINT);
     }
     public static void restore(ServerPlayerEntity player) { recover(player, 4); }
 
@@ -118,7 +149,9 @@ public final class PlayerMind {
 
     public static void write(PlayerEntity player, NbtCompound nbt) {
         nbt.putString("SscExtrasInt", baseInt(player).id());
-        nbt.putString("SscExtrasIntBeforeFeral", state(player).sscExtras$mind().beforeFeral.id());
+        nbt.putDouble("SscExtrasIntPoints", points(player));
+        nbt.putString("SscExtrasIntBeforeFeral", level(state(player).sscExtras$mind().beforeFeral).id());
+        nbt.putDouble("SscExtrasIntPointsBeforeFeral", state(player).sscExtras$mind().beforeFeral / (double)UNITS_PER_POINT);
     }
     public static void read(PlayerEntity player, NbtCompound nbt) {
         var value = state(player); var runtime = value.sscExtras$mind();
@@ -126,9 +159,15 @@ public final class PlayerMind {
         IntLevel level = IntLevel.FUTURISTIC;
         if (nbt.contains("SscExtrasInt")) level = saved(nbt.getString("SscExtrasInt"));
         else if (nbt.getBoolean("SscExtrasFeralMind")) level = legacy(nbt.getInt("SscExtrasSentience"));
-        runtime.beforeFeral = nbt.contains("SscExtrasIntBeforeFeral") ? saved(nbt.getString("SscExtrasIntBeforeFeral")) : IntLevel.FUTURISTIC;
-        runtime.loaded = nbt.contains("SscExtrasInt") || nbt.getBoolean("SscExtrasFeralMind");
-        value.sscExtras$baseInt(level.ordinal()); value.sscExtras$effectiveInt(level.ordinal());
+        IntLevel previous = nbt.contains("SscExtrasIntBeforeFeral") ? saved(nbt.getString("SscExtrasIntBeforeFeral")) : IntLevel.FUTURISTIC;
+        runtime.beforeFeral = savedUnits(nbt, "SscExtrasIntPointsBeforeFeral", previous);
+        runtime.loaded = nbt.contains("SscExtrasIntPoints") || nbt.contains("SscExtrasInt") || nbt.getBoolean("SscExtrasFeralMind");
+        value.sscExtras$intUnits(savedUnits(nbt, "SscExtrasIntPoints", level));
+        value.sscExtras$effectiveInt(baseInt(player).ordinal());
+    }
+    private static int savedUnits(NbtCompound nbt, String key, IntLevel fallback) {
+        return units(nbt.contains(key, net.minecraft.nbt.NbtElement.NUMBER_TYPE) && Double.isFinite(nbt.getDouble(key))
+                ? nbt.getDouble(key) : fallback.ordinal() * POINTS_PER_LEVEL);
     }
     private static IntLevel saved(String name) {
         try { return IntLevel.fromId(name); }
@@ -141,13 +180,13 @@ public final class PlayerMind {
         var value = state(player);
         if (value.sscExtras$mind().loaded) return;
         value.sscExtras$mind().loaded = true;
-        value.sscExtras$baseInt(legacy(dose).ordinal());
+        value.sscExtras$intUnits(legacy(dose).ordinal() * POINTS_PER_LEVEL * UNITS_PER_POINT);
         value.sscExtras$effectiveInt(effectiveInt(player).ordinal());
     }
     public static void copy(PlayerEntity oldPlayer, PlayerEntity newPlayer) {
         var from = state(oldPlayer); var to = state(newPlayer);
-        to.sscExtras$baseInt(from.sscExtras$baseInt());
-        to.sscExtras$effectiveInt(from.sscExtras$baseInt());
+        to.sscExtras$intUnits(from.sscExtras$intUnits());
+        to.sscExtras$effectiveInt(baseInt(oldPlayer).ordinal());
         to.sscExtras$mind().beforeFeral = from.sscExtras$mind().beforeFeral;
         to.sscExtras$mind().loaded = from.sscExtras$mind().loaded;
     }

@@ -119,7 +119,7 @@ public final class GuardianClient {
         if (player == null) return;
         var state = RuneboundGuardian.state(player);
         boolean nextDetached = state.detached && state.ritualTicks <= 1;
-        boolean nextFreeLook = state.ritualTicks <= 1 && (nextDetached || state.deactivated);
+        boolean nextFreeLook = state.ritualTicks <= 1 && (nextDetached || state.deactivated || sscextras.petrification.Petrification.frozen(player));
         if (nextFreeLook && !freeLook) { yaw = player.getYaw(); pitch = player.getPitch(); }
         if (nextDetached && !detached) previous = client.options.getPerspective();
         if (!nextDetached && detached) {

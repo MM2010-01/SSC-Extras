@@ -14,6 +14,7 @@ import java.util.Locale;
 
 /** Player-owned reserves and presentation; core identity and village service live in world saved data. */
 public final class GuardianState implements AutoSyncedComponent, ServerTickingComponent {
+    private static final int SUNLIGHT_ESCALATION_TICKS = 30 * 20;
     public final PlayerEntity owner;
     public double energy = 100;
     public boolean vision = true, overdrive, detached, protecting, flightGranted, deactivated, statueMode;
@@ -42,12 +43,21 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public GuardianEscort escort;
     public int ritualGuideId;
     private int lastEnergy = -1, lastWeather = -1;
+    private int sunlightTicks;
     private boolean lastDetached, lastProtecting, lastDeactivated, lastFlying, syncedFlying;
 
     public GuardianState(PlayerEntity owner) { this.owner = owner; }
     public double capacity() { return RuneboundGuardian.stage(owner) == 3 ? 200 : 100; }
     public double fraction() { return MathHelper.clamp(energy / capacity(), 0, 1); }
     public void charge(double amount) { energy = MathHelper.clamp(energy + amount, 0, capacity()); }
+    public boolean rechargeOnPedestal(long ticks) {
+        if (ticks <= 0 || owner.getWorld().isClient || !owner.isAlive() || owner.isCreative() || owner.isSpectator()
+                || detached || !RuneboundGuardian.construct(owner) || !GuardianPedestal.standing(owner)
+                || !GuardianSleep.statue(owner) && !deactivated) return false;
+        double before = energy;
+        charge(ticks * .025);
+        return energy != before;
+    }
     public void spend(double amount) { charge(-amount * (overdrive ? 2 : 1)); }
     public void sync() { if (!owner.getWorld().isClient) GuardianComponents.KEY.sync(owner); }
     public boolean ritualRestrained() { return ritualTicks > 1 || ritualTicks == 1 && ritualGuideId != 0; }
@@ -93,6 +103,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         GuardianEquipment.tick(player);
         GuardianOffering.standing(player);
         int stage = RuneboundGuardian.stage(player);
+        if (stage < 2) sunlightTicks = 0;
         if (stage < 0 && lastStage < 0 && coreId == null && !detached && !flightGranted && !replacedHunger) return;
         if (stage != lastStage) {
             GuardianVillages.stopRepair(player);
@@ -127,10 +138,11 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
             if (detached) GuardianCores.revert(player);
             GuardianBodyPower.flight(player, false); return;
         }
-        if (!player.isAlive()) { GuardianDialogue.stop(player); return; }
+        if (!player.isAlive()) { sunlightTicks = 0; GuardianDialogue.stop(player); return; }
         if (recoveryBlackout > 0) { recoveryBlackout--; if (recoveryBlackout == 0) sync(); }
         GuardianCores.tick(player);
         if (detached) {
+            sunlightTicks = 0;
             var village = GuardianVillages.claim(player);
             if (village != null && village.ritualTicks > 0) GuardianRitual.tick(player, village);
             syncChanged(player); return;
@@ -146,12 +158,15 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                 if (player.getAbilities().flying) cost += stage == 3 ? .03 : .06;
                 if (protecting && player.isSprinting()) cost *= 1.2;
                 boolean pedestal = GuardianPedestal.standing(player);
+                boolean sunlit = GuardianBodyPower.sunlit(player);
+                sunlightTicks = sunlit && !pedestal ? Math.min(sunlightTicks + 1, SUNLIGHT_ESCALATION_TICKS + 1) : 0;
                 if (!pedestal && !deactivated) spend(cost);
+                if (sunlightTicks > 0) charge(-capacity() * (sunlightTicks > SUNLIGHT_ESCALATION_TICKS ? .04 : .02) / 20);
                 if (stage == 3 && energy <= 0 && !deactivated) {
                     deactivate(player);
                     systemMessage(player, "power_empty");
                 }
-                if (GuardianBodyPower.sunlit(player) && (pedestal || stage == 3)) charge(pedestal ? .025 : .0125);
+                if (pedestal) rechargeOnPedestal(1);
                 if (deactivated && !statueMode && energy >= 2) {
                     deactivated = false;
                     systemMessage(player, "power_online", (guardianName.isBlank() ? player.getName().getString() : guardianName).toUpperCase(Locale.ROOT));
@@ -161,7 +176,10 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                     if (stage == 2 && !pedestal && player.age % 80 == 0 && player.getHealth() > 1)
                         player.setHealth(Math.max(1, player.getHealth() - 1));
                 }
-            } else deactivated = statueMode && !player.isSpectator();
+            } else {
+                sunlightTicks = 0;
+                deactivated = statueMode && !player.isSpectator();
+            }
             if (deactivated) {
                 player.setYaw(frozenYaw); player.setHeadYaw(frozenYaw); player.setPitch(frozenPitch);
                 player.bodyYaw = frozenYaw;
@@ -194,6 +212,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
         energy = nbt.contains("Energy") ? nbt.getDouble("Energy") : 100;
         if (!Double.isFinite(energy)) energy = 100;
         energy = MathHelper.clamp(energy, 0, 200);
+        sunlightTicks = MathHelper.clamp(nbt.getInt("SunlightTicks"), 0, SUNLIGHT_ESCALATION_TICKS + 1);
         vision = !nbt.contains("Vision") || nbt.getBoolean("Vision");
         overdrive = nbt.getBoolean("Overdrive"); detached = nbt.getBoolean("Detached");
         deactivated = nbt.getBoolean("Deactivated"); frozenYaw = nbt.getFloat("FrozenYaw"); frozenPitch = nbt.getFloat("FrozenPitch");
@@ -217,6 +236,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     }
     @Override public void writeToNbt(NbtCompound nbt) {
         nbt.putDouble("Energy", energy); nbt.putBoolean("Vision", vision); nbt.putBoolean("Overdrive", overdrive);
+        nbt.putInt("SunlightTicks", sunlightTicks);
         nbt.putBoolean("FlightGranted", flightGranted);
         nbt.putBoolean("Flying", flying());
         nbt.putBoolean("Detached", detached); nbt.putBoolean("Protecting", protecting); nbt.putString("Name", guardianName);

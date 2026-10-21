@@ -56,7 +56,7 @@ public final class GuardianBodyPower extends Power {
         if (stage >= 2 && state.energy <= 0) speed = .25;
         if (state.deactivated) speed = 0;
         if (overdrive) speed *= 2;
-        set(0, new double[]{1, 5, 10, 15}[stage], false, "base");
+        set(0, armor(stage), false, "base");
         set(1, stage * 2, false, "base");
         set(2, new double[]{.1, .35, .6, 1}[stage], false, "base");
         set(3, speed - 1, true, "base");
@@ -65,6 +65,7 @@ public final class GuardianBodyPower extends Power {
         double efficiency = GuardianCombat.toolEfficiency(player, player.getInventory().getMainHandStack());
         set(5, efficiency * (charged ? 1.3 : 1) * (overdrive ? 2 : 1) - 1, true, "base");
     }
+    public static double armor(int stage) { return new double[]{1, 5, 10, 15}[stage]; }
     private static UUID modifier(int index, String name) {
         return UUID.nameUUIDFromBytes(("ssc-extras:guardian/" + index + "/" + name).getBytes(StandardCharsets.UTF_8));
     }

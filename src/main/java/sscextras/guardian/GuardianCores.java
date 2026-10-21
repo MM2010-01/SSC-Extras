@@ -260,6 +260,7 @@ public final class GuardianCores {
     public static void breakBody(ServerPlayerEntity player) {
         var claim = GuardianVillages.claim(player); if (claim != null) { claim.body = null; claim.bodyPos = null; claim.rebuildTicks = claim.recoveryTicks = 0; }
         detach(player, true);
+        if (RuneboundGuardian.state(player).detached) sscextras.petrification.PetrificationMining.bodyBroken(player);
         player.getServerWorld().spawnParticles(new net.minecraft.particle.BlockStateParticleEffect(net.minecraft.particle.ParticleTypes.BLOCK,
                 net.minecraft.block.Blocks.STONE.getDefaultState()), player.getX(), player.getY() + 1, player.getZ(), 80, .5, 1, .5, .15);
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.body_broken"), false);

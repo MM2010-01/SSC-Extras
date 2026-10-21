@@ -67,9 +67,8 @@ public final class GuardianSleep {
     public static void skipped(ServerWorld world, long target) {
         long amount = Math.max(0, target - world.getTimeOfDay());
         for (var player : world.getPlayers()) {
-            if (statue(player) && RuneboundGuardian.construct(player) && GuardianBodyPower.sunlit(player)) {
-                var state = RuneboundGuardian.state(player); state.charge(amount * .025); state.sync();
-            }
+            var state = RuneboundGuardian.state(player);
+            if (state.rechargeOnPedestal(amount)) state.sync();
         }
     }
 }

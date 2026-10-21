@@ -114,9 +114,10 @@ public final class GuardianMesh {
             for (var part : bone.parts) {
                 if (part.core && !motion.corePresent) continue;
                 var texture = stage == 3 ? permanentTexture(weathered, active || part.core, false) : textures[part.texture];
+                if (model.petrified()) texture = PetrificationClient.texture(texture);
                 var layer = alpha < 1 ? RenderLayer.getEntityTranslucent(texture) : RenderLayer.getEntityCutoutNoCull(texture);
                 emit(part, matrices, tailTransforms, buffers.getBuffer(layer), light, red, green, blue, alpha, overlay);
-                if ((active || part.core && motion.corePresent) && alpha == 1 && emission[part.texture] != null) {
+                if (!model.petrified() && (active || part.core && motion.corePresent) && alpha == 1 && emission[part.texture] != null) {
                     var glow = stage == 3 ? permanentTexture(weathered, true, true) : emission[part.texture];
                     emit(part, matrices, tailTransforms, buffers.getBuffer(RenderLayer.getEyes(glow)), LightmapTextureManager.MAX_LIGHT_COORDINATE, 1);
                 }

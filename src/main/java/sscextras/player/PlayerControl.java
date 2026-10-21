@@ -47,7 +47,8 @@ public final class PlayerControl {
     }
     public static boolean available(ServerPlayerEntity player) {
         if (!player.isAlive() || player.isSpectator() || player.isSleeping() || player.hasVehicle() || player.hasPassengers()
-                || DrakeSoulbinding.ritualActive(player) || DrakeSoulbinding.restrained(player)) return false;
+                || DrakeSoulbinding.ritualActive(player) || DrakeSoulbinding.restrained(player)
+                || sscextras.petrification.Petrification.frozen(player)) return false;
         var guardian = RuneboundGuardian.state(player);
         return !guardian.detached && !guardian.deactivated && !guardian.protecting && guardian.ritualTicks == 0;
     }

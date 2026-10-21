@@ -17,13 +17,15 @@
     ],
     "cardinal-components-entity": [
       "sscextras.effigy.InfusionComponents",
-      "sscextras.guardian.GuardianComponents"
+      "sscextras.guardian.GuardianComponents",
+      "sscextras.petrification.PetrificationComponents"
     ]
   },
   "custom": {
     "cardinal-components": [
       "ssc-extras:infusions",
-      "ssc-extras:guardian"
+      "ssc-extras:guardian",
+      "ssc-extras:petrification"
     ]
   },
   "mixins": [

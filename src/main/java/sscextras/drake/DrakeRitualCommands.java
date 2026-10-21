@@ -70,7 +70,8 @@ public final class DrakeRitualCommands {
             });
             var intelligence = CommandManager.literal("int").then(withPlayer("get", (source, player) -> {
                 source.sendFeedback(() -> Text.translatable("message.ssc-extras.int.current", player.getDisplayName(),
-                        sscextras.player.PlayerMind.baseInt(player).text(), sscextras.player.PlayerMind.effectiveInt(player).text())
+                        sscextras.player.PlayerMind.baseInt(player).text(), sscextras.player.PlayerMind.points(player),
+                        sscextras.player.PlayerMind.effectiveInt(player).text(), sscextras.player.PlayerMind.effectivePoints(player))
                         .styled(style -> style.withInsertion("ssc-extras:mental_hint")), false);
                 return sscextras.player.PlayerMind.effectiveInt(player).ordinal();
             }));
@@ -78,13 +79,30 @@ public final class DrakeRitualCommands {
             for (var level : sscextras.player.IntLevel.values()) setInt.then(withPlayer(level.id(), (source, player) -> {
                 sscextras.player.PlayerMind.setBaseInt(player, level);
                 source.sendFeedback(() -> Text.translatable("message.ssc-extras.int.current", player.getDisplayName(),
-                        level.text(), sscextras.player.PlayerMind.effectiveInt(player).text())
+                        level.text(), sscextras.player.PlayerMind.points(player),
+                        sscextras.player.PlayerMind.effectiveInt(player).text(), sscextras.player.PlayerMind.effectivePoints(player))
                         .styled(style -> style.withInsertion("ssc-extras:mental_hint")), false);
                 return 1;
             }));
+            var points = CommandManager.argument("points", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, sscextras.player.PlayerMind.MAX_POINTS));
+            points.executes(context -> setPoints(context.getSource(), defaultPlayer(context.getSource()),
+                    com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "points")))
+                    .then(CommandManager.argument("player", EntityArgumentType.player()).executes(context ->
+                            setPoints(context.getSource(), EntityArgumentType.getPlayer(context, "player"),
+                                    com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "points"))));
             dispatcher.register(CommandManager.literal("ssc-extras").requires(source -> source.hasPermissionLevel(2))
-                    .then(rituals).then(clear).then(purge).then(intelligence.then(setInt)));
+                    .then(rituals).then(clear).then(purge).then(intelligence.then(setInt)
+                            .then(CommandManager.literal("points").then(points))));
         });
+    }
+
+    private static int setPoints(ServerCommandSource source, ServerPlayerEntity player, double points) {
+        sscextras.player.PlayerMind.setPoints(player, points);
+        source.sendFeedback(() -> Text.translatable("message.ssc-extras.int.current", player.getDisplayName(),
+                sscextras.player.PlayerMind.baseInt(player).text(), sscextras.player.PlayerMind.points(player),
+                sscextras.player.PlayerMind.effectiveInt(player).text(), sscextras.player.PlayerMind.effectivePoints(player))
+                .styled(style -> style.withInsertion("ssc-extras:mental_hint")), false);
+        return 1;
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> withPlayer(String literal,

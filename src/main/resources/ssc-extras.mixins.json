@@ -102,7 +102,13 @@
     "MentalScreenHandlerAccessor",
     "MentalItemTickMixin",
     "MentalCampfireMixin",
-    "GuardianCoreSpawnMixin"
+    "GuardianCoreSpawnMixin",
+    "PetrificationLivingMixin",
+    "PetrificationTargetMixin",
+    "PetrificationPhysicsMixin",
+    "ConnectorFluidNamespaceMixin",
+    "PetrificationEntityMixin",
+    "PetrificationNetworkMixin"
   ],
   "client": [
     "FormTailDataAccessor",
@@ -145,7 +151,15 @@
     "GuardianAttackMixin",
     "MentalInstrumentMixin",
     "MentalMapMixin",
-    "MentalMapRenderMixin"
+    "MentalMapRenderMixin",
+    "PetrificationInputMixin",
+    "PetrificationRendererMixin",
+    "PetrificationArmMixin",
+    "PetrificationMiningMixin",
+    "PetrificationCracksMixin",
+    "PetrificationFormMixin",
+    "PetrificationAnimationMixin",
+    "PetrificationFormPoseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -150,7 +150,8 @@ public final class GuardianCombat {
     public static float incoming(PlayerEntity player, DamageSource source, float amount) {
         int stage = RuneboundGuardian.stage(player);
         if (stage < 0 || source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) return amount;
-        if (stage == 3 && source.isIn(DamageTypeTags.IS_FALL)) return amount * 1.5f;
+        // Shared stone physics already applies the fall multiplier once, including while petrified.
+        if (stage == 3 && source.isIn(DamageTypeTags.IS_FALL)) return amount;
         if (source.isIn(MAGIC)) {
             float absorbed = amount * new float[]{.1f, .6f, .8f, 1}[stage];
             amount -= absorbed;
@@ -196,6 +197,7 @@ public final class GuardianCombat {
                 effect.getAmplifier(), effect.isAmbient(), effect.shouldShowParticles(), effect.shouldShowIcon());
     }
     public static boolean absorbEffect(PlayerEntity player, StatusEffectInstance effect) {
+        if (effect.getEffectType() == sscextras.petrification.Petrification.EFFECT) return false;
         if (RuneboundGuardian.stage(player) != 3 || effect.getEffectType().isBeneficial()
                 || effect.getEffectType() instanceof net.onixary.shapeShifterCurseFabric.status_effects.BaseTransformativeStatusEffect) return false;
         if (!player.getWorld().isClient) {

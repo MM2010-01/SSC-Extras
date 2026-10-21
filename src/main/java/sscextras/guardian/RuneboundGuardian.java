@@ -30,7 +30,7 @@ public final class RuneboundGuardian {
     static {
         var group = new PlayerFormGroup(id("runebound_guardian"));
         for (int stage = 0; stage < 4; stage++) {
-            var form = new PlayerFormBase(id("runebound_guardian_" + stage))
+            var form = new sscextras.player.StoneGolemForm(id("runebound_guardian_" + stage), stage == 3, GuardianBodyPower.armor(stage))
                     .setPhase(PlayerFormPhase.valueOf("PHASE_" + stage))
                     .setBodyType(PlayerFormBodyType.NORMAL).setIgnoreCursedMoon(stage == 3);
             FORMS[stage] = RegPlayerForms.registerPlayerForm(form);

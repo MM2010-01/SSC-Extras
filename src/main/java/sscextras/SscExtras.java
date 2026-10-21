@@ -20,6 +20,7 @@ public final class SscExtras implements ModInitializer {
         sscextras.drake.DrakeRitualCommands.register();
         sscextras.guardian.RuneboundGuardian.register();
         sscextras.player.PlayerAspects.register();
+        sscextras.petrification.Petrification.register();
     }
 
     public static float instinctPerHit() {

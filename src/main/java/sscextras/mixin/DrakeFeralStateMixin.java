@@ -23,11 +23,11 @@ public abstract class DrakeFeralStateMixin implements DrakeFeralization.State, s
     public sscextras.player.PlayerControl.Runtime sscExtras$bodyControl() { return sscExtras$bodyControl; }
     @Unique private final DrakeFeralization.Control sscExtras$feralRuntime = new DrakeFeralization.Control();
     @Unique private final sscextras.player.PlayerMind.Runtime sscExtras$mind = new sscextras.player.PlayerMind.Runtime();
-    @Unique private static final TrackedData<Integer> SSC_EXTRAS_INT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    @Unique private static final TrackedData<Integer> SSC_EXTRAS_INT_POINTS = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique private static final TrackedData<Integer> SSC_EXTRAS_EFFECTIVE_INT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public sscextras.player.PlayerMind.Runtime sscExtras$mind() { return sscExtras$mind; }
-    public int sscExtras$baseInt() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_INT) : 5; }
-    public void sscExtras$baseInt(int value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_INT, value); }
+    public int sscExtras$intUnits() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_INT_POINTS) : 50000; }
+    public void sscExtras$intUnits(int value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_INT_POINTS, value); }
     public int sscExtras$effectiveInt() { return sscExtras$feralDataReady ? ((PlayerEntity)(Object)this).getDataTracker().get(SSC_EXTRAS_EFFECTIVE_INT) : 5; }
     public void sscExtras$effectiveInt(int value) { ((PlayerEntity)(Object)this).getDataTracker().set(SSC_EXTRAS_EFFECTIVE_INT, value); }
     public DrakeFeralization.Control sscExtras$feralRuntime() { return sscExtras$feralRuntime; }
@@ -39,7 +39,7 @@ public abstract class DrakeFeralStateMixin implements DrakeFeralization.State, s
         var tracker = ((PlayerEntity)(Object)this).getDataTracker();
         tracker.startTracking(SSC_EXTRAS_FERAL, false); tracker.startTracking(SSC_EXTRAS_FERAL_CONTROL, false);
         tracker.startTracking(SSC_EXTRAS_SENTIENCE, 0);
-        tracker.startTracking(SSC_EXTRAS_INT, 5); tracker.startTracking(SSC_EXTRAS_EFFECTIVE_INT, 5);
+        tracker.startTracking(SSC_EXTRAS_INT_POINTS, 50000); tracker.startTracking(SSC_EXTRAS_EFFECTIVE_INT, 5);
         tracker.startTracking(SSC_EXTRAS_QUADRUPED_REQUEST, false);
         sscExtras$feralDataReady = true;
     }

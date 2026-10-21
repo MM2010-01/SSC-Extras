@@ -19,6 +19,9 @@ public final class SscExtrasClient implements ClientModInitializer {
 
     @Override public void onInitializeClient() {
         MentalPerception.register();
+        var intelligenceBar = new IntelligenceBarRenderer();
+        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register((context, delta) -> intelligenceBar.render(context));
+        PetrificationClient.register();
         ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.TRANSFORMATION_BLACKOUT_SYNC, (client, handler, buf, sender) -> {
             boolean removeBlackout = buf.readBoolean();
             client.execute(() -> removeBlackoutDuringTransformation = removeBlackout);
