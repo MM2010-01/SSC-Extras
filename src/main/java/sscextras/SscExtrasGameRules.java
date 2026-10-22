@@ -32,6 +32,8 @@ public final class SscExtrasGameRules {
     public static final GameRules.Key<GameRules.BooleanRule> UNLOCKED_PERMANENT_FORM_PROGRESSION_FOR_OTHER_FORMS = GameRuleRegistry.register(
             "UnlockedPermanentFormProgressionForOtherForms", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true,
                     (server, rule) -> server.getPlayerManager().getPlayerList().forEach(player -> syncPermanentProgression(player, rule.get()))));
+    public static final GameRules.Key<GameRules.BooleanRule> UNLOCKED_PERMANENT_FORM_REVERSION = GameRuleRegistry.register(
+            "UnlockedPermanentFormReversion", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
     public static final GameRules.Key<GameRules.BooleanRule> ENABLE_INT_SYSTEM = GameRuleRegistry.register(
             "EnableINTSystem", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true,
                     (server, rule) -> server.getPlayerManager().getPlayerList().forEach(player -> {

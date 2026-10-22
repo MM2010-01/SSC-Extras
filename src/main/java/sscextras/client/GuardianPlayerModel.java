@@ -14,7 +14,7 @@ import sscextras.guardian.GuardianEquipment;
 import sscextras.guardian.RuneboundGuardian;
 
 /** The Guardian is the player's body model; its joint positions also drive equipment. */
-public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientPlayerEntity> {
+public final class GuardianPlayerModel extends AuthoredPlayerModel {
     private final int stage;
     private AbstractClientPlayerEntity player;
     private VertexConsumerProvider buffers;
@@ -22,7 +22,7 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
     private FormTailPhysics.Drag tailDrag = FormTailPhysics.Drag.NONE;
 
     public GuardianPlayerModel(int stage) {
-        super(PlayerEntityModel.getTexturedModelData(Dilation.NONE, false).getRoot().createPart(64, 64), false);
+        super(PlayerEntityModel.getTexturedModelData(Dilation.NONE, false).getRoot().createPart(64, 64));
         this.stage = stage;
     }
 
@@ -30,6 +30,11 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
         this.player = player;
         this.buffers = buffers;
     }
+
+    @Override public void animate(float tickDelta) {
+        animateTail(tickDelta);
+    }
+    @Override public float renderScale() { return stage == 3 ? 1 / .9375f : 1; }
 
     public void animateTail(float tickDelta) {
         var state = RuneboundGuardian.state(player);
@@ -42,6 +47,7 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
     public void clear() { player = null; buffers = null; tailDrag = FormTailPhysics.Drag.NONE; }
     public GuardianMesh mesh() { return GuardianMesh.get(stage); }
     public int stage() { return stage; }
+    public AbstractClientPlayerEntity wearer() { return player; }
     public boolean petrified() { return player != null && sscextras.petrification.Petrification.replaceTexture(player); }
 
     public ModelPart joint(String name) {
@@ -90,6 +96,8 @@ public final class GuardianPlayerModel extends PlayerEntityModel<AbstractClientP
             part.pivotY += legY;
             part.pivotZ += legZ;
         }
+        TrainerGuardianRig.pose(this, player, limbAngle, limbDistance, statue);
+        TrainerLimbModel.apply(this, player);
         hat.copyTransform(head); jacket.copyTransform(body);
         leftSleeve.copyTransform(leftArm); rightSleeve.copyTransform(rightArm);
         leftPants.copyTransform(leftLeg); rightPants.copyTransform(rightLeg);

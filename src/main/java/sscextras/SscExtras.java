@@ -21,7 +21,9 @@ public final class SscExtras implements ModInitializer {
         sscextras.drake.DrakeOutpostOwnership.register();
         sscextras.drake.DrakeRitualCommands.register();
         sscextras.guardian.RuneboundGuardian.register();
+        sscextras.golem.DrakeGolem.register();
         sscextras.player.PlayerAspects.register();
+        sscextras.trainer.QuadrupedalTrainer.register();
         sscextras.petrification.Petrification.register();
     }
 

@@ -48,6 +48,10 @@ public abstract class DrakeFeralNetworkMixin {
             target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
             shift = At.Shift.AFTER), cancellable = true)
     private void sscExtras$noItemActions(PlayerActionC2SPacket packet, CallbackInfo ci) {
+        if (packet.getAction() == PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND
+                && sscextras.trainer.QuadrupedalTrainer.mouth(player)) {
+            player.currentScreenHandler.syncState(); ci.cancel(); return;
+        }
         if (DrakeFeralization.restricted(player) && (DrakeFeralization.controlled(player)
                 || DrakeFeralization.itemsRestricted(player) && switch (packet.getAction()) {
                     case START_DESTROY_BLOCK, ABORT_DESTROY_BLOCK, STOP_DESTROY_BLOCK, RELEASE_USE_ITEM,

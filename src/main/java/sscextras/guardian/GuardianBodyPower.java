@@ -37,13 +37,9 @@ public final class GuardianBodyPower extends Power {
         // The mesh retains its authored proportions; these scales control only physical reach and clearance.
         float[] height = {1.8f, 1.95f, 2.15f, 2.7f};
         float[] width = {.6f, .72f, .9f, 1.1f};
-        setScale(ScaleTypes.WIDTH, 1); setScale(ScaleTypes.HEIGHT, 1);
-        setScale(ScaleTypes.HITBOX_WIDTH, width[stage] / .6f);
-        setScale(ScaleTypes.HITBOX_HEIGHT, height[stage] / 1.8f);
-        setScale(ScaleTypes.EYE_HEIGHT, height[stage] * .91f / 1.62f);
-    }
-    private void setScale(virtuoel.pehkui.api.ScaleType type, float amount) {
-        var scale = type.getScaleData(entity); scale.setScale(amount); scale.setPersistence(true);
+        boolean quad = entity instanceof PlayerEntity player && sscextras.player.PlayerStance.requested(player);
+        float currentHeight = quad ? new float[]{1.3f, 1.4f, 1.5f, 1.55f}[stage] : height[stage];
+        sscextras.player.AuthoredFormDimensions.apply(entity, width[stage], currentHeight, currentHeight * (quad ? .78f : .91f));
     }
     public void refresh() {
         if (entity.getWorld().isClient || !(entity instanceof PlayerEntity player)) return;
@@ -85,8 +81,7 @@ public final class GuardianBodyPower extends Power {
             var attribute = entity.getAttributeInstance(ATTRIBUTES[i]);
             if (attribute != null) { attribute.removeModifier(modifier(i, "base")); attribute.removeModifier(modifier(i, "boost")); }
         }
-        setScale(ScaleTypes.HITBOX_WIDTH, 1);
-        setScale(ScaleTypes.HITBOX_HEIGHT, 1); setScale(ScaleTypes.EYE_HEIGHT, 1);
+        sscextras.player.AuthoredFormDimensions.reset(entity);
         if (entity instanceof PlayerEntity player) flight(player, false);
     }
     public static boolean sunlit(PlayerEntity player) {

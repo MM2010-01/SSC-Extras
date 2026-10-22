@@ -1,0 +1,11 @@
+{
+  "powers": [
+    "ssc-extras:drake_golem/body"
+  ],
+  "icon": {
+    "item": "minecraft:chiseled_stone_bricks"
+  },
+  "unchoosable": true,
+  "order": 0,
+  "impact": 0
+}

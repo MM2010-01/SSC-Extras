@@ -109,7 +109,11 @@
     "PetrificationPhysicsMixin",
     "ConnectorFluidNamespaceMixin",
     "PetrificationEntityMixin",
-    "PetrificationNetworkMixin"
+    "PetrificationNetworkMixin",
+    "TrainerPlayerMixin",
+    "MouthItemUseMixin",
+    "TrainerLookMixin",
+    "TrainerInventoryMixin"
   ],
   "client": [
     "FormTailDataAccessor",
@@ -142,6 +146,7 @@
     "DrakeFormGearMixin",
     "DrakeRiderInventoryMixin",
     "GuardianModelMixin",
+    "DrakeGolemPoseMixin",
     "GuardianHudMixin",
     "GuardianOutlineMixin",
     "GuardianOutlineColorMixin",
@@ -160,7 +165,13 @@
     "PetrificationCracksMixin",
     "PetrificationFormMixin",
     "PetrificationAnimationMixin",
-    "PetrificationFormPoseMixin"
+    "PetrificationFormPoseMixin",
+    "TrainerModelMixin",
+    "TrainerModelPartMixin",
+    "TrainerFormVisibilityMixin",
+    "TrainerGeoLimbMixin",
+    "TrainerMouthAttachmentMixin",
+    "TrainerArmPoseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

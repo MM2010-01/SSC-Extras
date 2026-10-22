@@ -115,7 +115,10 @@ public final class GuardianCombat {
                 && !(target instanceof VillagerEntity && RuneboundGuardian.stage(player) >= 1);
     }
     public static boolean canUse(PlayerEntity player, ItemStack stack) {
-        return !locked(player) && !blockedTool(player, stack) && !(RuneboundGuardian.construct(player) && stack.isFood());
+        boolean permanentInhibitor = RuneboundGuardian.stage(player) == 3
+                && stack.isOf(net.onixary.shapeShifterCurseFabric.items.RegCustomItem.POWERFUL_INHIBITOR);
+        return !locked(player) && !blockedTool(player, stack)
+                && !(RuneboundGuardian.construct(player) && stack.isFood() && !permanentInhibitor);
     }
     public static boolean stone(PlayerEntity player, ItemStack stack) {
         return RuneboundGuardian.construct(player) && stack.isIn(RuneboundGuardian.STONES);

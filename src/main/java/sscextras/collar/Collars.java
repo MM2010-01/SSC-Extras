@@ -79,6 +79,8 @@ public final class Collars {
             entries.add(sscextras.drake.DrakeEquipment.RIDERS_CHEST);
             entries.add(sscextras.drake.DrakeEquipment.CLAW_TIPS);
             entries.add(DrakeEquipment.SHOES.getDefaultStack());
+            entries.add(sscextras.trainer.QuadrupedalTrainer.MOLD.getDefaultStack());
+            entries.add(sscextras.trainer.QuadrupedalTrainer.COLLAR.getDefaultStack());
             entries.add(sscextras.drake.DrakeStable.SPAWN_EGG);
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.POTION));
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.SPLASH_POTION));

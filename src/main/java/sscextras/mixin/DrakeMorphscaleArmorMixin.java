@@ -25,13 +25,25 @@ public abstract class DrakeMorphscaleArmorMixin {
         var model = context.baseModel();
         scale(bones.leftBoot, model.leftLeg.xScale, model.leftLeg.yScale, model.leftLeg.zScale);
         scale(bones.rightBoot, model.rightLeg.xScale, model.rightLeg.yScale, model.rightLeg.zScale);
+        if (context.currentEntity() instanceof net.minecraft.client.network.AbstractClientPlayerEntity golemPlayer
+                && net.minecraft.client.MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(golemPlayer)
+                        instanceof net.minecraft.client.render.entity.PlayerEntityRenderer golemRenderer
+                && golemRenderer.getModel() instanceof sscextras.client.DrakeGolemPlayerModel golem) {
+            sscextras.client.DrakeGolemArmorFit.fit(golem, bones, context.currentSlot());
+            return;
+        }
         if (context.currentEntity() instanceof net.minecraft.client.network.AbstractClientPlayerEntity guardianPlayer
                 && net.minecraft.client.MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(guardianPlayer)
                         instanceof net.minecraft.client.render.entity.PlayerEntityRenderer renderer
                 && renderer.getModel() instanceof sscextras.client.GuardianPlayerModel guardian) {
             sscextras.client.GuardianArmorFit.fit(guardian, bones, context.currentSlot());
+            sscextras.client.TrainerArmorFit.fit(guardianPlayer, guardian, bones, context.currentSlot());
             return;
         }
+        if (context.currentEntity() instanceof net.minecraft.client.network.AbstractClientPlayerEntity wearer
+                && net.minecraft.client.MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(wearer)
+                        instanceof net.minecraft.client.render.entity.PlayerEntityRenderer wearerRenderer)
+            sscextras.client.TrainerArmorFit.fit(wearer, wearerRenderer.getModel(), bones, context.currentSlot());
         if (!(context.currentEntity() instanceof PlayerEntity player) || EarthenDrake.stage(player) != 3) return;
         switch (context.currentSlot()) {
             case HEAD -> scale(bones.head, .64f, .38f, .68f);

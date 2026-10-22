@@ -14,7 +14,10 @@ public abstract class DrakeSoulPostureMixin {
     @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At("TAIL"))
     private void sscExtras$soulPosture(LivingEntity entity, float limbAngle, float limbDistance, float age,
             float headYaw, float headPitch, CallbackInfo ci) {
-        if (entity instanceof PlayerEntity player)
+        if (entity instanceof PlayerEntity player) {
             EarthenDrakeAnimation.poseSoulBody((PlayerEntityModel<?>)(Object)this, player, limbAngle, limbDistance, age, headYaw, headPitch);
+            if (!((Object)this instanceof sscextras.client.AuthoredPlayerModel))
+                sscextras.client.TrainerLimbModel.apply((PlayerEntityModel<?>)(Object)this, player);
+        }
     }
 }

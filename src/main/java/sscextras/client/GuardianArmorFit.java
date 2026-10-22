@@ -4,6 +4,7 @@ import mod.azure.azurelib.rewrite.model.AzBone;
 import mod.azure.azurelib.rewrite.render.armor.bone.AzArmorBoneContext;
 import net.minecraft.entity.EquipmentSlot;
 import org.joml.Vector3f;
+import static sscextras.client.ArmorRigTransform.*;
 
 /** Morphscale ornaments attach to the current rig, including its separate ankle joints. */
 public final class GuardianArmorFit {
@@ -41,11 +42,4 @@ public final class GuardianArmorFit {
         scale(bone, 1 + model.stage() * .1f, 1, 1);
     }
 
-    private static void position(AzBone bone, Vector3f point, float x, float y) {
-        if (bone != null) bone.updatePosition(point.x * 16 - x, y - point.y * 16, point.z * 16);
-    }
-
-    private static void scale(AzBone bone, float x, float y, float z) {
-        if (bone != null) { bone.setScaleX(x); bone.setScaleY(y); bone.setScaleZ(z); }
-    }
 }

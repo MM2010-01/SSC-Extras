@@ -54,6 +54,15 @@ public final class RuneboundGuardian {
     public static boolean construct(PlayerEntity player) { return stage(player) >= 2; }
 
     public static void register() {
+        sscextras.player.PlayerStance.registerGroup(GROUP.GroupID, new sscextras.player.PlayerStance.Profile() {
+            public boolean supports(PlayerEntity player, sscextras.player.PlayerStance.Stance stance) { return true; }
+            public sscextras.player.PlayerStance.Stance current(PlayerEntity player) {
+                return sscextras.player.PlayerStance.requested(player) ? sscextras.player.PlayerStance.Stance.QUADRUPEDAL : sscextras.player.PlayerStance.Stance.UPRIGHT;
+            }
+            public void refresh(net.minecraft.server.network.ServerPlayerEntity player) {
+                io.github.apace100.apoli.component.PowerHolderComponent.getPowers(player, GuardianBodyPower.class).forEach(GuardianBodyPower::resize);
+            }
+        });
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(STATUE_TOGGLE,
                 (server, player, handler, buffer, sender) -> server.execute(() -> state(player).toggleStatueMode()));
         var body = GuardianBodyPower.factory();

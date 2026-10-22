@@ -50,7 +50,7 @@ public final class GuardianClient {
         });
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
             @Override public Identifier getFabricId() { return RuneboundGuardian.id("guardian_meshes"); }
-            @Override public void reload(ResourceManager manager) { GuardianMesh.reload(); GuardianAdornmentMesh.reload(); }
+            @Override public void reload(ResourceManager manager) { GuardianMesh.reload(); GuardianAdornmentMesh.reload(); FormPlayerModels.reload(); }
         });
         ClientPlayNetworking.registerGlobalReceiver(GuardianVillages.VISION, (client, handler, buffer, sender) -> {
             int count = buffer.readVarInt(); var entries = new ArrayList<Threat>();

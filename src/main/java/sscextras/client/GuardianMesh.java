@@ -1,6 +1,6 @@
 package sscextras.client;
 
-import com.google.gson.*;
+import sscextras.client.RiggedMesh.Part;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.*;
@@ -15,7 +15,7 @@ import java.util.*;
 
 /** Rigid armor and a continuous, articulated tail core preserve the authored topology and UVs. */
 public final class GuardianMesh {
-    public static final List<String> PLAYER_JOINTS = List.of("bipedBody", "bipedHead", "bipedLeftArm", "bipedRightArm", "bipedLeftLeg", "bipedRightLeg");
+    public static final List<String> PLAYER_JOINTS = AuthoredPlayerModel.PLAYER_JOINTS;
     public record Motion(boolean corePresent, boolean hideHead, float age, float limbAngle, float limbDistance, boolean statue,
             FormTailPhysics.Drag drag, boolean flying) {
         public Motion(boolean corePresent, boolean hideHead, float age, float limbAngle, float limbDistance, boolean statue) {
@@ -44,7 +44,6 @@ public final class GuardianMesh {
         }
     }
     private static final GuardianMesh[] MODELS = new GuardianMesh[4];
-    private record Part(int texture, boolean core, float[] vertices, int[] tailJoints) { }
     private static final class Bone {
         String name, parent;
         float[] pivot;
@@ -55,17 +54,36 @@ public final class GuardianMesh {
     private final List<Bone> roots = new ArrayList<>();
     private final Map<String, Bone> bones = new HashMap<>();
     private final Map<String, Vector3f> sizes = new HashMap<>();
+    private final Map<String, Float> limbBottoms = new HashMap<>();
+    private final Map<String, List<Part>> branches = new HashMap<>();
     private final List<Bone> tailBones = new ArrayList<>();
     private final Identifier[] textures, emission;
     private final int stage;
 
     public Vector3f pivot(String name) { return new Vector3f(bones.get(name).pivot); }
+    private List<Part> branchParts(String name) {
+        return branches.computeIfAbsent(name, key -> {
+            var result=new ArrayList<Part>();collect(bones.get(key),result);return List.copyOf(result);
+        });
+    }
+    private static void collect(Bone bone,List<Part> into) {
+        into.addAll(bone.parts);for(var child:bone.children)collect(child,into);
+    }
+    public float limbBottom(String owner) {
+        return limbBottoms.computeIfAbsent(owner, name -> {
+            float bottom = pivot(name).y;
+            for (var bone : bones.values()) if (name.equals(owner(bone)))
+                for (var part : bone.parts) for (int i = 1; i < part.vertices().length; i += 8)
+                    bottom = Math.max(bottom, part.vertices()[i]);
+            return bottom;
+        });
+    }
     public Vector3f size(String name) {
         if (sizes.containsKey(name)) return sizes.get(name);
         var min = new Vector3f(Float.POSITIVE_INFINITY);
         var max = new Vector3f(Float.NEGATIVE_INFINITY);
-        for (var part : bones.get(name).parts) for (int i = 0; i < part.vertices.length; i += 8) {
-            var p = new Vector3f(part.vertices[i], part.vertices[i + 1], part.vertices[i + 2]);
+        for (var part : bones.get(name).parts) for (int i = 0; i < part.vertices().length; i += 8) {
+            var p = new Vector3f(part.vertices()[i], part.vertices()[i + 1], part.vertices()[i + 2]);
             min.min(p); max.max(p);
         }
         var size = max.sub(min);
@@ -98,6 +116,11 @@ public final class GuardianMesh {
             if (!model.joint(owner).visible || motion.hideHead && owner.equals("bipedHead")) continue;
             matrices.push();
             model.transform(matrices, owner);
+            if (bone.tailIndex >= 0 && sscextras.player.PlayerStance.quadrupedal(model.wearer())) {
+                var base=pivot("tail_0");matrices.translate(base.x,base.y,base.z);
+                matrices.multiply(RotationAxis.POSITIVE_X.rotation(-model.body.pitch));
+                matrices.translate(-base.x,-base.y,-base.z);
+            }
             rotateWing(bone, matrices, motion);
             MatrixStack.Entry[] tailTransforms = null;
             if (bone.tailIndex >= 0) {
@@ -111,18 +134,24 @@ public final class GuardianMesh {
                     for (int i = 0; i < tailBones.size(); i++) matrices.pop();
                 }
             }
-            for (var part : bone.parts) {
-                if (part.core && !motion.corePresent) continue;
-                var texture = stage == 3 ? permanentTexture(weathered, active || part.core, false) : textures[part.texture];
+            for (var source : bone.parts) {
+                var part = TrainerGuardianRig.deform(model, model.wearer(), owner, source);
+                if (part.core() && !motion.corePresent) continue;
+                var texture = stage == 3 ? permanentTexture(weathered, active || part.core(), false) : textures[part.texture()];
                 if (model.petrified()) texture = PetrificationClient.texture(texture);
                 var layer = alpha < 1 ? RenderLayer.getEntityTranslucent(texture) : RenderLayer.getEntityCutoutNoCull(texture);
                 emit(part, matrices, tailTransforms, buffers.getBuffer(layer), light, red, green, blue, alpha, overlay);
-                if (!model.petrified() && (active || part.core && motion.corePresent) && alpha == 1 && emission[part.texture] != null) {
-                    var glow = stage == 3 ? permanentTexture(weathered, true, true) : emission[part.texture];
+                if (!model.petrified() && (active || part.core() && motion.corePresent) && alpha == 1 && emission[part.texture()] != null) {
+                    var glow = stage == 3 ? permanentTexture(weathered, true, true) : emission[part.texture()];
                     emit(part, matrices, tailTransforms, buffers.getBuffer(RenderLayer.getEyes(glow)), LightmapTextureManager.MAX_LIGHT_COORDINATE, 1);
                 }
             }
             adornments(bone, matrices, buffers, light, equipment);
+            boolean hand = bone.name.equals("left_hand") || bone.name.equals("right_hand");
+            boolean foot = bone.name.equals("left_foot") || bone.name.equals("right_foot");
+            if ((hand || foot) && !sscextras.trainer.QuadrupedalTrainer.equipped(model.wearer(), hand
+                    ? sscextras.trainer.QuadrupedalTrainer.HANDS : sscextras.trainer.QuadrupedalTrainer.FEET, true).isEmpty())
+                TrainerMeshMolds.render(branchParts(bone.name), matrices, buffers, light, point -> TrainerGuardianRig.map(model, model.wearer(), owner, point));
             matrices.pop();
         }
         matrices.pop();
@@ -130,45 +159,20 @@ public final class GuardianMesh {
 
     private GuardianMesh(int stage) throws IOException {
         this.stage = stage;
-        var resources = MinecraftClient.getInstance().getResourceManager();
-        JsonObject data;
-        try (var reader = resources.getResourceOrThrow(RuneboundGuardian.id("guardian/stage_" + stage + ".json")).getReader()) {
-            data = JsonParser.parseReader(reader).getAsJsonObject();
-        }
-        var paths = data.getAsJsonArray("textures");
-        textures = new Identifier[paths.size()]; emission = new Identifier[paths.size()];
-        for (int i = 0; i < paths.size(); i++) {
-            textures[i] = RuneboundGuardian.id("textures/guardian/" + paths.get(i).getAsString());
-            var glow = new Identifier(textures[i].toString().replace(".png", "_emission.png"));
-            if (resources.getResource(glow).isPresent()) emission[i] = glow;
-        }
-        for (var value : data.getAsJsonArray("bones")) {
-            var object = value.getAsJsonObject(); var bone = new Bone();
-            bone.name = object.get("name").getAsString();
+        var data = RiggedMesh.load(RuneboundGuardian.id("guardian/stage_" + stage + ".json"),
+                RuneboundGuardian.id("textures/guardian/"));
+        textures = data.textures; emission = data.emission;
+        for (var source : data.bones.values()) {
+            var bone = new Bone(); bone.name = source.name(); bone.parent = source.parent();
+            bone.pivot = new float[]{source.pivot().x, source.pivot().y, source.pivot().z};
+            bone.parts.addAll(source.parts());
             if (bone.name.startsWith("tail_")) bone.tailIndex = Integer.parseInt(bone.name.substring(5));
-            bone.parent = object.get("parent").isJsonNull() ? null : object.get("parent").getAsString();
-            bone.pivot = floats(object.getAsJsonArray("pivot"));
-            for (var entry : object.getAsJsonArray("parts")) {
-                var part = entry.getAsJsonObject();
-                int[] joints = null;
-                if (part.has("tail_joints")) {
-                    var dataJoints = part.getAsJsonArray("tail_joints");
-                    joints = new int[dataJoints.size()];
-                    for (int i = 0; i < joints.length; i++) joints[i] = dataJoints.get(i).getAsInt();
-                }
-                bone.parts.add(new Part(part.get("texture").getAsInt(), part.get("core").getAsBoolean(), floats(part.getAsJsonArray("vertices")), joints));
-            }
             bones.put(bone.name, bone);
         }
         for (var bone : bones.values()) {
             if (bone.parent == null) roots.add(bone); else bones.get(bone.parent).children.add(bone);
         }
         for (int i = 0; bones.containsKey("tail_" + i); i++) tailBones.add(bones.get("tail_" + i));
-    }
-    private static float[] floats(JsonArray array) {
-        float[] values = new float[array.size()];
-        for (int i = 0; i < values.length; i++) values[i] = array.get(i).getAsFloat();
-        return values;
     }
     public static void reload() { Arrays.fill(MODELS, null); }
     public static GuardianMesh get(int stage) {
@@ -234,13 +238,13 @@ public final class GuardianMesh {
             }
         }
         for (var mesh : bone.parts) {
-            if (mesh.core && !motion.corePresent) continue;
-            Identifier texture = textures[mesh.texture];
-            if (stage == 3) texture = permanentTexture(weathered, active || mesh.core, false);
+            if (mesh.core() && !motion.corePresent) continue;
+            Identifier texture = textures[mesh.texture()];
+            if (stage == 3) texture = permanentTexture(weathered, active || mesh.core(), false);
             var layer = alpha < 1 ? RenderLayer.getEntityTranslucent(texture) : RenderLayer.getEntityCutoutNoCull(texture);
             emit(mesh, matrices, tailTransforms, buffers.getBuffer(layer), light, alpha);
-            if ((active || mesh.core && motion.corePresent) && alpha == 1 && emission[mesh.texture] != null) {
-                var glow = stage == 3 ? permanentTexture(weathered, true, true) : emission[mesh.texture];
+            if ((active || mesh.core() && motion.corePresent) && alpha == 1 && emission[mesh.texture()] != null) {
+                var glow = stage == 3 ? permanentTexture(weathered, true, true) : emission[mesh.texture()];
                 emit(mesh, matrices, tailTransforms, buffers.getBuffer(RenderLayer.getEyes(glow)), LightmapTextureManager.MAX_LIGHT_COORDINATE, 1);
             }
         }
@@ -301,21 +305,6 @@ public final class GuardianMesh {
     }
     private static void emit(Part mesh, MatrixStack matrices, MatrixStack.Entry[] tailTransforms, VertexConsumer consumer,
             int light, float red, float green, float blue, float alpha, int overlay) {
-        float[] v = mesh.vertices;
-        if (mesh.tailJoints != null) {
-            var p = new Vector3f(); var n = new Vector3f();
-            for (int i = 0; i < v.length; i += 8) {
-                var joint = tailTransforms[mesh.tailJoints[i / 8]];
-                joint.getPositionMatrix().transformPosition(v[i], v[i+1], v[i+2], p);
-                joint.getNormalMatrix().transform(v[i+5], v[i+6], v[i+7], n);
-                consumer.vertex(p.x, p.y, p.z).color(red, green, blue, alpha)
-                        .texture(v[i+3], v[i+4]).overlay(overlay).light(light).normal(n.x, n.y, n.z).next();
-            }
-            return;
-        }
-        var position = matrices.peek().getPositionMatrix(); var normal = matrices.peek().getNormalMatrix();
-        for (int i = 0; i < v.length; i += 8) consumer.vertex(position, v[i], v[i+1], v[i+2])
-                .color(red, green, blue, alpha).texture(v[i+3], v[i+4]).overlay(overlay)
-                .light(light).normal(normal, v[i+5], v[i+6], v[i+7]).next();
+        RiggedMesh.emit(mesh, matrices, tailTransforms, consumer, light, red, green, blue, alpha, overlay);
     }
 }

@@ -18,6 +18,28 @@ import sscextras.drake.EarthenDrake;
 
 @Mixin(value = MouthItemFeature.class, remap = false)
 public abstract class DrakeMouthItemMixin {
+    @org.spongepowered.asm.mixin.Shadow @org.spongepowered.asm.mixin.Final
+    private net.minecraft.client.render.item.HeldItemRenderer heldItemRenderer;
+    @com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod(method = "renderItemInMouth")
+    private void sscExtras$golemMouth(MatrixStack matrices, VertexConsumerProvider vertices, int light,
+            LivingEntity entity, ItemStack stack, float yaw, float pitch,
+            com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+        if (!(entity instanceof net.minecraft.client.network.AbstractClientPlayerEntity player)
+                || !sscextras.golem.DrakeGolem.is(player)
+                || !(net.minecraft.client.MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(player)
+                    instanceof net.minecraft.client.render.entity.PlayerEntityRenderer renderer)
+                || !(renderer.getModel() instanceof sscextras.client.DrakeGolemPlayerModel model)) {
+            original.call(matrices, vertices, light, entity, stack, yaw, pitch); return;
+        }
+        matrices.push(); model.transform(matrices, "bipedHead");
+        matrices.translate(0, .08, -1.48);
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(90));
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Z.rotationDegrees(180));
+        heldItemRenderer.renderItem(entity, stack,
+                net.minecraft.client.render.model.json.ModelTransformationMode.GROUND, false, matrices, vertices, light);
+        matrices.pop();
+    }
+
     @ModifyVariable(method = "renderItemInMouth", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private float sscExtras$shoeingMouthYaw(float yaw, MatrixStack matrices, VertexConsumerProvider vertices,
             int light, LivingEntity entity, ItemStack stack, float headYaw, float headPitch) {

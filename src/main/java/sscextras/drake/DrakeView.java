@@ -14,15 +14,18 @@ public final class DrakeView {
     public static Vec3d atHead(Entity entity, float tickDelta, Vec3d eyes) {
         if (!(entity instanceof PlayerEntity player) || player.isSleeping()) return eyes;
         int stage = EarthenDrake.stage(player);
-        if (stage < 0 || stage < 2 && !EarthenDrake.onAllFours(player)) return eyes;
+        int guardian = sscextras.guardian.RuneboundGuardian.stage(player);
+        boolean adapted = sscextras.player.PlayerStance.genericQuadruped(player)
+                || guardian >= 0 && sscextras.player.PlayerStance.quadrupedal(player);
+        if (stage < 0 && !adapted || stage >= 0 && stage < 2 && !EarthenDrake.onAllFours(player)) return eyes;
         double scale = stage == 3 ? 1.5 : 1;
         double width = ScaleUtils.getModelWidthScale(player, tickDelta) / scale;
         double height = ScaleUtils.getModelHeightScale(player, tickDelta) / scale;
         double bodyYaw = Math.toRadians(MathHelper.lerpAngleDegrees(tickDelta, player.prevBodyYaw, player.bodyYaw));
         double yaw = Math.toRadians(MathHelper.lerpAngleDegrees(tickDelta, player.prevHeadYaw, player.headYaw));
         double pitch = Math.toRadians(player.getPitch(tickDelta));
-        double pivot = stage == 3 ? .68 : EarthenDrake.onAllFours(player) ? .375 : .1;
-        double forward = stage == 3 ? .206 * Math.cos(pitch) + .104 * Math.sin(pitch) : .3;
+        double pivot = adapted ? guardian == 3 ? 1.043 : .375 : stage == 3 ? .68 : EarthenDrake.onAllFours(player) ? .375 : .1;
+        double forward = adapted ? .18 : stage == 3 ? .206 * Math.cos(pitch) + .104 * Math.sin(pitch) : .3;
         double vertical = stage == 3 ? .104 * (Math.cos(pitch) - 1) - .206 * Math.sin(pitch) : 0;
         Vec3d offset = new Vec3d((-Math.sin(bodyYaw)*pivot-Math.sin(yaw)*forward)*width,
                 vertical*height, (Math.cos(bodyYaw)*pivot+Math.cos(yaw)*forward)*width);

@@ -62,7 +62,7 @@ public final class DrakeFeralization {
     }
 
     public static boolean carriesInMouth(PlayerEntity player) {
-        return permanent(player) || temporary(player) && EarthenDrake.stage(player) >= 0 || DrakeShoes.hands(player);
+        return sscextras.player.PlayerMouth.active(player);
     }
 
     public static int recovery(PlayerEntity player) { return permanent(player) ? ((State)player).sscExtras$sentience() : 0; }

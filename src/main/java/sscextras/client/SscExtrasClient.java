@@ -20,9 +20,11 @@ public final class SscExtrasClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         MentalPerception.register();
         var intelligenceBar = new IntelligenceBarRenderer();
+        var quadBar = new QuadBarRenderer();
+        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register(quadBar::render);
         net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register(intelligenceBar::render);
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null || client.options.hudHidden) intelligenceBar.reset();
+            if (client.player == null || client.options.hudHidden) { intelligenceBar.reset(); quadBar.reset(); }
         });
         PetrificationClient.register();
         ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.TRANSFORMATION_BLACKOUT_SYNC, (client, handler, buf, sender) -> {
@@ -38,6 +40,11 @@ public final class SscExtrasClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
                 SscExtrasGameRules.setClientPermanentProgression(true, java.util.Set.of()));
         GuardianClient.register();
+        for (int stage = 0; stage < 4; stage++) {
+            int index = stage;
+            FormPlayerModels.register(sscextras.guardian.RuneboundGuardian.FORMS[stage].FormID, () -> new GuardianPlayerModel(index));
+        }
+        FormPlayerModels.register(sscextras.golem.DrakeGolem.FORM.FormID, DrakeGolemPlayerModel::new);
         DrakeEquipmentClient.register();
         DrakeCameraControl.register();
         FeralPerception.register();
@@ -67,6 +74,7 @@ public final class SscExtrasClient implements ClientModInitializer {
                 DrakeSoulRenderer.initialize(context);
                 helper.register(new CollarFeatureRenderer(playerRenderer));
                 helper.register(new CuffsFeatureRenderer(playerRenderer));
+                helper.register(new TrainerFeatureRenderer(playerRenderer));
                 helper.register(new DrakeGearFeatureRenderer(playerRenderer));
                 helper.register(new DrakeShoesFeatureRenderer(playerRenderer));
             }
