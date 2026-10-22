@@ -67,6 +67,7 @@
     "LootContextAccessor",
     "InfusionPlayerMixin",
     "InfusionPlayerInventoryMixin",
+    "EmptySlotNetworkMixin",
     "InfusionMiningMixin",
     "InfusionDurabilityMixin",
     "InfusionEnchantmentMixin",

@@ -56,7 +56,7 @@ public final class Infusions {
         if (stack.isEmpty() || !restricted(player, slot, stack)) return ItemStack.EMPTY;
         ItemStack real = slot.armor() ? player.getInventory().armor.get(slot.equipment.getEntitySlotId())
                 : player.getInventory().main.get(player.getInventory().selectedSlot);
-        return real.isEmpty() ? stack : ItemStack.EMPTY;
+        return (slot.armor() ? real.isEmpty() : sscextras.player.EmptySlot.isBare(real)) ? stack : ItemStack.EMPTY;
     }
 
     public static ItemStack weapon(PlayerEntity player) { return active(player, InfusionSlot.WEAPON); }

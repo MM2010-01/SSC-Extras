@@ -139,6 +139,8 @@
     "items/read/minecraft:snowball": "dumb",
     "items/use/ssc-extras:soul_recovery_catalyst": "feral",
     "items/use/ssc-extras:sentient_catalyst": "feral",
+    "items/use/ssc-extras:empty_slot": "feral",
+    "items/read/ssc-extras:empty_slot": "feral",
     "items/use/ssc-extras:full_beastization_catalyst": "feral",
     "items/place/minecraft:sugar_cane": "dumb",
     "items/place/minecraft:bamboo": "dumb",
@@ -146,7 +148,7 @@
     "items/place/minecraft:kelp": "dumb",
     "items/place/minecraft:nether_wart": "dumb"
   },
-  "recipes": {},
+  "recipes": {"ssc-extras:empty_slot": "simple"},
   "screens": {
     "minecraft:generic_9x1": "dumb",
     "minecraft:generic_9x2": "dumb",

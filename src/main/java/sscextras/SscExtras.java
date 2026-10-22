@@ -7,6 +7,7 @@ public final class SscExtras implements ModInitializer {
     public void onInitialize() {
         SscExtrasConfig.load();
         SscExtrasGameRules.register();
+        sscextras.player.EmptySlot.register();
         ConfiguredLootChance.register();
         sscextras.drake.EarthenDrake.register();
         // Explicit block interactions precede the empty-hand infused-tool fallback.

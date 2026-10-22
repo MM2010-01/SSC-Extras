@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["DS", "SC"],
+  "key": {
+    "D": {"item": "minecraft:dirt"},
+    "S": {"item": "minecraft:stick"},
+    "C": {"item": "minecraft:cobblestone"}
+  },
+  "result": {"item": "ssc-extras:empty_slot", "count": 1}
+}

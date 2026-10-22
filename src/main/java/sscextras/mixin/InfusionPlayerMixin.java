@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.effigy.InfusionHand;
 import sscextras.effigy.Infusions;
+import sscextras.player.EmptySlot;
 
 @Mixin(PlayerEntity.class)
 public abstract class InfusionPlayerMixin {
@@ -65,18 +66,35 @@ public abstract class InfusionPlayerMixin {
 
     @Inject(method = "getEquippedStack", at = @At("RETURN"), cancellable = true)
     private void sscExtras$actionHand(EquipmentSlot slot, CallbackInfoReturnable<ItemStack> cir) {
+        if (EmptySlot.physicalHands((PlayerEntity)(Object)this)) return;
+        if (slot.getType() == EquipmentSlot.Type.HAND) cir.setReturnValue(EmptySlot.held(cir.getReturnValue()));
         if (slot == EquipmentSlot.MAINHAND && cir.getReturnValue().isEmpty()) {
             ItemStack infused = InfusionHand.get((PlayerEntity)(Object)this);
             if (!infused.isEmpty()) cir.setReturnValue(infused);
         }
     }
 
+    @Inject(method = "equipStack", at = @At("HEAD"), cancellable = true)
+    private void sscExtras$receiveIntoPlaceholder(EquipmentSlot slot, ItemStack incoming,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity)(Object)this;
+        if (slot.getType() != EquipmentSlot.Type.HAND || EmptySlot.physicalHands(player)) return;
+        var inventory = player.getInventory();
+        ItemStack physical = slot == EquipmentSlot.MAINHAND ? inventory.main.get(inventory.selectedSlot) : inventory.offHand.get(0);
+        if (physical == incoming || !EmptySlot.isPlaceholder(physical)) return;
+        // An empty-hand interaction (e.g. taking armor from a stand) cannot overwrite the reserved slot.
+        if (!incoming.isEmpty() && !player.getWorld().isClient) inventory.offerOrDrop(incoming);
+        ci.cancel();
+    }
+
     @Inject(method = "getStackReference", at = @At("HEAD"), cancellable = true)
     private void sscExtras$physicalInventorySlot(int mappedIndex, CallbackInfoReturnable<StackReference> cir) {
-        if (mappedIndex != 98) return; // weapon.mainhand
+        if (mappedIndex != 98 && mappedIndex != 99) return; // weapon.mainhand / offhand
         PlayerEntity player = (PlayerEntity)(Object)this;
-        if (!InfusionHand.get(player).isEmpty()) {
-            cir.setReturnValue(StackReference.of(player.getInventory(), player.getInventory().selectedSlot));
+        int slot = mappedIndex == 98 ? player.getInventory().selectedSlot : 40;
+        if (EmptySlot.isPlaceholder(player.getInventory().getStack(slot))
+                || mappedIndex == 98 && !InfusionHand.get(player).isEmpty()) {
+            cir.setReturnValue(StackReference.of(player.getInventory(), slot));
         }
     }
 

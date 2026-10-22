@@ -156,6 +156,12 @@
   "message.ssc-extras.drake.pillager.feed": "掠夺者：饿了，%s？给，把肉吃了。",
   "message.ssc-extras.drake.pillager.hand_feed": "掠夺者：%s，还不吃？张嘴，我来喂你。",
   "message.ssc-extras.drake.pillager.catalyst_feed": "掠夺者：%s，张嘴。这份催化剂会帮你变成真正的地龙。",
+  "message.ssc-extras.drake.pillager.confiscation": "掠夺者：先把这些收走。你当坐骑，用不着这些。",
+  "message.ssc-extras.drake.pillager.confiscation_catalysts": "掠夺者：%s，看来你已经准备好成为一头合格的坐骑了，连催化剂都自己带来了！来，张嘴！",
+  "message.ssc-extras.drake.pillager.contraband_check": "掠夺者：%s，别动。该检查违禁品了。",
+  "message.ssc-extras.drake.pillager.contraband_key": "掠夺者：想都别想。",
+  "message.ssc-extras.drake.pillager.contraband_inhibitor": "掠夺者：这对乖坐骑的健康可不好。",
+  "message.ssc-extras.drake.pillager.contraband_lava": "掠夺者：这对你来说太危险了。",
   "message.ssc-extras.drake.pillager.reward": "掠夺者：干得好，%s。这些肉是奖给你的。",
   "message.ssc-extras.drake.pillager.stable_rules": "掠夺者：听好了，%s。到你能够载人之前，给我待在自己的栏位里。跑出去被抓到，就牵回来喂催化剂。到了你足够强壮并且能够四足行走并载人的时候，也只能在兽栏周围%s格内活动。午夜后要待在兽栏内，除非你有借口。这就是规矩。",
   "enchantment.ssc-extras.soulbound": "灵魂绑定",
@@ -431,5 +437,7 @@
   "death.attack.ssc_extras_shatter": "%1$s被%2$s敲碎了",
   "message.ssc-extras.int.decreased": "智力已降至%s。",
   "hud.ssc-extras.int.loss": "- 智力",
-  "hud.ssc-extras.int.gain": "+ 智力"
+  "hud.ssc-extras.int.gain": "+ 智力",
+  "item.ssc-extras.empty_slot": "空槽位",
+  "tooltip.ssc-extras.empty_slot": "手持时保留此槽位，并视为空手，可正常使用天生能力和灌注效果。"
 }

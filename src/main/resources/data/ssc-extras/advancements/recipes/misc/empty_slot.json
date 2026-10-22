@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_materials": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {"items": ["minecraft:dirt"]},
+          {"items": ["minecraft:stick"]},
+          {"items": ["minecraft:cobblestone"]}
+        ]
+      }
+    }
+  },
+  "rewards": {"recipes": ["ssc-extras:empty_slot"]}
+}

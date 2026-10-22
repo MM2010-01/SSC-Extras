@@ -80,7 +80,7 @@ public final class EarthenDrake {
         Registry.register(ApoliRegistries.POWER_FACTORY, bodySlam.getSerializerId(), bodySlam);
         var bareClaws = new ConditionFactory<Entity>(id("bare_claws"), new SerializableData(),
                 (data, entity) -> entity instanceof PlayerEntity player
-                        && player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()
+                        && sscextras.player.EmptySlot.bareMainHand(player)
                         && Infusions.weapon(player).isEmpty());
         Registry.register(ApoliRegistries.ENTITY_CONDITION, bareClaws.getSerializerId(), bareClaws);
         var clawTips = new ConditionFactory<Entity>(id("netherite_claws"), new SerializableData(),
@@ -132,7 +132,7 @@ public final class EarthenDrake {
     public static ItemStack clawTool(PlayerEntity player, BlockState block) {
         int stage = stage(player);
         if (stage < 0 || player.isSpectator() || DrakeShoes.restricted(player)
-                || !player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()) return ItemStack.EMPTY;
+                || !sscextras.player.EmptySlot.bareMainHand(player)) return ItemStack.EMPTY;
         Item tool;
         if (block.isIn(BlockTags.PICKAXE_MINEABLE)) {
             tool = stage == 0 ? Items.WOODEN_PICKAXE : stage == 1 ? Items.STONE_PICKAXE : stage == 2 ? Items.IRON_PICKAXE : Items.DIAMOND_PICKAXE;

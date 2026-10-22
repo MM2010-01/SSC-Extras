@@ -9,7 +9,7 @@ public final class FormItemRestrictions {
     private FormItemRestrictions() { }
 
     public static boolean prevents(PlayerEntity player, ItemStack stack) {
-        return !stack.isEmpty() && !player.isCreative() && !player.isSpectator()
+        return !sscextras.player.EmptySlot.isBare(stack) && !player.isCreative() && !player.isSpectator()
                 && PowerHolderComponent.getPowers(player, PreventItemUsePower.class).stream().anyMatch(power -> power.doesPrevent(stack));
     }
 

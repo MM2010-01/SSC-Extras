@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import sscextras.effigy.InfusionHand;
+import sscextras.player.EmptySlot;
 
 @Mixin(PlayerInventory.class)
 public abstract class InfusionPlayerInventoryMixin {
@@ -18,9 +19,15 @@ public abstract class InfusionPlayerInventoryMixin {
 
     @Inject(method = "getMainHandStack", at = @At("RETURN"), cancellable = true)
     private void sscExtras$actionHand(CallbackInfoReturnable<ItemStack> cir) {
-        if (!cir.getReturnValue().isEmpty()) return;
+        if (EmptySlot.physicalHands(player) || !EmptySlot.isBare(cir.getReturnValue())) return;
         ItemStack stack = InfusionHand.get(player);
-        if (!stack.isEmpty()) cir.setReturnValue(stack);
+        cir.setReturnValue(stack);
+    }
+
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "dropSelectedItem", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/entity/player/PlayerInventory;getMainHandStack()Lnet/minecraft/item/ItemStack;"))
+    private ItemStack sscExtras$dropPhysicalSlot(PlayerInventory inventory) {
+        return inventory.main.get(inventory.selectedSlot);
     }
 
     @Inject(method = "getBlockBreakingSpeed", at = @At("HEAD"), cancellable = true)

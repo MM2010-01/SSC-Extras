@@ -72,7 +72,7 @@ public final class DrakeInstinct {
     public static void register() {
         var claws = new ConditionFactory<Entity>(EarthenDrake.id("claw_instinct"), new SerializableData(),
                 (data, entity) -> entity instanceof PlayerEntity player && canGain(player)
-                        && player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty());
+                        && sscextras.player.EmptySlot.bareMainHand(player));
         Registry.register(ApoliRegistries.ENTITY_CONDITION, claws.getSerializerId(), claws);
         var quadruped = new ConditionFactory<Entity>(EarthenDrake.id("quadruped_instinct"), new SerializableData(),
                 (data, entity) -> entity instanceof PlayerEntity player && canGain(player)
@@ -83,7 +83,7 @@ public final class DrakeInstinct {
         Registry.register(ApoliRegistries.ENTITY_CONDITION, ridden.getSerializerId(), ridden);
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (hand == Hand.MAIN_HAND && canGain(player) && player.canModifyBlocks()
-                    && player.getInventory().main.get(player.getInventory().selectedSlot).isEmpty()) {
+                    && sscextras.player.EmptySlot.bareMainHand(player)) {
                 var block = world.getBlockState(pos);
                 if (!block.isAir() && block.getHardness(world, pos) >= 0) {
                     InstinctManager.applyImmediateEffect(player, "SSC_EXTRAS_DRAKE_DIG", 0.8f);

@@ -49,17 +49,24 @@ public final class RiderChestInventory extends SimpleInventory {
                 : owner instanceof StableDrakeEntity drake ? drake.chest() : ItemStack.EMPTY;
     }
 
-    public static void open(ServerPlayerEntity viewer, LivingEntity owner) {
+    /** Returns the same equipped cargo instance used by every open viewer, or null without an equipped chest. */
+    public static RiderChestInventory get(LivingEntity owner) {
         var stack = equipped(owner);
-        if (stack.isEmpty() || !owner.isAlive() || viewer.isSpectator() || viewer.getWorld() != owner.getWorld()
-                || viewer.squaredDistanceTo(owner) > 64) return;
+        if (stack.isEmpty()) return null;
         var state = (DrakeRiding.State) owner;
         RiderChestInventory inventory = state.sscExtras$getChest();
         if (inventory == null || !inventory.belongsTo(stack)) {
             inventory = new RiderChestInventory(owner, stack);
             state.sscExtras$setChest(inventory);
         }
-        final var shared = inventory;
+        return inventory;
+    }
+
+    public static void open(ServerPlayerEntity viewer, LivingEntity owner) {
+        if (!owner.isAlive() || viewer.isSpectator() || viewer.getWorld() != owner.getWorld()
+                || viewer.squaredDistanceTo(owner) > 64) return;
+        final var shared = get(owner);
+        if (shared == null) return;
         viewer.openHandledScreen(new SimpleNamedScreenHandlerFactory((id, playerInventory, player) ->
                 new GenericContainerScreenHandler(net.minecraft.screen.ScreenHandlerType.GENERIC_9X6, id, playerInventory, shared, 6) {
                     { for (int i = 0; i < 54; i++) {

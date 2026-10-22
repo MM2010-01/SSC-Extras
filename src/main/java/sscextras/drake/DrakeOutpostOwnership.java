@@ -48,6 +48,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         public int escapes;
         public boolean tryingToEscape;
         public boolean collarIssued;
+        public DrakeConfiscation.State confiscation = new DrakeConfiscation.State();
         public int stallIndex, goodTicks, ritualHint;
         public boolean soulbound, awaitingRespawn, feral;
         public boolean shoeingDue;
@@ -90,6 +91,16 @@ public final class DrakeOutpostOwnership extends PersistentState {
     }
 
     private final Map<UUID, Claim> mounts = new LinkedHashMap<>();
+    private final Map<GlobalPos, DrakeConfiscationStorage> confiscationDepots = new LinkedHashMap<>();
+
+    DrakeConfiscationStorage confiscationStorage(ServerWorld world, BlockBox stable) {
+        var key = GlobalPos.create(world.getRegistryKey(), new BlockPos(stable.getMinX(), stable.getMinY(), stable.getMinZ()));
+        var storage = confiscationDepots.get(key);
+        if (storage == null) {
+            storage = new DrakeConfiscationStorage(stable); confiscationDepots.put(key, storage); markDirty();
+        }
+        return storage;
+    }
     private final sscextras.events.EventAssignments assignments = new sscextras.events.EventAssignments();
     public sscextras.events.EventAssignments assignments() { return assignments; }
     private final Map<GlobalPos, String> pendingSigns = new LinkedHashMap<>();
@@ -173,6 +184,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
             if (claim.pursuit != null) claim.pursuit.finish();
             if (claim.tryingToEscape && !DrakeBattleGoal.riding(player)) {
                 claim.escapes++;
+                claim.confiscation.adjust(5);
+                claim.confiscation.misbehaved = true;
                 claim.tryingToEscape = false;
                 if (EarthenDrake.stage(player) < 2) {
                     claim.escapeCatalystDue = true;
@@ -197,6 +210,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         claim.stallIndex = stall;
         claim.nextCatalyst = player.getWorld().getTime() + DrakeFeedGoal.catalystDelay(player);
         claim.lastServiceTime = player.getWorld().getTimeOfDay();
+        claim.confiscation.lastDay = Math.floorDiv(player.getWorld().getTimeOfDay(), 24000);
         data.mounts.put(player.getUuid(), claim);
         data.updateSign(player.getServer(), GlobalPos.create(claim.world, claim.sign()), claim.name, true);
         data.markDirty();
@@ -290,6 +304,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
         DrakeRoaming.tick(player, claim);
         if (claim(player) != claim) return;
         DrakeSoulbinding.tick((ServerPlayerEntity)player, claim);
+        DrakeConfiscation.tick((ServerPlayerEntity)player, claim);
         if (player.getWorld().getRegistryKey().equals(claim.world)
                 && DrakeLeashing.holder(player) instanceof LeashKnotEntity ownedKnot
                 && ownedKnot.getDecorationBlockPos().equals(claim.tie())) issueCollar(player, claim);
@@ -344,6 +359,8 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static void register() {
         DrakeSoulbinding.register();
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) ->
+                DrakeConfiscationGoal.unloaded(entity));
         net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (!(entity instanceof PlayerEntity player)) return;
             var claim = claim(player);
@@ -409,6 +426,14 @@ public final class DrakeOutpostOwnership extends PersistentState {
 
     public static DrakeOutpostOwnership read(NbtCompound nbt) {
         var data = new DrakeOutpostOwnership();
+        for (var element : nbt.getList("ConfiscationDepots", NbtElement.COMPOUND_TYPE)) {
+            var tag = (NbtCompound)element;
+            var storage = DrakeConfiscationStorage.read(tag);
+            if (storage == null) continue;
+            var box = storage.stable;
+            data.confiscationDepots.put(GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("World"))),
+                    new BlockPos(box.getMinX(), box.getMinY(), box.getMinZ())), storage);
+        }
         for (var element : nbt.getList("VacantResidents", NbtElement.COMPOUND_TYPE)) {
             var tag = (NbtCompound)element;
             data.vacantResidents.add(GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, new Identifier(tag.getString("World"))),
@@ -432,6 +457,9 @@ public final class DrakeOutpostOwnership extends PersistentState {
             claim.escapes = Math.max(0, tag.getInt("Escapes"));
             claim.tryingToEscape = tag.getBoolean("TryingToEscape");
             claim.collarIssued = tag.getBoolean("CollarIssued");
+            if (tag.contains("Confiscation", NbtElement.COMPOUND_TYPE))
+                claim.confiscation = DrakeConfiscation.State.read(tag.getCompound("Confiscation"));
+            else claim.confiscation.initialDone = true; // Existing mounts do not receive a retroactive full inventory sweep.
             if (tag.contains("Stall")) claim.stallIndex = Math.max(0, Math.min(claim.stallIndex, tag.getInt("Stall")));
             claim.goodTicks = Math.max(0, Math.min(DrakeSoulbinding.SERVICE_TICKS, tag.getInt("GoodTicks")));
             claim.lastAttendanceNight = tag.contains("AttendanceNight") ? tag.getLong("AttendanceNight") : Long.MIN_VALUE;
@@ -482,6 +510,7 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putBoolean("EscapeCatalystDue", claim.escapeCatalystDue);
             tag.putInt("Escapes", claim.escapes); tag.putBoolean("TryingToEscape", claim.tryingToEscape);
             tag.putBoolean("CollarIssued", claim.collarIssued);
+            tag.put("Confiscation", claim.confiscation.write());
             tag.putInt("Stall", claim.stallIndex); tag.putInt("GoodTicks", claim.goodTicks); tag.putInt("RitualHint", claim.ritualHint);
             tag.putLong("AttendanceNight", claim.lastAttendanceNight);
             tag.putBoolean("Soulbound", claim.soulbound); tag.putBoolean("AwaitingRespawn", claim.awaitingRespawn);
@@ -509,6 +538,11 @@ public final class DrakeOutpostOwnership extends PersistentState {
             tag.putLong("Pos", pos.getPos().asLong()); vacancies.add(tag);
         });
         nbt.put("VacantResidents", vacancies);
+        var depots = new NbtList();
+        confiscationDepots.forEach((key, depot) -> {
+            var tag = depot.write(); tag.putString("World", key.getDimension().getValue().toString()); depots.add(tag);
+        });
+        nbt.put("ConfiscationDepots", depots);
         nbt.put("Mounts", mounts); nbt.put("Signs", signs); nbt.put("Introductions", introductions); return nbt;
     }
 }

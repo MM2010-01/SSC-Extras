@@ -156,6 +156,12 @@
   "message.ssc-extras.drake.pillager.feed": "Pillager: Hungry, %s? Here. Eat your meat.",
   "message.ssc-extras.drake.pillager.hand_feed": "Pillager: Still not eating, %s? Open up. I'll feed you.",
   "message.ssc-extras.drake.pillager.catalyst_feed": "Pillager: Open up, %s. This catalyst will help you become a proper drake.",
+  "message.ssc-extras.drake.pillager.confiscation": "Pillager: Let's get these out of the way. You don't need them as a mount.",
+  "message.ssc-extras.drake.pillager.confiscation_catalysts": "Pillager: %s, looks like you're prepared to become a proper mount. You even brought the catalysts yourself! Now open up!",
+  "message.ssc-extras.drake.pillager.contraband_check": "Pillager: Hold still, %s. Time to check for contraband.",
+  "message.ssc-extras.drake.pillager.contraband_key": "Pillager: Don't even think about it.",
+  "message.ssc-extras.drake.pillager.contraband_inhibitor": "Pillager: Not healthy for a good mount.",
+  "message.ssc-extras.drake.pillager.contraband_lava": "Pillager: Too dangerous for you.",
   "message.ssc-extras.drake.pillager.reward": "Pillager: Good work, %s. You've earned this meat.",
   "message.ssc-extras.drake.pillager.stable_rules": "Pillager: Listen carefully, %s. Stay in your stall until you are rideable. Get caught outside before then and we'll leash you back and feed you a catalyst. When you are strong and quadrupedal enough to be ridden, stay within %s blocks of the stable. Be inside the stable after midnight, unless you have excuses. Those are the rules.",
   "enchantment.ssc-extras.soulbound": "Soulbound",
@@ -431,5 +437,7 @@
   "death.attack.ssc_extras_shatter": "%1$s was shattered by %2$s",
   "message.ssc-extras.int.decreased": "Intelligence has fallen to %s.",
   "hud.ssc-extras.int.loss": "- INT",
-  "hud.ssc-extras.int.gain": "+ INT"
+  "hud.ssc-extras.int.gain": "+ INT",
+  "item.ssc-extras.empty_slot": "Empty Slot",
+  "tooltip.ssc-extras.empty_slot": "Reserves this slot while held. Acts as an empty hand, including natural abilities and infusions."
 }

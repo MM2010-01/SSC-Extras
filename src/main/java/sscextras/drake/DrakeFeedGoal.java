@@ -79,10 +79,12 @@ public final class DrakeFeedGoal extends Goal {
 
     @Override public boolean canStart() {
         if (pillager.hasVehicle() || pillager.age < nextSearch || DrakeFaction.fighting(pillager)
-                || DrakeSoulbinding.attendee(pillager) != null) return false;
+                || DrakeSoulbinding.attendee(pillager) != null
+                || DrakeOutpostOwnership.get(pillager.getServer()).assignments().owner(pillager.getUuid()) != null) return false;
         nextSearch = pillager.age + 40;
         player = pillager.getWorld().getEntitiesByClass(PlayerEntity.class, pillager.getBoundingBox().expand(12), candidate ->
                 inStall(candidate) && !candidate.isUsingItem() && !DrakeSoulbinding.ritualActive(candidate)
+                && DrakeOutpostOwnership.get(candidate.getServer()).assignments().owner(candidate.getUuid()) == null
                 && (candidate.getHungerManager().getFoodLevel() < 10 || canFeedCatalyst(candidate)
                     && (DrakeOutpostOwnership.claim(candidate).escapeCatalystDue
                         || DrakeOutpostOwnership.claim(candidate).nextCatalyst <= pillager.getWorld().getTime()))
@@ -113,6 +115,7 @@ public final class DrakeFeedGoal extends Goal {
     @Override public boolean shouldContinue() {
         if (thrown || player == null || !inStall(player) || DrakeOutpostOwnership.claim(player) != feedingClaim
                 || pillager.hasVehicle() || DrakeFaction.fighting(pillager)
+                || DrakeOutpostOwnership.get(player.getServer()).assignments().owner(player.getUuid()) != null
                 || DrakeSoulbinding.attendee(pillager) != null || DrakeSoulbinding.ritualActive(player)) return false;
         if (catalyst) return canFeedCatalyst(player) && pillager.age - started < 600;
         return handFeeding ? earlyStage(player) && player.canConsume(false) && !player.isCreative() && !player.isSleeping()
@@ -153,22 +156,10 @@ public final class DrakeFeedGoal extends Goal {
 
     private void feedByHand() {
         feedingClaim.nextMeal = pillager.getWorld().getTime() + 200;
-        if (!feedingClaim.stall().contains(pillager.getPos()) || pillager.squaredDistanceTo(player) > 4
-                || !pillager.getVisibilityCache().canSee(player)) {
+        if (!approach(pillager, player, feedingClaim)) {
             pauseFeeding();
-            if (pillager.getNavigation().isIdle() || (pillager.age - started) % 10 == 0) {
-                var positions = new java.util.HashSet<BlockPos>();
-                for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
-                    var pos = player.getBlockPos().add(dx, 0, dz);
-                    var point = Vec3d.ofBottomCenter(pos);
-                    // Navigation may stop short of the node, so leave room inside the two-block feeding reach.
-                    if (feedingClaim.stall().contains(point) && player.squaredDistanceTo(point) <= 1.25 * 1.25) positions.add(pos);
-                }
-                pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(positions, 0), .8);
-            }
             return;
         }
-        pillager.getNavigation().stop();
         if (player.isUsingItem()) { pauseFeeding(); return; }
         if (!announced) { DrakeDialogue.say(player, catalyst ? "catalyst_feed" : "hand_feed"); announced = true; }
         if (catalyst) {
@@ -196,6 +187,25 @@ public final class DrakeFeedGoal extends Goal {
         pillager.swingHand(Hand.MAIN_HAND);
         ((ServerWorld)player.getWorld()).spawnParticles(new ItemStackParticleEffect(ParticleTypes.ITEM, meal),
                 player.getX(), player.getEyeY() - .15, player.getZ(), 6, .15, .1, .15, .02);
+    }
+
+    /** Shared close-range approach for hand feeding and inspections; the caller owns timing and effects. */
+    static boolean approach(PillagerEntity pillager, PlayerEntity player, DrakeOutpostOwnership.Claim claim) {
+        if (claim.stall().contains(pillager.getPos()) && pillager.squaredDistanceTo(player) <= 4
+                && pillager.getVisibilityCache().canSee(player)) {
+            pillager.getNavigation().stop(); return true;
+        }
+        if (pillager.getNavigation().isIdle() || pillager.age % 10 == 0) {
+            var positions = new java.util.HashSet<BlockPos>();
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+                var pos = player.getBlockPos().add(dx, 0, dz);
+                var point = Vec3d.ofBottomCenter(pos);
+                // Navigation may stop short of a node; leave room inside the actual interaction reach.
+                if (claim.stall().contains(point) && player.squaredDistanceTo(point) <= 1.25 * 1.25) positions.add(pos);
+            }
+            pillager.getNavigation().startMovingAlong(pillager.getNavigation().findPathTo(positions, 0), .8);
+        }
+        return false;
     }
 
     @Override public void stop() {

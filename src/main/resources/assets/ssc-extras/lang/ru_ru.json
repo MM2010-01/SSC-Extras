@@ -156,6 +156,12 @@
   "message.ssc-extras.drake.pillager.feed": "Разбойник: Хочешь есть, %s? Держи. Ешь мясо.",
   "message.ssc-extras.drake.pillager.hand_feed": "Разбойник: Всё ещё не ешь, %s? Открывай пасть. Я тебя накормлю.",
   "message.ssc-extras.drake.pillager.catalyst_feed": "Разбойник: Открывай пасть, %s. Этот катализатор поможет тебе стать настоящим дрейком.",
+  "message.ssc-extras.drake.pillager.confiscation": "Разбойник: Уберём это с дороги. Ездовому животному такие вещи ни к чему.",
+  "message.ssc-extras.drake.pillager.confiscation_catalysts": "Разбойник: %s, похоже, ты готовишься стать настоящим ездовым животным. Даже катализаторы с собой! А теперь открывай пасть!",
+  "message.ssc-extras.drake.pillager.contraband_check": "Разбойник: Не двигайся, %s. Пора проверить, нет ли запрещённых вещей.",
+  "message.ssc-extras.drake.pillager.contraband_key": "Разбойник: Даже не думай об этом.",
+  "message.ssc-extras.drake.pillager.contraband_inhibitor": "Разбойник: Хорошему ездовому животному это вредно.",
+  "message.ssc-extras.drake.pillager.contraband_lava": "Разбойник: Для тебя это слишком опасно.",
   "message.ssc-extras.drake.pillager.reward": "Разбойник: Хорошая работа, %s. Ты заслуживаешь это мясо.",
   "message.ssc-extras.drake.pillager.stable_rules": "Разбойник: Слушай внимательно, %s. Оставайся в стойле, пока на тебе нельзя ездить. Если до этого попадёшься снаружи, мы вернём тебя на поводке и накормим катализатором. Когда ты станешь достаточно сильным и четвероногим для верховой езды, оставайся в пределах %s блоков от конюшни. После полуночи будь внутри конюшни, если нет уважительной причины отсутствовать. Таковы правила.",
   "enchantment.ssc-extras.soulbound": "Привязка к душе",
@@ -428,5 +434,7 @@
   "death.attack.ssc_extras_shatter": "%2$s разбил статую %1$s",
   "message.ssc-extras.int.decreased": "Интеллект снизился до уровня «%s».",
   "hud.ssc-extras.int.loss": "- ИНТ",
-  "hud.ssc-extras.int.gain": "+ ИНТ"
+  "hud.ssc-extras.int.gain": "+ ИНТ",
+  "item.ssc-extras.empty_slot": "Пустой слот",
+  "tooltip.ssc-extras.empty_slot": "Резервирует слот, но считается пустой рукой. Сохраняет природные способности и эффекты насыщения."
 }

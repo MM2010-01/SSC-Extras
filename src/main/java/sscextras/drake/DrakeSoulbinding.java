@@ -57,11 +57,17 @@ public final class DrakeSoulbinding {
         SoulboundEquipment.register();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             var claim = DrakeOutpostOwnership.claim(handler.player);
-            if (claim != null) claim.lastServiceTime = handler.player.getWorld().getTimeOfDay();
+            if (claim != null) {
+                claim.lastServiceTime = handler.player.getWorld().getTimeOfDay();
+                claim.confiscation.lastDay = Math.max(claim.confiscation.lastDay,
+                        Math.floorDiv(handler.player.getWorld().getTimeOfDay(), DAY_TICKS));
+                DrakeOutpostOwnership.get(server).markDirty();
+            }
             syncSoul(handler.player);
             DrakeRitualTransform.recover(handler.player);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            DrakeConfiscationGoal.unloaded(handler.player);
             var claim = DrakeOutpostOwnership.claim(handler.player);
             if (claim != null) cancel(handler.player, claim);
         });
@@ -184,6 +190,11 @@ public final class DrakeSoulbinding {
         var claim = DrakeOutpostOwnership.claim(player);
         if (claim == null || claim.soulbound) return;
         claim.lastServiceTime = player.getWorld().getTimeOfDay();
+        // A reset starts a fresh full service day; escapes which retain service are tracked separately.
+        if (claim.confiscation.misbehaved) {
+            claim.confiscation.misbehaved = false;
+            DrakeOutpostOwnership.get(player.getServer()).markDirty();
+        }
         if (claim.goodTicks == 0) return;
         claim.goodTicks = 0; claim.ritualHint = 0;
         cancel(player, claim);
@@ -213,7 +224,9 @@ public final class DrakeSoulbinding {
         if ((player.isCreative() && !commanded) || EarthenDrake.stage(player) < 0) { cancel(player, claim); return; }
         if (!commanded && missedAttendance(player, claim)) { cancel(player, claim); return; }
         if (!claim.soulbound && !commanded && !punishment && !shoeing && claim.goodTicks < SERVICE_TICKS) {
+            int before = claim.goodTicks;
             claim.goodTicks += (int)Math.min(SERVICE_TICKS - claim.goodTicks, elapsed);
+            DrakeConfiscation.goodService(claim, before, claim.goodTicks);
             DrakeOutpostOwnership.get(player.getServer()).markDirty();
         }
         int hint = claim.goodTicks >= SERVICE_TICKS ? 3 : claim.goodTicks >= 8 * DAY_TICKS ? 2 : 1;

@@ -95,6 +95,7 @@ public abstract class DrakePillagerGoalMixin extends IllagerEntity implements Dr
         goalSelector.add(1, sscExtras$equipGoal);
         sscExtras$captureGoal = new DrakeCaptureGoal((PillagerEntity)(Object)this);
         goalSelector.add(1, sscExtras$captureGoal);
+        goalSelector.add(1, new sscextras.drake.DrakeConfiscationGoal((PillagerEntity)(Object)this));
         goalSelector.add(1, new sscextras.drake.DrakeFeedGoal((PillagerEntity)(Object)this));
         goalSelector.add(2, new sscextras.drake.DrakeGuardGoal((PillagerEntity)(Object)this, true));
         goalSelector.add(3, new sscextras.drake.DrakeStableRepairGoal((PillagerEntity)(Object)this));
