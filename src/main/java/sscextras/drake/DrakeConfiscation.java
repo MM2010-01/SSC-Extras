@@ -13,6 +13,7 @@ import net.onixary.shapeShifterCurseFabric.items.RegCustomItem;
 import sscextras.collar.AccessoryEquipment;
 import sscextras.collar.Collars;
 import sscextras.collar.CuriosCompat;
+import sscextras.inventory.CarriedItemSearch;
 import java.util.EnumSet;
 import java.util.function.Predicate;
 
@@ -92,49 +93,45 @@ public final class DrakeConfiscation {
 
     static void dirty(ServerPlayerEntity player) { DrakeOutpostOwnership.get(player.getServer()).markDirty(); }
 
-    /** A single inspection traverses physical inventory, cursor, active accessories and Rider's Chest cargo. */
+    /** A single inspection traverses physical inventory, active accessories and supported nested storage. */
     static EnumSet<Contraband> take(ServerPlayerEntity player, DrakeConfiscationStorage storage, boolean initial,
                                     boolean keepCatalysts) {
         var found = EnumSet.noneOf(Contraband.class);
         Predicate<ItemStack> take = stack -> !stack.isEmpty() && (initial ? !allowed(stack)
                 && !(keepCatalysts && stack.isOf(RegCustomItem.CATALYST)) : contraband(stack) != null);
-        var seenChests = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<ItemStack, Boolean>());
+        // Let an open modded bag commit its menu edits before searching its backing item.
+        if (player.currentScreenHandler != player.playerScreenHandler) {
+            var held = player.currentScreenHandler.getCursorStack();
+            player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
+            player.closeHandledScreen();
+            player.currentScreenHandler.setCursorStack(held);
+        }
         java.util.function.Consumer<ItemStack> collect = stack -> {
             var kind = contraband(stack); if (kind != null) found.add(kind);
             storage.cargo.add(stack);
         };
-        java.util.function.Consumer<ItemStack> inspectChest = stack -> {
-            if (stack.isOf(DrakeEquipment.RIDERS_CHEST) && seenChests.add(stack)) {
-                var chest = stack == RiderChestInventory.equipped(player) ? RiderChestInventory.get(player)
-                        : new RiderChestInventory(player, stack);
-                takeInventory(chest, take, collect);
-            }
-        };
+        var search = new CarriedItemSearch(player, take, collect, stack ->
+                !stack.isOf(DrakeEquipment.RIDERS_CHEST) ? null : stack == RiderChestInventory.equipped(player)
+                        ? RiderChestInventory.get(player) : new RiderChestInventory(player, stack));
         var inventory = player.getInventory();
-        for (int i = 0; i < inventory.size(); i++) inspectChest.accept(inventory.getStack(i));
-        takeInventory(inventory, take, collect);
+        search.inventory(inventory);
         var cursor = player.currentScreenHandler.getCursorStack();
-        inspectChest.accept(cursor);
         if (take.test(cursor)) { player.currentScreenHandler.setCursorStack(ItemStack.EMPTY); collect.accept(cursor); }
+        else search.contents(cursor);
         var io = AccessoryEquipment.slots();
         if (io != null) {
             var slots = CuriosCompat.instance == null ? io.getEntitySlots(player) : CuriosCompat.instance.allSlots(player);
             if (slots != null) for (var entry : slots.entrySet()) for (int i = 0; i < entry.getValue().size(); i++) {
                 var stack = io.getEntitySlot(player, entry.getKey().getLeft(), entry.getKey().getRight(), i);
                 if (stack == null) continue;
-                inspectChest.accept(stack);
                 if (take.test(stack)) AccessoryEquipment.clear(player, io, entry.getKey().getLeft(),
                         entry.getKey().getRight(), i, collect);
+                else search.contents(stack);
             }
         }
+        search.playerStorage();
         inventory.markDirty(); player.currentScreenHandler.sendContentUpdates(); dirty(player);
         return found;
-    }
-
-    private static void takeInventory(Inventory inventory, Predicate<ItemStack> take,
-                                      java.util.function.Consumer<ItemStack> collect) {
-        for (int i = 0; i < inventory.size(); i++) if (take.test(inventory.getStack(i))) collect.accept(inventory.removeStack(i));
-        inventory.markDirty();
     }
 
     private record Dose(ItemStack stack, java.util.function.Consumer<ItemStack> replace) { }
