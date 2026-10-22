@@ -82,6 +82,7 @@ public abstract class SoulRitual extends AbstractDrakeRitual {
         checkpoint.feedingTicks = -1;
         checkpoint.catalystsFed++;
         food.finishUsing(context.player().getWorld(), context.player());
+        sscextras.trainer.QuadrupedalTrainer.ritualCatalyst(context.player());
         leader.swingHand(net.minecraft.util.Hand.MAIN_HAND);
         DrakeOutpostOwnership.get(context.player().getServer()).markDirty();
     }

@@ -111,7 +111,7 @@ public final class Collars {
 
     public static boolean tryEquip(PlayerEntity player, ItemStack source) {
         if (!(player instanceof ServerPlayerEntity) || source.isEmpty() || !source.isOf(CURSED)
-                || !canAutoEquip(player)) return false;
+                || FormAbilityManager.getForm(player).getIndex() == 3 || !canAutoEquip(player)) return false;
         CollarSlots.Slot destination = null;
         for (var slot : CollarSlots.get(player)) {
             if (!slot.stack().isEmpty()) return false;
@@ -132,6 +132,7 @@ public final class Collars {
 
     public static void equipCarried(PlayerEntity player) {
         if (!canAutoEquip(player)) return;
+        sscextras.trainer.TrainerLoot.equipCarried(player);
         for (int i = 0; i < player.getInventory().size(); i++) {
             if (tryEquip(player, player.getInventory().getStack(i))) {
                 player.getInventory().markDirty();
@@ -183,6 +184,7 @@ public final class Collars {
 
     public static void openedContainer(ServerPlayerEntity player) {
         if (!canAutoEquip(player)) return;
+        if (sscextras.trainer.TrainerLoot.openedContainer(player)) return;
         for (Slot slot : player.currentScreenHandler.slots) {
             if (slot.inventory == player.getInventory() || !slot.canTakeItems(player)) continue;
             if (tryEquip(player, slot.getStack())) {
@@ -193,11 +195,10 @@ public final class Collars {
         }
     }
 
-    private static boolean canAutoEquip(PlayerEntity player) {
+    public static boolean canAutoEquip(PlayerEntity player) {
         return player.isAlive() && !player.isSpectator() && !player.hasStatusEffect(CURSE_CLEANSED)
-                && FormAbilityManager.getForm(player).getIndex() != 3
                 && player.getWorld().getGameRules().getBoolean(isCursed(player)
-                ? SscExtrasGameRules.COLLAR_AUTO_EQUIP_CURSED : SscExtrasGameRules.COLLAR_AUTO_EQUIP_UNCURSED);
+                ? SscExtrasGameRules.CURSED_LOOT_AUTO_EQUIP_CURSED : SscExtrasGameRules.CURSED_LOOT_AUTO_EQUIP_UNCURSED);
     }
 
     public static BaseTransformativeStatusEffect infusion(ItemStack stack) {

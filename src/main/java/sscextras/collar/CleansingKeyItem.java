@@ -50,10 +50,11 @@ public final class CleansingKeyItem extends Item {
             String group = CuriosCompat.instance == null ? feet ? "feet" : "hand" : "";
             String name = CuriosCompat.instance == null ? feet ? "shoes" : "glove" : feet ? "feet" : "hands";
             var stacks = sscextras.drake.DrakeShoes.stacks(player, feet);
-            for (int i = 0; i < stacks.size(); i++) if (stacks.get(i).isOf(DrakeEquipment.SHOES))
+            for (int i = 0; i < stacks.size(); i++) if ((stacks.get(i).isOf(DrakeEquipment.SHOES) || stacks.get(i).isOf(sscextras.trainer.QuadrupedalTrainer.MOLD)))
                 if (release(player, key, hand, io, group, name, i)) removed++;
         }
         if (removed == 0) return 0;
+        sscextras.trainer.QuadrupedalTrainer.refresh(player);
         player.addStatusEffect(new StatusEffectInstance(Collars.CURSE_CLEANSED, 600, 0, false, false, true));
         player.getInventory().markDirty();
         player.currentScreenHandler.sendContentUpdates();
@@ -67,13 +68,15 @@ public final class CleansingKeyItem extends Item {
         if (key != null && (key.isEmpty() || key.getDamage() >= key.getMaxDamage())) return false;
         ItemStack stack = io.getEntitySlot(player, group, name, index);
         if (stack == null || !(stack.isOf(Collars.CURSED) || stack.isOf(Collars.TAMING) || DrakeEquipment.isReins(stack)
-                || stack.isOf(DrakeEquipment.SADDLE) || stack.isOf(DrakeEquipment.SHOES))) return false;
-        ItemStack dropped = stack.copy();
-        io.setEntitySlot(player, group, name, index, ItemStack.EMPTY);
-        if (!io.getEntitySlot(player, group, name, index).isEmpty()) return false;
-        DrakeEquipment.clearSetBinding(dropped);
+                || stack.isOf(DrakeEquipment.SADDLE) || stack.isOf(DrakeEquipment.SHOES)
+                || stack.isOf(sscextras.trainer.QuadrupedalTrainer.MOLD) || stack.isOf(sscextras.trainer.QuadrupedalTrainer.COLLAR))) return false;
+        if (!AccessoryEquipment.clear(player, io, group, name, index, dropped -> {
+            DrakeEquipment.clearSetBinding(dropped);
+            if (dropped.isOf(sscextras.trainer.QuadrupedalTrainer.MOLD) || dropped.isOf(sscextras.trainer.QuadrupedalTrainer.COLLAR))
+                sscextras.trainer.QuadrupedalTrainer.binding(dropped, false);
+            player.dropItem(dropped, false);
+        })) return false;
         DrakeEquipment.refreshBinding(player);
-        player.dropItem(dropped, false);
         if (key != null) {
             key.setDamage(key.getDamage() + 1);
             if (key.getDamage() >= key.getMaxDamage()) {

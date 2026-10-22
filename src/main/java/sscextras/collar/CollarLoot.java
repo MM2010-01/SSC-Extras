@@ -34,6 +34,7 @@ public final class CollarLoot {
         Registry.register(Registries.LOOT_CONDITION_TYPE, new Identifier("ssc-extras", "root_chest"), RootChestCondition.TYPE);
         LootTableEvents.MODIFY.register((resources, manager, id, builder, source) -> {
             if (!eligible(id)) return;
+            sscextras.trainer.TrainerLoot.addPool(builder);
             var pool = LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
                     .conditionally(() -> RootChestCondition.INSTANCE)
                     .conditionally(() -> new ConfiguredLootChance("cursedCollarLootChance"));

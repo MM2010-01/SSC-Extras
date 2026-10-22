@@ -11,7 +11,6 @@ import net.minecraft.util.math.Vec3d;
 import net.onixary.shapeShifterCurseFabric.render.form_render.DefaultModelAnimationSystem;
 import net.onixary.shapeShifterCurseFabric.render.form_render.FormModel;
 import net.onixary.shapeShifterCurseFabric.render.form_render.FormRenderer;
-import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import sscextras.drake.EarthenDrake;
 
@@ -82,11 +81,7 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
                 if (body != null) {
                     tail.setPosZ((body.getPivotZ() - tail.getPivotZ()) * MathHelper.sin(body.getRotX()));
                     // Cancel the torso tilt before applying sway, so yaw stays sideways.
-                    var rotation = new Quaternionf().rotationX(-body.getRotX())
-                            .rotateY(tail.getRotY()).rotateX(tail.getRotX()).getEulerAnglesZYX(new Vector3f());
-                    tail.setRotX(rotation.x);
-                    tail.setRotY(rotation.y);
-                    tail.setRotZ(rotation.z);
+                    FormTailPhysics.counterTilt(tail, body);
                 }
             }
         }

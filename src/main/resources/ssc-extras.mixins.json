@@ -4,6 +4,7 @@
   "package": "sscextras.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "CursedLootRulesMixin",
     "GuardianVillagerTradeMixin",
     "GuardianTargetMixin",
     "GuardianSpawnerAccessor",
@@ -98,6 +99,10 @@
     "GuardianTeleportMixin",
     "GuardianVillageStructureMixin",
     "MentalCraftingMixin",
+    "MentalCraftingRewardMixin",
+    "MentalReadingMixin",
+    "MentalLecternMixin",
+    "MentalFoodMixin",
     "MentalFurnaceMixin",
     "MentalScreenMixin",
     "MentalScreenHandlerAccessor",
@@ -171,7 +176,8 @@
     "TrainerFormVisibilityMixin",
     "TrainerGeoLimbMixin",
     "TrainerMouthAttachmentMixin",
-    "TrainerArmPoseMixin"
+    "TrainerArmPoseMixin",
+    "StanceTailPoseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

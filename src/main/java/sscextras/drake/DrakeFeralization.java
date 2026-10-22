@@ -108,18 +108,19 @@ public final class DrakeFeralization {
     }
 
     static void recover(ServerPlayerEntity player) {
+        player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
+        PlayerMind.gainPoints(player, 100);
         if (permanent(player)) {
             var state = (State)player;
             state.sscExtras$feral(true);
             int recovered = recovery(player) + 1;
             if (recovered >= 4) {
-                DrakeSoulbinding.clearFeralization(player);
-                player.sendMessage(SentientCatalyst.hint(player, 4), false);
+                DrakeSoulbinding.clearFeralization(player, false);
+                if (!PlayerMind.enabled(player)) player.sendMessage(SentientCatalyst.hint(player, 4), false);
                 return;
             }
             state.sscExtras$sentience(recovered);
-            PlayerMind.recover(player, recovered);
-            player.sendMessage(SentientCatalyst.hint(player, recovered), false);
+            if (!PlayerMind.enabled(player)) player.sendMessage(SentientCatalyst.hint(player, recovered), false);
         }
         player.removeStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED);
         PlayerMind.refresh(player);
@@ -130,7 +131,6 @@ public final class DrakeFeralization {
     static void relapse(PlayerEntity player) {
         if (permanent(player)) {
             ((State)player).sscExtras$sentience(Math.max(0, recovery(player) - 1));
-            if (player instanceof ServerPlayerEntity serverPlayer) PlayerMind.recover(serverPlayer, recovery(player));
         }
     }
 
@@ -249,6 +249,7 @@ public final class DrakeFeralization {
     }
 
     public static void tick(ServerPlayerEntity player) {
+        sscextras.player.MentalProgression.tick(player);
         PlayerMind.refresh(player);
         tickPolicy(player);
         if (wantsHeldFood(player)) FeralForageGoal.eatHeldFood(player);

@@ -69,6 +69,7 @@ public final class MentalRequirements {
                     ? IntLevel.DUMB : modLevel(context.id().getNamespace());
         }
         if (stack.isEmpty()) return IntLevel.FERAL;
+        if ((context.action() == Action.READ || context.action() == Action.USE) && MentalProgression.isBook(stack)) return IntLevel.SIMPLE;
         Item item = stack.getItem();
         if (stack.isFood() && context.action() != Action.CRAFT) return IntLevel.FERAL;
         IntLevel mod = modLevel(context.id().getNamespace());
@@ -111,7 +112,8 @@ public final class MentalRequirements {
                 || block instanceof CropBlock || block instanceof StemBlock || block instanceof AttachedStemBlock
                 || block instanceof SweetBerryBushBlock || block instanceof CocoaBlock || block instanceof CaveVines)
             return IntLevel.DUMB;
-        if (block instanceof CraftingTableBlock || block instanceof ComposterBlock || block instanceof FurnaceBlock || block instanceof SmokerBlock)
+        if (block instanceof CraftingTableBlock || block instanceof ComposterBlock || block instanceof FurnaceBlock || block instanceof SmokerBlock
+                || block instanceof LecternBlock)
             return IntLevel.SIMPLE;
         return mod;
     }

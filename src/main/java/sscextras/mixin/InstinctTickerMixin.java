@@ -14,7 +14,6 @@ import net.onixary.shapeShifterCurseFabric.player_form.instinct.PlayerInstinctCo
 import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -23,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = InstinctTicker.class, remap = false)
 public abstract class InstinctTickerMixin {
-    @Shadow private static void processImmediateEffects(PlayerInstinctComponent comp) { throw new AssertionError(); }
     @Inject(method = "clearInstinct", at = @At("HEAD"))
     private static void sscExtras$clearTarget(PlayerEntity player, CallbackInfo ci) {
         CreatureInstinct.clearTarget(player);
@@ -65,16 +63,11 @@ public abstract class InstinctTickerMixin {
         if (comp.immediateEffects.isEmpty()) return;
         float cost = CreatureInstinct.costMultiplier(player);
         float multiplier = Collars.gain(player, 1);
-        if (cost == 1 && multiplier == 1 && MetalCuffs.equipped(player, false, false).isEmpty()
-                && MetalCuffs.equipped(player, true, false).isEmpty()) {
-            processImmediateEffects(comp);
-            return;
-        }
         while (!comp.immediateEffects.isEmpty()) {
             InstinctEffect effect = comp.immediateEffects.poll();
             float value = effect.getValue();
             if (value > 0) value *= multiplier;
-            comp.instinctValue = MetalCuffs.apply(player, comp.instinctValue, value / cost);
+            comp.instinctValue = CreatureInstinct.applyGain(player, comp.instinctValue, value / cost);
         }
     }
 
@@ -82,7 +75,7 @@ public abstract class InstinctTickerMixin {
             "Lnet/minecraft/util/math/MathHelper;clamp(FFF)F", remap = true))
     private static float sscExtras$cuffPassiveGain(float value, float min, float max, ServerPlayerEntity player) {
         var comp = net.onixary.shapeShifterCurseFabric.player_form.instinct.RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player);
-        return MetalCuffs.apply(player, comp.instinctValue, comp.currentInstinctRate);
+        return CreatureInstinct.applyGain(player, comp.instinctValue, comp.currentInstinctRate);
     }
 
     @Inject(method = "checkThreshold", at = @At("HEAD"), cancellable = true)

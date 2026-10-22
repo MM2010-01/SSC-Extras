@@ -161,6 +161,7 @@
     "minecraft:crafting": "simple",
     "minecraft:furnace": "simple",
     "minecraft:smoker": "simple",
-    "minecraft:merchant": "simple"
+    "minecraft:merchant": "simple",
+    "minecraft:lectern": "simple"
   }
 }

@@ -40,10 +40,17 @@ public final class CreatureInstinct {
             state.sscExtras$setTarget(target.FormID);
         }
         sscextras.collar.Collars.equipCarried(player);
-        instinct.instinctValue = sscextras.cuffs.MetalCuffs.apply(player, instinct.instinctValue,
+        instinct.instinctValue = applyGain(player, instinct.instinctValue,
                 sscextras.collar.Collars.gain(player, amount) / costMultiplier(player));
         RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.sync(player);
         return true;
+    }
+
+    /** Shared final gain boundary: native suppression/clamping, then INT loss for accepted instinct only. */
+    public static float applyGain(PlayerEntity player, float current, float gain) {
+        float next = sscextras.cuffs.MetalCuffs.apply(player, current, gain);
+        sscextras.player.MentalProgression.instinctGained(player, Math.max(0, next - current));
+        return next;
     }
 
     public static boolean canGain(PlayerEntity player, BaseTransformativeStatusEffect effect) {

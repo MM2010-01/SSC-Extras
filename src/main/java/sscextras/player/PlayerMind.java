@@ -22,6 +22,7 @@ public final class PlayerMind {
 
     public static final class Runtime {
         private final Map<Identifier, IntLevel> limits = new LinkedHashMap<>();
+        final MentalProgression.Runtime progression = new MentalProgression.Runtime();
         private int beforeFeral = MAX_UNITS;
         private boolean loaded;
         long nextHint;
@@ -29,6 +30,7 @@ public final class PlayerMind {
 
     private PlayerMind() { }
     private static State state(PlayerEntity player) { return (State)player; }
+    static Runtime runtime(PlayerEntity player) { return state(player).sscExtras$mind(); }
     public static boolean enabled(PlayerEntity player) { return sscextras.SscExtrasGameRules.intSystemEnabled(player); }
     public static double points(PlayerEntity player) { return state(player).sscExtras$intUnits() / (double)UNITS_PER_POINT; }
     public static double effectivePoints(PlayerEntity player) {
@@ -62,7 +64,9 @@ public final class PlayerMind {
     public static Decision check(PlayerEntity player, MentalContext context) {
         IntLevel required = MentalRequirements.required(context);
         return new Decision(permits(player, required), required, net.minecraft.text.Text.translatable(
-                "message.ssc-extras.int.required", required.text()).styled(style -> style.withInsertion("ssc-extras:mental_hint")));
+                MentalProgression.isBook(context.stack()) && effectiveInt(player) == IntLevel.DUMB
+                        ? "message.ssc-extras.int.book.dumb" : "message.ssc-extras.int.required", required.text())
+                .styled(style -> style.withInsertion("ssc-extras:mental_hint")));
     }
     public static boolean allow(PlayerEntity player, MentalContext context) {
         var result = check(player, context);
@@ -98,9 +102,21 @@ public final class PlayerMind {
         setPoints(player, level.ordinal() * POINTS_PER_LEVEL);
     }
     public static void setPoints(ServerPlayerEntity player, double points) {
+        IntLevel previous = baseInt(player);
         state(player).sscExtras$intUnits(units(points));
         state(player).sscExtras$mind().loaded = true;
         refresh(player);
+        if (enabled(player)) MentalProgression.tierChanged(player, previous, baseInt(player));
+    }
+    /** Completed gameplay gains stop at the maximum; no reserve is banked beyond it. */
+    public static double gainPoints(ServerPlayerEntity player, double amount) {
+        int gain = units(Math.max(0, amount));
+        if (gain == 0 || !MentalProgression.eligible(player)) return 0;
+        int previous = state(player).sscExtras$intUnits();
+        gain = (int)Math.min(gain, (long)MAX_UNITS - previous);
+        if (gain == 0) return 0;
+        setPoints(player, ((long)previous + gain) / (double)UNITS_PER_POINT);
+        return gain / (double)UNITS_PER_POINT;
     }
     /** Commit a completed server action. Returns the actual loss; never changes instinct or body state. */
     public static double losePoints(ServerPlayerEntity player, double amount) {
@@ -109,11 +125,7 @@ public final class PlayerMind {
         int previous = state(player).sscExtras$intUnits();
         loss = (int)Math.min(loss, (long)previous - Integer.MIN_VALUE);
         if (loss == 0) return 0;
-        var before = effectiveInt(player);
         setPoints(player, (previous - loss) / (double)UNITS_PER_POINT);
-        if (effectiveInt(player) != before) player.sendMessage(net.minecraft.text.Text.translatable(
-                "message.ssc-extras.int.decreased", effectiveInt(player).text())
-                .styled(style -> style.withInsertion("ssc-extras:mental_hint")), true);
         return loss / (double)UNITS_PER_POINT;
     }
     public static void limitInt(ServerPlayerEntity player, Identifier source, IntLevel level) {
@@ -125,9 +137,12 @@ public final class PlayerMind {
         refresh(player);
     }
     public static void feralize(ServerPlayerEntity player) {
-        var runtime = state(player).sscExtras$mind();
-        if (!((sscextras.drake.DrakeFeralization.State)player).sscExtras$feral()) runtime.beforeFeral = state(player).sscExtras$intUnits();
-        setBaseInt(player, IntLevel.FERAL);
+        if (!player.hasStatusEffect(BeastizationCatalyst.TOTAL_FERALIZED)) rememberBeforeFeral(player);
+        setPoints(player, Math.min(0, points(player)));
+    }
+    public static void rememberBeforeFeral(ServerPlayerEntity player) {
+        if (!((sscextras.drake.DrakeFeralization.State)player).sscExtras$feral())
+            runtime(player).beforeFeral = state(player).sscExtras$intUnits();
     }
     public static void recover(ServerPlayerEntity player, int dose) {
         int restored = state(player).sscExtras$mind().beforeFeral;
@@ -155,6 +170,7 @@ public final class PlayerMind {
         nbt.putDouble("SscExtrasIntPoints", points(player));
         nbt.putString("SscExtrasIntBeforeFeral", level(state(player).sscExtras$mind().beforeFeral).id());
         nbt.putDouble("SscExtrasIntPointsBeforeFeral", state(player).sscExtras$mind().beforeFeral / (double)UNITS_PER_POINT);
+        MentalProgression.write(player, nbt);
     }
     public static void read(PlayerEntity player, NbtCompound nbt) {
         var value = state(player); var runtime = value.sscExtras$mind();
@@ -167,6 +183,7 @@ public final class PlayerMind {
         runtime.loaded = nbt.contains("SscExtrasIntPoints") || nbt.contains("SscExtrasInt") || nbt.getBoolean("SscExtrasFeralMind");
         value.sscExtras$intUnits(savedUnits(nbt, "SscExtrasIntPoints", level));
         value.sscExtras$effectiveInt(baseInt(player).ordinal());
+        MentalProgression.read(player, nbt);
     }
     private static int savedUnits(NbtCompound nbt, String key, IntLevel fallback) {
         if (!nbt.contains(key, net.minecraft.nbt.NbtElement.NUMBER_TYPE) || !Double.isFinite(nbt.getDouble(key)))
@@ -199,5 +216,6 @@ public final class PlayerMind {
         to.sscExtras$effectiveInt(baseInt(oldPlayer).ordinal());
         to.sscExtras$mind().beforeFeral = from.sscExtras$mind().beforeFeral;
         to.sscExtras$mind().loaded = from.sscExtras$mind().loaded;
+        MentalProgression.copy(oldPlayer, newPlayer);
     }
 }

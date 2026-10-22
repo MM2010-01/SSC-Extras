@@ -58,7 +58,8 @@ public final class TrainerLimbModel {
             boolean enabled = arm ? hands : feet;
             float progress = QuadrupedalTrainer.progress(player, arm ? QuadrupedalTrainer.HANDS : QuadrupedalTrainer.FEET);
             float end = arm ? 10 : 12;
-            float bottom = 24 - Math.max(0, root.pitch) * 4;
+            float bottom = 24 - Math.max(0, root.pitch) * 4
+                    - (QuadrupedalTrainer.equipped(player,arm ? QuadrupedalTrainer.HANDS : QuadrupedalTrainer.FEET,false).isEmpty() ? 0 : .7f);
             if (ground) end = (bottom - root.pivotY - 1.8f + MathHelper.sin(root.pitch) * -1.2f * progress)
                     / Math.max(.5f, MathHelper.cos(root.pitch)) + 1.8f;
             reshape(root, arm, left, enabled, progress, end, ground);
@@ -92,8 +93,8 @@ public final class TrainerLimbModel {
         float length = end - start;
         float p = MathHelper.clamp(amount, 0, 1);
         var shoulder = new Vector3f(center, start, 0);
-        var knee = new Vector3f(center, start + length * .43f, (arm ? 1.3f : -2.25f) * p);
-        var hock = new Vector3f(center, end - 3.8f, (arm ? -.4f : 1.9f) * p);
+        var knee = new Vector3f(center, start + length * (.5f - .15f * p), (arm ? 1.3f : -2.25f) * p);
+        var hock = new Vector3f(center, end - (2.5f + 2.8f * p), (arm ? -.4f : 1.9f) * p);
         var ankle = new Vector3f(center, end - 1.8f, -.4f * p);
         segment(root.getChild(PREFIX + "upper"), shoulder, knee, 1 + .12f * p);
         segment(root.getChild(PREFIX + "lower"), knee, hock, 1 - .18f * p);
@@ -120,9 +121,13 @@ public final class TrainerLimbModel {
 
     public static Vector3f point(ModelPart root, String joint) {
         var part = root.getChild(PREFIX + joint);
-        var point = new Vector3f(part.pivotX * root.xScale, part.pivotY * root.yScale, part.pivotZ * root.zScale);
+        return localPoint(root, part.pivotX, part.pivotY, part.pivotZ).div(16);
+    }
+    /** A point in a joint's parent frame, in model pixels, with its exact posed transform. */
+    public static Vector3f localPoint(ModelPart root, float x, float y, float z) {
+        var point = new Vector3f(x * root.xScale, y * root.yScale, z * root.zScale);
         point.rotateX(root.pitch).rotateY(root.yaw).rotateZ(root.roll);
-        return point.add(root.pivotX, root.pivotY, root.pivotZ).div(16);
+        return point.add(root.pivotX, root.pivotY, root.pivotZ);
     }
     public static ModelPart joint(ModelPart root, String name) { return root.getChild(PREFIX + name); }
 }

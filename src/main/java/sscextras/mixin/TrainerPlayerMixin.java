@@ -17,19 +17,23 @@ public abstract class TrainerPlayerMixin implements TrainerState.Owner {
     @Unique private boolean sscExtras$trainerReady;
     @Unique private static final TrackedData<Integer> TRAINER_HANDS = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique private static final TrackedData<Integer> TRAINER_FEET = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    @Unique private static final TrackedData<Integer> TRAINER_QUAD = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique private static final TrackedData<Integer> TRAINER_EQUIPMENT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public TrainerState sscExtras$trainer() { return sscExtras$trainer; }
     public int sscExtras$trainerHands() { return sscExtras$trainerReady ? ((PlayerEntity)(Object)this).getDataTracker().get(TRAINER_HANDS) : 0; }
     public int sscExtras$trainerFeet() { return sscExtras$trainerReady ? ((PlayerEntity)(Object)this).getDataTracker().get(TRAINER_FEET) : 0; }
     public int sscExtras$trainerEquipment() { return sscExtras$trainerReady ? ((PlayerEntity)(Object)this).getDataTracker().get(TRAINER_EQUIPMENT) : 0; }
-    public void sscExtras$trainerSnapshot(int hands, int feet, int equipment) {
+    public int sscExtras$trainerQuad() { return sscExtras$trainerReady ? ((PlayerEntity)(Object)this).getDataTracker().get(TRAINER_QUAD) : 0; }
+    public void sscExtras$trainerSnapshot(int hands, int feet, int quad, int equipment) {
         var tracker = ((PlayerEntity)(Object)this).getDataTracker();
         tracker.set(TRAINER_HANDS, hands); tracker.set(TRAINER_FEET, feet); tracker.set(TRAINER_EQUIPMENT, equipment);
+        tracker.set(TRAINER_QUAD, quad);
     }
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void trainerInit(CallbackInfo ci) {
         var tracker = ((PlayerEntity)(Object)this).getDataTracker();
         tracker.startTracking(TRAINER_HANDS, 0); tracker.startTracking(TRAINER_FEET, 0); tracker.startTracking(TRAINER_EQUIPMENT, 0);
+        tracker.startTracking(TRAINER_QUAD, 0);
         sscExtras$trainerReady = true;
     }
     @Inject(method = "tick", at = @At("TAIL"))

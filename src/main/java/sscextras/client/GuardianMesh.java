@@ -152,6 +152,18 @@ public final class GuardianMesh {
             if ((hand || foot) && !sscextras.trainer.QuadrupedalTrainer.equipped(model.wearer(), hand
                     ? sscextras.trainer.QuadrupedalTrainer.HANDS : sscextras.trainer.QuadrupedalTrainer.FEET, true).isEmpty())
                 TrainerMeshMolds.render(branchParts(bone.name), matrices, buffers, light, point -> TrainerGuardianRig.map(model, model.wearer(), owner, point));
+            boolean armBand=bone.name.endsWith("Arm")||bone.name.endsWith("_forearm");
+            boolean legBand=bone.name.endsWith("Leg")||bone.name.endsWith("_shin");
+            if((armBand||legBand)&&!sscextras.trainer.QuadrupedalTrainer.equipped(model.wearer(),armBand
+                    ?sscextras.trainer.QuadrupedalTrainer.HANDS:sscextras.trainer.QuadrupedalTrainer.FEET,true).isEmpty())
+                TrainerMeshMolds.band(bone.parts,matrices,buffers,light,point->TrainerGuardianRig.map(model,model.wearer(),owner,point));
+            if((bone.name.endsWith("Arm")||bone.name.endsWith("Leg"))&&!sscextras.trainer.QuadrupedalTrainer.equipped(model.wearer(),armBand
+                    ?sscextras.trainer.QuadrupedalTrainer.HANDS:sscextras.trainer.QuadrupedalTrainer.FEET,true).isEmpty()) {
+                String side=bone.name.contains("Left")?"left_":"right_";
+                var lower=bones.get(side+(armBand?"forearm":"shin"));
+                if(lower!=null)TrainerMeshMolds.rails(bone.parts,lower.parts,branchParts(side+(armBand?"hand":"foot")),
+                        matrices,buffers,light,point->TrainerGuardianRig.map(model,model.wearer(),owner,point));
+            }
             matrices.pop();
         }
         matrices.pop();

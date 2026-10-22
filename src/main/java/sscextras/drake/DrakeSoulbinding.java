@@ -506,6 +506,7 @@ public final class DrakeSoulbinding {
     }
 
     static void completeSoul(ServerPlayerEntity player, DrakeOutpostOwnership.Claim claim, boolean punishment) {
+        sscextras.trainer.QuadrupedalTrainer.ritualComplete(player);
         if (!punishment && !claim.soulbound) {
             claim.previousSpawn.putString("World", player.getSpawnPointDimension().getValue().toString());
             if (player.getSpawnPointPosition() != null) claim.previousSpawn.putLong("Pos", player.getSpawnPointPosition().asLong());
@@ -560,7 +561,10 @@ public final class DrakeSoulbinding {
     }
 
     static void clearFeralization(ServerPlayerEntity player) {
-        sscextras.player.PlayerMind.restore(player);
+        clearFeralization(player, true);
+    }
+    static void clearFeralization(ServerPlayerEntity player, boolean restoreMind) {
+        if (restoreMind) sscextras.player.PlayerMind.restore(player);
         var claim = DrakeOutpostOwnership.claim(player);
         if (claim != null) {
             if (claim.ritualCheckpoint != null && claim.ritualCheckpoint.type.equals(DrakeRituals.FERALIZATION.command())) finishRitual(player, claim);

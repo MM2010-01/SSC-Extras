@@ -41,6 +41,10 @@ public final class BeastizationCatalyst extends Item {
     }
 
     static void apply(PlayerEntity player) {
+        if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
+            if (!DrakeFeralization.temporary(player)) sscextras.player.PlayerMind.rememberBeforeFeral(serverPlayer);
+            sscextras.player.PlayerMind.losePoints(serverPlayer, 50);
+        }
         DrakeFeralization.relapse(player);
         InstinctManager.applyImmediateEffect(player, "ssc-extras:full_beastization_catalyst", INSTINCT);
         player.addStatusEffect(new StatusEffectInstance(TOTAL_FERALIZED, DURATION));

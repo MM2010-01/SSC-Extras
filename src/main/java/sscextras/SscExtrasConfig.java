@@ -22,10 +22,13 @@ public final class SscExtrasConfig {
     private static final Map<String, Float> lootChances = new LinkedHashMap<>();
     private static float instinctPerHit = 10.0f;
     private static float instinctPerPotion = 200.0f / 3.0f;
+    private static double instinctPerIntLoss = 100, permanentFormIntLoss = 0.05;
+    private static int permanentFormIntIntervalTicks = 200;
     private static Set<Identifier> permanentFormProgressionExceptions = Set.of();
 
     static {
         LOOT_DEFAULTS.put("cursedCollarLootChance", 1.0f / 15.0f);
+        LOOT_DEFAULTS.put("cursedTrainerLootChance", 1.0f / 30.0f);
         LOOT_DEFAULTS.put("drakeCursePotionLootChance", 0.25f);
         LOOT_DEFAULTS.put("stableReinsLootChance", 1.0f);
         LOOT_DEFAULTS.put("stableSaddleLootChance", 1.0f);
@@ -58,6 +61,12 @@ public final class SscExtrasConfig {
         boolean changed = config.putIfAbsent("instinctPerHit", "10.0") == null;
         changed |= config.putIfAbsent("instinctPerPotion", Float.toString(200.0f / 3.0f)) == null;
         changed |= config.putIfAbsent("permanentFormProgressionExceptions", "") == null;
+        changed |= config.putIfAbsent("instinctPerIntLoss", "100") == null;
+        changed |= config.putIfAbsent("permanentFormIntLoss", "0.05") == null;
+        changed |= config.putIfAbsent("permanentFormIntIntervalSeconds", "10") == null;
+        instinctPerIntLoss = readRange(config, "instinctPerIntLoss", 100, 0.01, 1000000);
+        permanentFormIntLoss = readRange(config, "permanentFormIntLoss", 0.05, 0, 400);
+        permanentFormIntIntervalTicks = (int)Math.round(20 * readRange(config, "permanentFormIntIntervalSeconds", 10, 0.05, 86400));
         for (var entry : LOOT_DEFAULTS.entrySet()) {
             changed |= config.putIfAbsent(entry.getKey(), Float.toString(entry.getValue())) == null;
             lootChances.put(entry.getKey(), readValue(config, entry.getKey(), entry.getValue(), true));
@@ -78,6 +87,9 @@ public final class SscExtrasConfig {
                 Files.createDirectories(file.toAbsolutePath().getParent());
                 try (Writer writer = Files.newBufferedWriter(file)) {
                     config.store(writer, "Restart to apply. Instinct amounts: greater than 0, at most 100.\n"
+                            + "instinctPerIntLoss: actual instinct gained per 1 INT lost (0.01 to 1000000).\n"
+                            + "permanentFormIntLoss: INT lost each interval (0 to 400); permanentFormIntIntervalSeconds: 0.05 to 86400.\n"
+                            + "Both INT drains also require their gamerule and EnableINTSystem.\n"
                             + "Loot/drop chances: 0 to 1 (0 disables, 1 guarantees; 0.25 = 25%).\n"
                             + "Collars: eligible dungeon chests. Drake Curse potions: pillager outpost chests.\n"
                             + "stable*LootChance: stable chests. stableDrake*DropChance: naturally equipped drake gear.\n"
@@ -100,6 +112,14 @@ public final class SscExtrasConfig {
                 chance ? "a number from 0 to 1" : "a number greater than 0 and at most 100", fallback);
         return fallback;
     }
+    private static double readRange(Properties config, String key, double fallback, double min, double max) {
+        try {
+            double value = Double.parseDouble(config.getProperty(key));
+            if (Double.isFinite(value) && value >= min && value <= max) return value;
+        } catch (NumberFormatException ignored) { }
+        LOGGER.warn("Invalid {}: expected {} to {}; using {}", key, min, max, fallback);
+        return fallback;
+    }
 
     public static float lootChance(String key) {
         Float chance = lootChances.get(key);
@@ -109,5 +129,8 @@ public final class SscExtrasConfig {
 
     public static float instinctPerHit() { return instinctPerHit; }
     public static float instinctPerPotion() { return instinctPerPotion; }
+    public static double instinctPerIntLoss() { return instinctPerIntLoss; }
+    public static double permanentFormIntLoss() { return permanentFormIntLoss; }
+    public static int permanentFormIntIntervalTicks() { return permanentFormIntIntervalTicks; }
     public static Set<Identifier> permanentFormProgressionExceptions() { return permanentFormProgressionExceptions; }
 }

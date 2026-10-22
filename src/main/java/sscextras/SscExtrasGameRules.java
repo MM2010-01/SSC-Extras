@@ -18,10 +18,10 @@ public final class SscExtrasGameRules {
     private static boolean clientIntSystemEnabled = true;
     private static boolean clientPermanentProgressionUnlocked = true;
     private static Set<Identifier> clientPermanentProgressionExceptions = Set.of();
-    public static final GameRules.Key<GameRules.BooleanRule> COLLAR_AUTO_EQUIP_CURSED = GameRuleRegistry.register(
-            "CursedCollarAutoEquipForCursedPlayers", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
-    public static final GameRules.Key<GameRules.BooleanRule> COLLAR_AUTO_EQUIP_UNCURSED = GameRuleRegistry.register(
-            "CursedCollarAutoEquipForUncursedPlayers", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(false));
+    public static final GameRules.Key<GameRules.BooleanRule> CURSED_LOOT_AUTO_EQUIP_CURSED = GameRuleRegistry.register(
+            "CursedLootAutoEquipForCursedPlayers", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+    public static final GameRules.Key<GameRules.BooleanRule> CURSED_LOOT_AUTO_EQUIP_UNCURSED = GameRuleRegistry.register(
+            "CursedLootAutoEquipForUncursedPlayers", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
     public static final GameRules.Key<GameRules.BooleanRule> PILLAGER_RECRUIT_DRAKE = GameRuleRegistry.register(
             "PillagerMountRecruitingForDrake", GameRules.Category.MOBS, GameRuleFactory.createBooleanRule(true));
     public static final GameRules.Key<GameRules.BooleanRule> PILLAGER_RECRUIT_UNCURSED = GameRuleRegistry.register(
@@ -42,6 +42,10 @@ public final class SscExtrasGameRules {
                         sscextras.player.PlayerMind.refresh(player);
                         player.playerScreenHandler.onContentChanged(player.getInventory());
                     })));
+    public static final GameRules.Key<GameRules.BooleanRule> INSTINCT_GAIN_INT_DRAIN = GameRuleRegistry.register(
+            "InstinctGainINTDrain", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+    public static final GameRules.Key<GameRules.BooleanRule> PERMANENT_FORM_INT_DRAIN = GameRuleRegistry.register(
+            "PermanentFormINTDrain", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
 
     private SscExtrasGameRules() { }
 

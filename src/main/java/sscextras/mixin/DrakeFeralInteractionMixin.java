@@ -36,6 +36,10 @@ public abstract class DrakeFeralInteractionMixin {
     private void sscExtras$hayOnly(ServerPlayerEntity player, World world, ItemStack stack, Hand hand,
                                    net.minecraft.util.hit.BlockHitResult hit, CallbackInfoReturnable<ActionResult> cir) {
         if (DrakeSoulbinding.restrained(player)) { cir.setReturnValue(ActionResult.FAIL); return; }
+        if (world.getBlockEntity(hit.getBlockPos()) instanceof net.minecraft.block.entity.LecternBlockEntity lectern && lectern.hasBook()
+                && !sscextras.player.MentalProgression.allowBook(player, lectern.getBook())) {
+            cir.setReturnValue(ActionResult.FAIL); return;
+        }
         var eating = DrakeFeralization.eatAtBlock(player, hand);
         if (eating != ActionResult.PASS) { cir.setReturnValue(eating); return; }
         var result = DrakeShoes.useBlock(player, hit.getBlockPos());

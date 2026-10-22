@@ -10,7 +10,7 @@ import sscextras.trainer.QuadrupedalTrainer;
 
 /** Deforms the Guardian's existing textured limbs through the trainer joints. */
 public final class TrainerGuardianRig {
-    private record Cache(float progress,float height,boolean ground,IdentityHashMap<RiggedMesh.Part,RiggedMesh.Part> parts) { }
+    private record Cache(float progress,float height,boolean ground,boolean mold,IdentityHashMap<RiggedMesh.Part,RiggedMesh.Part> parts) { }
     private static final Map<GuardianPlayerModel,Map<String,Cache>> CACHE=new WeakHashMap<>();
     private TrainerGuardianRig() { }
     public static void pose(GuardianPlayerModel model,PlayerEntity player,float angle,float distance,boolean statue) {
@@ -48,9 +48,10 @@ public final class TrainerGuardianRig {
         if(!limb(player,owner))return source;
         float progress=QuadrupedalTrainer.progress(player,owner.endsWith("Arm")?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET);
         boolean ground=PlayerStance.quadrupedal(player)&&!player.isSwimming()&&!player.isFallFlying()&&!player.isSleeping()&&!player.hasVehicle();
+        boolean mold=!QuadrupedalTrainer.equipped(player,owner.endsWith("Arm")?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET,false).isEmpty();
         var poses=CACHE.computeIfAbsent(model,key->new HashMap<>());var cache=poses.get(owner);
-        if(cache==null||cache.progress!=progress||cache.height!=model.joint(owner).pivotY||cache.ground!=ground){
-            cache=new Cache(progress,model.joint(owner).pivotY,ground,new IdentityHashMap<>());poses.put(owner,cache);
+        if(cache==null||cache.progress!=progress||cache.height!=model.joint(owner).pivotY||cache.ground!=ground||cache.mold!=mold){
+            cache=new Cache(progress,model.joint(owner).pivotY,ground,mold,new IdentityHashMap<>());poses.put(owner,cache);
         }
         return cache.parts.computeIfAbsent(source,part->deformPart(model,player,owner,part));
     }
@@ -89,7 +90,8 @@ public final class TrainerGuardianRig {
         boolean arm=owner.endsWith("Arm");float amount=QuadrupedalTrainer.progress(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET);
         var rest=model.mesh().pivot(owner);float length=Math.max(.01f,model.mesh().limbBottom(owner)-rest.y);
         boolean quad=PlayerStance.quadrupedal(player)&&!player.isSwimming()&&!player.isFallFlying()&&!player.isSleeping()&&!player.hasVehicle();
-        float target=quad?1.5f-model.joint(owner).pivotY/16:length;
+        float clearance=QuadrupedalTrainer.equipped(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET,false).isEmpty()?0:.45f/16;
+        float target=quad?1.5f-model.joint(owner).pivotY/16-clearance:length;
         float t=(point.y-rest.y)/length;
         point.y=rest.y+(point.y-rest.y)*target/length;point.z+=bend(t,arm)*amount/16;
         if(t>.85f){float spread=(t-.85f)/.15f*amount;point.x=rest.x+(point.x-rest.x)*(1+.15f*spread);point.z-=.5f*spread/16;}
