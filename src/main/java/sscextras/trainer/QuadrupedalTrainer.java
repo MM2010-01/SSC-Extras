@@ -87,10 +87,9 @@ public final class QuadrupedalTrainer {
                 || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ALLAY_SP) return Fit.EXOTIC;
         if (form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.BAT_2
                 || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.BAT_3) return Fit.FRAME;
+        if (EarthenDrake.stage(player) == 3) return Fit.FERAL;
+        if (EarthenDrake.stage(player) == 2 || sscextras.guardian.RuneboundGuardian.stage(player) == 2) return Fit.DIGITIGRADE;
         if (nativeQuadruped(player) || sscextras.drake.DrakeFeralization.permanent(player)) return Fit.SUITABLE;
-        // Stage two can stand upright; molds use its existing native digitigrade
-        // limbs and must remain compatible across its voluntary stance changes.
-        if (EarthenDrake.stage(player) == 2) return Fit.SUITABLE;
         if (PlayerStance.quadrupedal(player)) return Fit.SUITABLE;
         if (nativeDigitigrade(player)) return Fit.DIGITIGRADE;
         if (!PlayerStance.supports(player, PlayerStance.Stance.QUADRUPEDAL)) return Fit.EXOTIC;
@@ -153,8 +152,13 @@ public final class QuadrupedalTrainer {
     /** Continuous walking starts at ten seconds; the inverse delay governs standing recovery. */
     public static int walkingDelay(PlayerEntity player) { return (int)Math.ceil(200 * (1 - quadProgress(player))); }
     public static int standingDelay(PlayerEntity player) { return (int)Math.ceil(200 * quadProgress(player)); }
+    private static boolean gaitApplies(PlayerEntity player) { return sscextras.guardian.RuneboundGuardian.stage(player) != 2; }
+    private static boolean stanceApplies(PlayerEntity player) {
+        int guardian=sscextras.guardian.RuneboundGuardian.stage(player);
+        return guardian!=1&&guardian!=2;
+    }
     private static boolean gaitEligible(PlayerEntity player, TrainerState state, int worn) {
-        return ((worn & (HANDS | FEET)) != 0 || state.handsTicks > 0 || state.feetTicks > 0 || state.quad() > 0)
+        return stanceApplies(player) && ((worn & (HANDS | FEET)) != 0 || state.handsTicks > 0 || state.feetTicks > 0 || state.quad() > 0)
                 && !player.hasVehicle() && !player.isSwimming() && !player.isFallFlying()
                 && !player.isSleeping() && !player.getAbilities().flying;
     }
@@ -165,7 +169,7 @@ public final class QuadrupedalTrainer {
                 if(release(player,location)>0)reject(player,fit(player,location));
             worn=equipment(player);
         }
-        boolean require = player.isAlive() && !player.isSpectator() && (worn == (HANDS | FEET | NECK)
+        boolean require = stanceApplies(player) && player.isAlive() && !player.isSpectator() && (worn == (HANDS | FEET | NECK)
                 || state.quad() == MAX_PROGRESS
                 || (worn & (HANDS | FEET)) != 0 && player.isSprinting()
                 || gaitEligible(player, state, worn) && (state.walkingTicks >= walkingDelay(player)
@@ -247,6 +251,17 @@ public final class QuadrupedalTrainer {
         }
         refresh(player);
         if (!player.isAlive() || player.isSpectator()) return;
+        // Stage two keeps its native stance. Retain the saved course for other
+        // forms without charging upright effort, training or recovering its QUAD.
+        if (!gaitApplies(player)) { state.resetActivity(); state.recoveryTicks = 0; return; }
+        // Holding an upright body becomes tiring as its gait adapts to all fours.
+        // Native exhaustion preserves saturation, hunger rules and creative immunity.
+        if (PlayerStance.current(player) == PlayerStance.Stance.UPRIGHT && player.isOnGround()
+                && !player.hasVehicle() && !player.isSwimming() && !player.isFallFlying()
+                && !player.isSleeping() && !player.getAbilities().flying) {
+            float effort = Math.max(0, quadProgress(player) * 2 - 1);
+            if (effort > 0) player.addExhaustion(.002f * effort);
+        }
         int worn = equipment(player);
         if ((worn & (HANDS | FEET)) != 0 && fit(player) == Fit.SUITABLE) {
             // Mounted transport, swimming, flying and teleports do not train a walking gait.
@@ -257,7 +272,7 @@ public final class QuadrupedalTrainer {
                 int amount = mode == 2 ? 240 : 48; // 1% or 0.2% in the existing 24,000-unit scale.
                 if ((worn & HANDS) != 0) state.handsTicks = Math.min(MAX_PROGRESS, state.handsTicks + amount);
                 if ((worn & FEET) != 0) state.feetTicks = Math.min(MAX_PROGRESS, state.feetTicks + amount);
-                advance(player, amount, true);
+                advance(player, PlayerStance.quadrupedal(player) ? amount * 2 : amount, true);
             }
             state.recoveryTicks = 0;
         } else {

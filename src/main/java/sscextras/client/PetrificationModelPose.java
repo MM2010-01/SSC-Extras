@@ -71,6 +71,11 @@ public final class PetrificationModelPose {
             var value=Petrification.state(current.entity).pose().retain("part/body/player/"+i,read(part));
             current.playerParts.put(part,value); apply(part,value);
         }
+        if (model instanceof AuthoredPlayerModel authored) authored.poseJoints().forEach((name, part) -> {
+            current.originals.computeIfAbsent(part, PetrificationModelPose::read);
+            var value = Petrification.state(current.entity).pose().retain("part/body/authored/" + name, read(part));
+            current.playerParts.put(part, value); apply(part, value);
+        });
     }
     /** SSC copies negated native positions into GeoBones; later camera offsets remain transient. */
     public static net.minecraft.util.math.Vec3d playerRenderOffset(ModelPart part) {

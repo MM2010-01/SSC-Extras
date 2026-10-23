@@ -26,6 +26,11 @@ public final class GuardianClient {
     public static float yaw, pitch;
     private GuardianClient() { }
     public static void register() {
+        net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.MODIFY_CHAT.register(message -> {
+            var player = MinecraftClient.getInstance().player;
+            return player != null && RuneboundGuardian.stage(player) == 3
+                    ? net.minecraft.util.StringHelper.truncateChat(message.toUpperCase(Locale.ROOT)) : message;
+        });
         net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(GuardianOffering.TYPE, GuardianOfferingRenderer::new);
         for (var item : new net.minecraft.item.Item[]{GuardianEquipment.CUFFS, GuardianEquipment.COLLAR})
             net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item, (stack, mode, matrices, buffers, light, overlay) -> {
@@ -39,6 +44,7 @@ public final class GuardianClient {
                 matrices.pop();
             });
         net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register((stack,tint)->0x35e8ee,GuardianCores.CORE);
+        for (var egg : GuardianSpawnEgg.ALL) ColorProviderRegistry.ITEM.register((stack, tint) -> egg.getColor(tint), egg);
         if(!GuardianForgeHud.register()) HudRenderCallback.EVENT.register((context,delta)->{
             var client=MinecraftClient.getInstance();
             if(client.player!=null&&!client.options.hudHidden&&!client.player.isCreative()&&!client.player.isSpectator())
@@ -78,7 +84,8 @@ public final class GuardianClient {
             restore(client); THREATS.clear(); owner = null; FormTailPhysics.clear();
         });
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
-            if (entity instanceof net.minecraft.entity.player.PlayerEntity player && RuneboundGuardian.stage(player) >= 0)
+            if (entity instanceof net.minecraft.entity.player.PlayerEntity player
+                    && (RuneboundGuardian.stage(player) >= 0 || sscextras.golem.DrakeGolem.is(player)))
                 FormTailPhysics.reset(player);
         });
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
@@ -118,8 +125,8 @@ public final class GuardianClient {
         if (owner != player) { restore(client); owner = player; }
         if (player == null) return;
         var state = RuneboundGuardian.state(player);
-        boolean nextDetached = state.detached && state.ritualTicks <= 1;
-        boolean nextFreeLook = state.ritualTicks <= 1 && (nextDetached || state.deactivated || sscextras.petrification.Petrification.frozen(player));
+        boolean nextDetached = state.detached && state.ritualTicks <= 1 || sscextras.statue.StatueCrates.packed(player);
+        boolean nextFreeLook = state.ritualTicks <= 1 && (nextDetached || state.deactivated || sscextras.statue.StatueBodies.locked(player));
         if (nextFreeLook && !freeLook) { yaw = player.getYaw(); pitch = player.getPitch(); }
         if (nextDetached && !detached) previous = client.options.getPerspective();
         if (!nextDetached && detached) {

@@ -16,6 +16,7 @@ public abstract class GuardianCoreEntityMixin {
         var item = (ItemEntity)(Object)this;
         if (item.getWorld().isClient || !item.getStack().hasNbt()) return;
         GuardianCores.observe(item);
+        sscextras.statue.StatueCrates.observe(item.getStack(), item);
         if (item.getY() < item.getWorld().getBottomY() - 64) GuardianCores.destroyed(item.getStack(), item.getServer());
     }
     @Inject(method = "damage", at = @At("RETURN"))

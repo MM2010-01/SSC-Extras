@@ -70,6 +70,35 @@ public final class GuardianPedestal extends BlockWithEntity {
         return true;
     }
     public static Vec3d position(BlockPos corner) { return new Vec3d(corner.getX() + 1, corner.getY() + .75, corner.getZ() + 1); }
+    public static java.util.UUID reservation(ServerWorld world, BlockPos pos) {
+        return java.util.UUID.nameUUIDFromBytes(("guardian-pedestal:" + world.getRegistryKey().getValue() + ":" + pos.asLong())
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+    /** Loaded, intact, unclaimed and physically empty. The current event may retain its own reservation. */
+    public static boolean vacant(ServerWorld world, BlockPos pos, PlayerEntity occupant, sscextras.events.NpcEvent event) {
+        if (!world.isChunkLoaded(pos) || !intact(world, pos)
+                || !(world.getBlockEntity(pos) instanceof GuardianOffering offering) || offering.hasResident()
+                || offering.target != null && (occupant == null || !offering.target.equals(occupant.getUuid()))) return false;
+        var owner = sscextras.drake.DrakeOutpostOwnership.get(world.getServer()).assignments().owner(reservation(world, pos));
+        if (owner != null && owner != event) return false;
+        if (GuardianWorldState.get(world.getServer()).villages.values().stream()
+                .anyMatch(v -> v.world.equals(world.getRegistryKey()) && v.pedestal.equals(pos))) return false;
+        var feet = position(pos);
+        var box = new net.minecraft.util.math.Box(feet.x - .8, feet.y, feet.z - .8, feet.x + .8, feet.y + 3, feet.z + .8);
+        return world.getEntitiesByClass(LivingEntity.class, box, e -> e != occupant && e.isAlive() && !e.isSpectator()
+                && !(e instanceof GuardianShellEntity shell && event != null && shell.capture == event)).isEmpty();
+    }
+    public static java.util.List<BlockPos> nearby(ServerWorld world, BlockPos center, int radius) {
+        var result = new java.util.ArrayList<BlockPos>();
+        for (int x = (center.getX() - radius) >> 4; x <= (center.getX() + radius) >> 4; x++)
+            for (int z = (center.getZ() - radius) >> 4; z <= (center.getZ() + radius) >> 4; z++) {
+                var chunk = world.getChunkManager().getWorldChunk(x, z);
+                if (chunk == null) continue;
+                for (var entry : chunk.getBlockEntities().entrySet()) if (entry.getValue() instanceof GuardianOffering
+                        && entry.getKey().isWithinDistance(center, radius)) result.add(entry.getKey());
+            }
+        return result;
+    }
     public static BlockPos beneath(PlayerEntity player) {
         var pos = BlockPos.ofFloored(player.getX(), player.getY() - .05, player.getZ());
         var state = player.getWorld().getBlockState(pos);
@@ -109,6 +138,7 @@ public final class GuardianPedestal extends BlockWithEntity {
     }
     @Override public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) { return List.of(new ItemStack(ITEM)); }
     @Override public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (player.getStackInHand(hand).getItem() instanceof GuardianSpawnEgg) return ActionResult.PASS;
         if (state.get(OFFERING) && hand == Hand.MAIN_HAND) {
             if (world.isClient) return ActionResult.SUCCESS;
             if (world.getBlockEntity(corner(pos, state)) instanceof GuardianOffering offering && offering.start((ServerPlayerEntity)player)) return ActionResult.CONSUME;

@@ -10,6 +10,7 @@ import sscextras.trainer.QuadrupedalTrainer;
 
 /** Deforms the Guardian's existing textured limbs through the trainer joints. */
 public final class TrainerGuardianRig {
+    private static final float[] JOINT_FRACTIONS={0,.43f,.73f,.88f,1};
     private record Cache(float progress,float height,boolean ground,boolean mold,IdentityHashMap<RiggedMesh.Part,RiggedMesh.Part> parts) { }
     private static final Map<GuardianPlayerModel,Map<String,Cache>> CACHE=new WeakHashMap<>();
     private TrainerGuardianRig() { }
@@ -66,7 +67,7 @@ public final class TrainerGuardianRig {
         for(int i=0;i<input.length;i+=32){
             List<float[]> polygon=new ArrayList<>();
             for(int v=0;v<4;v++)polygon.add(Arrays.copyOfRange(input,i+v*8,i+v*8+8));
-            float[] splits={Float.NEGATIVE_INFINITY,rest.y+length*.43f,rest.y+length*.73f,rest.y+length*.88f,Float.POSITIVE_INFINITY};
+            float[] splits={Float.NEGATIVE_INFINITY,rest.y+length*JOINT_FRACTIONS[1],rest.y+length*JOINT_FRACTIONS[2],rest.y+length*JOINT_FRACTIONS[3],Float.POSITIVE_INFINITY};
             for(int section=0;section<4;section++){
                 var face=clip(clip(polygon,splits[section],true),splits[section+1],false);
                 if(face.size()<3)continue;
@@ -97,8 +98,15 @@ public final class TrainerGuardianRig {
         if(t>.85f){float spread=(t-.85f)/.15f*amount;point.x=rest.x+(point.x-rest.x)*(1+.15f*spread);point.z-=.5f*spread/16;}
         return point;
     }
+    /** Rest-frame knee, hock and ankle centers used by the surface map and mold rails. */
+    public static Vector3f[] frameJoints(GuardianPlayerModel model,String owner) {
+        var rest=model.mesh().pivot(owner);float length=model.mesh().limbBottom(owner)-rest.y;
+        var joints=new Vector3f[3];
+        for(int i=0;i<joints.length;i++)joints[i]=new Vector3f(rest.x,rest.y+length*JOINT_FRACTIONS[i+1],rest.z);
+        return joints;
+    }
     private static float bend(float t,boolean arm){
-        float[] at={0,.43f,.73f,.88f,1},z=arm?new float[]{0,1.3f,-.4f,-.4f,-.4f}:new float[]{0,-2.25f,1.9f,-.4f,-.4f};
+        float[] at=JOINT_FRACTIONS,z=arm?new float[]{0,1.3f,-.4f,-.4f,-.4f}:new float[]{0,-2.25f,1.9f,-.4f,-.4f};
         for(int i=0;i<4;i++)if(t<=at[i+1])return MathHelper.lerp(Math.max(0,(t-at[i])/(at[i+1]-at[i])),z[i],z[i+1]);
         return z[4];
     }

@@ -42,13 +42,26 @@ public final class PlayerControl {
     private static Runtime runtime(PlayerEntity player) { return ((State)player).sscExtras$bodyControl(); }
     public static boolean active(PlayerEntity player) { return ((DrakeFeralization.State)player).sscExtras$feralControl(); }
     public static Handle current(ServerPlayerEntity player) { return runtime(player).active; }
+    public static void look(ServerPlayerEntity player, float yaw, float pitch) {
+        var handle = current(player);
+        if (handle == null || !handle.brain.freeLook() || !Float.isFinite(yaw) || !Float.isFinite(pitch)) return;
+        player.setYaw(net.minecraft.util.math.MathHelper.wrapDegrees(yaw));
+        player.setPitch(net.minecraft.util.math.MathHelper.clamp(pitch, -90, 90));
+    }
+    public static void syncPosition(ServerPlayerEntity player) {
+        var handle = current(player);
+        var flags = handle != null && handle.brain.freeLook()
+                ? java.util.Set.of(net.minecraft.network.packet.s2c.play.PositionFlag.X_ROT, net.minecraft.network.packet.s2c.play.PositionFlag.Y_ROT)
+                : java.util.Set.<net.minecraft.network.packet.s2c.play.PositionFlag>of();
+        player.networkHandler.requestTeleport(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch(), flags);
+    }
     public static boolean owns(ServerPlayerEntity player, Identifier source) {
         var handle = current(player); return handle != null && handle.source.equals(source);
     }
     public static boolean available(ServerPlayerEntity player) {
         if (!player.isAlive() || player.isSpectator() || player.isSleeping() || player.hasVehicle() || player.hasPassengers()
                 || DrakeSoulbinding.ritualActive(player) || DrakeSoulbinding.restrained(player)
-                || sscextras.petrification.Petrification.frozen(player)) return false;
+                || sscextras.statue.StatueBodies.locked(player)) return false;
         var guardian = RuneboundGuardian.state(player);
         return !guardian.detached && !guardian.deactivated && !guardian.protecting && guardian.ritualTicks == 0;
     }

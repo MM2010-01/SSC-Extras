@@ -21,7 +21,10 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public final class Petrification {
-    public static final int DOSE_INTERVAL = 100, BOTTLE_DURATION = 1200, STONE_DURATION = 3600;
+    public static final int DOSE_INTERVAL = 100, BOTTLE_DURATION = 1200, STONE_DURATION = StatusEffectInstance.INFINITE;
+    public static final Identifier MOVEMENT_BREAK = id("petrification_movement_break");
+    public static final net.minecraft.registry.tag.TagKey<net.minecraft.fluid.Fluid> FLUIDS =
+            net.minecraft.registry.tag.TagKey.of(net.minecraft.registry.RegistryKeys.FLUID, id("petrification"));
     public static final net.minecraft.registry.tag.TagKey<net.minecraft.entity.EntityType<?>> STONE_BODIES =
             sscextras.player.StoneBodies.TYPES;
     public static final StatusEffect EFFECT = new StatusEffect(StatusEffectCategory.HARMFUL, 0x858581) {
@@ -61,17 +64,24 @@ public final class Petrification {
         var effect = entity.getStatusEffect(EFFECT);
         return !entity.isSpectator() && effect != null && effect.getAmplifier() >= 2;
     }
-    public static boolean poseLocked(LivingEntity entity) { return frozen(entity) || stoneAppearance(entity); }
+    public static boolean poseLocked(LivingEntity entity) { return sscextras.statue.StatueBodies.locked(entity) || stoneAppearance(entity); }
     public static boolean stoneBody(LivingEntity entity) {
         return sscextras.player.StoneBodies.material(entity);
     }
     public static boolean replaceTexture(LivingEntity entity) { return stoneAppearance(entity) && !stoneBody(entity); }
     public static ItemStack potion(Item item) { return PotionUtil.setPotion(new ItemStack(item), POTION); }
+    /** Preserve the native instance, including hidden effects, while making III permanent. */
+    public static boolean makePermanent(StatusEffectInstance effect) {
+        if (effect == null || effect.getEffectType() != EFFECT || effect.getAmplifier() < 2 || effect.isInfinite()) return false;
+        ((sscextras.mixin.PetrificationDurationAccessor)effect).sscExtras$setPetrificationDuration(STONE_DURATION);
+        return true;
+    }
 
     public static void register() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
             if (entity instanceof LivingEntity living) {
-                sscextras.player.StoneBodies.refreshArmor(living);
+                sscextras.player.StoneBodies.refresh(living);
+                if (makePermanent(living.getStatusEffect(EFFECT))) state(living).effectChanged();
                 state(living).updateLock();
             }
         });
@@ -86,21 +96,25 @@ public final class Petrification {
         Registry.register(Registries.RECIPE_SERIALIZER, id("petrification_bucket"), BUCKET_RECIPE);
         net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, world, hand) -> {
             var stack = player.getStackInHand(hand);
-            return frozen(player) && stack.getUseAction() != net.minecraft.util.UseAction.DRINK
+            return sscextras.statue.StatueBodies.locked(player) && stack.getUseAction() != net.minecraft.util.UseAction.DRINK
                     ? net.minecraft.util.TypedActionResult.fail(stack) : net.minecraft.util.TypedActionResult.pass(stack);
         });
         net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) ->
-                frozen(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
+                sscextras.statue.StatueBodies.locked(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
         net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player, world, hand, target, hit) ->
-                frozen(player) || !state(player).miningPermissionCheck && PetrificationMining.mineable(player, target)
+                sscextras.statue.StatueBodies.locked(player) || !state(player).miningPermissionCheck && PetrificationMining.mineable(player, target)
                         ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
         PetrificationMining.register();
         PetrificationPose.register();
         PetrificationComponents.registerSync();
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(MOVEMENT_BREAK, (server, player, handler, buffer, response) -> {
+            if (buffer.readableBytes() != 0) return;
+            server.execute(() -> state(player).tryMovementBreak());
+        });
         net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) ->
-                frozen(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
+                sscextras.statue.StatueBodies.locked(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
         net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, target, hit) ->
-                frozen(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
+                sscextras.statue.StatueBodies.locked(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> {
             entries.add(potion(Items.POTION)); entries.add(potion(Items.SPLASH_POTION)); entries.add(potion(Items.LINGERING_POTION));
         });

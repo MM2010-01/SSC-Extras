@@ -8,4 +8,5 @@ public interface PlayerBrain {
     void think();
     Vec3d movement();
     void stop();
+    default boolean freeLook() { return false; }
 }

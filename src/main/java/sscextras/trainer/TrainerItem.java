@@ -58,11 +58,9 @@ public final class TrainerItem extends AccessoryItem {
     }
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> lines, TooltipContext context) {
         lines.add(Text.translatable(collar ? "tooltip.ssc-extras.trainer.neck" : "tooltip.ssc-extras.trainer.mold").formatted(Formatting.GRAY));
-        if (!collar) lines.add(Text.translatable("tooltip.ssc-extras.trainer.mouth").formatted(Formatting.GRAY));
-        lines.add(Text.translatable("tooltip.ssc-extras.trainer.equip").formatted(Formatting.GRAY));
-        lines.add(Text.translatable("tooltip.ssc-extras.trainer.set").formatted(Formatting.DARK_PURPLE));
-        lines.add(Text.translatable("tooltip.ssc-extras.trainer.rates").formatted(Formatting.GRAY));
-        lines.add(Text.translatable("tooltip.ssc-extras.trainer.binding").formatted(Formatting.DARK_PURPLE));
-        lines.add(Text.translatable("tooltip.ssc-extras.trainer.cure").formatted(Formatting.GRAY));
+        if (!collar) {
+            lines.add(Text.translatable("tooltip.ssc-extras.trainer.set").formatted(Formatting.DARK_PURPLE));
+            lines.add(Text.translatable("tooltip.ssc-extras.trainer.cure").formatted(Formatting.GRAY));
+        }
     }
 }

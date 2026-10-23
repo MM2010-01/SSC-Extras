@@ -10,5 +10,5 @@ import sscextras.guardian.GuardianCores;
 @Mixin(BlockEntity.class)
 public abstract class GuardianCoreContainerMixin {
     @Inject(method = "markDirty()V", at = @At("TAIL"))
-    private void sscExtras$followStoredCore(CallbackInfo ci) { GuardianCores.observe((BlockEntity)(Object)this); }
+    private void sscExtras$followStoredCore(CallbackInfo ci) { GuardianCores.observe((BlockEntity)(Object)this); sscextras.statue.StatueCrates.observe((BlockEntity)(Object)this); }
 }

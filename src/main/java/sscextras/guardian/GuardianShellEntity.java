@@ -16,6 +16,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import java.util.UUID;
 
 /** An empty vessel has no player consciousness and keeps the body's inventory until occupied again. */
@@ -23,36 +25,96 @@ public final class GuardianShellEntity extends PathAwareEntity {
     private static final TrackedData<Integer> STAGE = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> WORK = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Boolean> WEATHERED = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> AWAKE = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> CORE_PRESENT = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> GRABBING = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Integer> EQUIPMENT = DataTracker.registerData(GuardianShellEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public UUID formerOwner;
     public NbtList inventory = new NbtList(), accessories = new NbtList();
     public ItemStack core = ItemStack.EMPTY;
     public double energy;
     public int weatherTicks;
+    private BlockPos home;
+    private boolean sentry, placedStatue;
+    UUID offender;
+    long alertUntil, recaptureAfter;
+    GuardianCaptureEvent capture;
 
-    public GuardianShellEntity(EntityType<? extends GuardianShellEntity> type, World world) { super(type, world); setPersistent(); setAiDisabled(true); }
+    public GuardianShellEntity(EntityType<? extends GuardianShellEntity> type, World world) {
+        super(type, world); setPersistent(); setAiDisabled(true); setStepHeight(1);
+        getNavigation().setCanSwim(true);
+    }
+    @Override protected void initGoals() { goalSelector.add(0, new GuardianVillageGoal(this)); }
     public static DefaultAttributeContainer.Builder attributes() {
         return createMobAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 26).add(EntityAttributes.GENERIC_ARMOR, 15)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1).add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0);
+                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1).add(EntityAttributes.GENERIC_MOVEMENT_SPEED, .27)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 6).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48);
     }
     @Override protected void initDataTracker() {
         super.initDataTracker(); dataTracker.startTracking(STAGE, 3); dataTracker.startTracking(WORK, 0); dataTracker.startTracking(WEATHERED, false);
+        dataTracker.startTracking(AWAKE, false); dataTracker.startTracking(CORE_PRESENT, false);
+        dataTracker.startTracking(GRABBING, false); dataTracker.startTracking(EQUIPMENT, 0);
     }
     public int stage() { return dataTracker.get(STAGE); }
     public void stage(int value) { dataTracker.set(STAGE, value); }
     public int work() { return dataTracker.get(WORK); }
     public void work(int value) { dataTracker.set(WORK, value); }
     public boolean weathered() { return dataTracker.get(WEATHERED); }
+    public boolean awake() { return dataTracker.get(AWAKE); }
+    void awake(boolean value) { dataTracker.set(AWAKE, value); }
+    public boolean corePresent() { return dataTracker.get(CORE_PRESENT); }
+    public boolean grabbing() { return dataTracker.get(GRABBING); }
+    void grabbing(boolean value) { dataTracker.set(GRABBING, value); }
+    public int equipment() { return dataTracker.get(EQUIPMENT); }
+    public BlockPos home() { return home; }
+    public boolean sentry() { return sentry; }
+    public boolean resident() { return home != null; }
+    @Override public ItemStack getPickBlockStack() {
+        if (!resident()) return ItemStack.EMPTY;
+        return (sentry ? (weathered() ? GuardianSpawnEgg.WEATHERED_SENTRY : GuardianSpawnEgg.SENTRY)
+                : (weathered() ? GuardianSpawnEgg.WEATHERED_GUARDIAN : GuardianSpawnEgg.GUARDIAN)).getDefaultStack();
+    }
+    public boolean statue() { return stage() == 3 && work() == 0 && !awake(); }
+    public boolean placedStatue() { return placedStatue; }
+    /** Crate placement preserves a resting resident until its next village alarm. */
+    public void holdPlacedStatue() {
+        if (!resident() || !statue()) return;
+        placedStatue = true; getNavigation().stop(); setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+    }
+    public void villageResident(BlockPos pedestal, boolean statue, boolean weathered) {
+        home = pedestal.toImmutable(); sentry = statue; weatherTicks = weathered ? 72000 : 0;
+        energy = 200; accessories = GuardianEquipment.bodySet();
+        core = statue ? ItemStack.EMPTY : GuardianCores.INACTIVE_CORE.getDefaultStack();
+        setAiDisabled(false); syncAppearance();
+        setCustomName(net.minecraft.text.Text.translatable(statue ? "entity.ssc-extras.guardian_sentry" : "entity.ssc-extras.village_guardian"));
+    }
+    private void syncAppearance() {
+        dataTracker.set(WEATHERED, weatherTicks >= 72000); dataTracker.set(CORE_PRESENT, !core.isEmpty());
+        dataTracker.set(EQUIPMENT, GuardianEquipment.bodyVisuals(accessories));
+    }
+    public void alarm(ServerPlayerEntity player) {
+        if (!resident() || !isAlive() || work() != 0 || GuardianCores.id(core) != null || capture != null) return;
+        placedStatue = false; offender = player.getUuid(); alertUntil = getWorld().getTime() + 1200; awake(true);
+    }
+    void releaseHome() {
+        if (home != null && getWorld().getBlockEntity(home) instanceof GuardianOffering offering) offering.releaseResident(getUuid());
+    }
     @Override public boolean isPushable() { return false; }
     @Override public boolean isInsideWall() { return work() == 0 && super.isInsideWall(); }
     @Override public boolean canImmediatelyDespawn(double distance) { return false; }
     @Override public void tick() {
+        if (!getWorld().isClient && resident()) {
+            boolean atHome = squaredDistanceTo(GuardianPedestal.position(home)) < .1 && GuardianPedestal.intact(getWorld(), home);
+            awake(!placedStatue && GuardianCores.id(core) == null && (capture != null || offender != null && getWorld().getTime() <= alertUntil
+                    || !atHome || !sentry && !getWorld().isDay()));
+        }
         super.tick();
         if (!getWorld().isClient && !core.isEmpty()) {
             GuardianCores.observe(core, this, "shell");
             var owner = GuardianCores.owner(getServer(), core);
             if (owner != null) GuardianCores.occupy(owner, this, core);
         }
-        if (!getWorld().isClient) dataTracker.set(WEATHERED, weatherTicks >= 72000);
+        if (!getWorld().isClient) syncAppearance();
     }
     @Override protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         var held = player.getStackInHand(hand);
@@ -69,6 +131,8 @@ public final class GuardianShellEntity extends PathAwareEntity {
     }
     @Override public void onDeath(DamageSource source) {
         if (!getWorld().isClient) {
+            if (capture != null) capture.finish();
+            releaseHome();
             for (int i = 0; i < inventory.size(); i++) dropStack(ItemStack.fromNbt(inventory.getCompound(i)));
             for (int i = 0; i < accessories.size(); i++) dropStack(ItemStack.fromNbt(accessories.getCompound(i).getCompound("Stack")));
             if (!core.isEmpty()) dropStack(core);
@@ -76,17 +140,31 @@ public final class GuardianShellEntity extends PathAwareEntity {
         }
         super.onDeath(source);
     }
+    @Override public void remove(RemovalReason reason) {
+        if (!getWorld().isClient && capture != null) capture.finish();
+        super.remove(reason);
+    }
     @Override public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
         if (formerOwner != null) nbt.putUuid("FormerOwner", formerOwner);
         nbt.put("BodyItems", inventory); nbt.put("BodyAccessories", accessories); nbt.put("Core", core.writeNbt(new NbtCompound()));
         nbt.putInt("GuardianStage", stage()); nbt.putInt("Work", work()); nbt.putInt("Weather", weatherTicks); nbt.putDouble("Energy", energy);
+        if (home != null) nbt.putLong("VillageHome", home.asLong());
+        nbt.putBoolean("VillageSentry", sentry);
+        nbt.putBoolean("VillageAwake", awake()); nbt.putBoolean("VillagePlacedStatue", placedStatue);
+        if (offender != null) nbt.putUuid("VillageOffender", offender);
+        nbt.putLong("VillageAlertUntil", alertUntil); nbt.putLong("RecaptureAfter", recaptureAfter);
     }
     @Override public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         formerOwner = nbt.containsUuid("FormerOwner") ? nbt.getUuid("FormerOwner") : null;
         inventory = nbt.getList("BodyItems", 10); accessories = nbt.getList("BodyAccessories", 10); core = ItemStack.fromNbt(nbt.getCompound("Core"));
         stage(nbt.contains("GuardianStage") ? nbt.getInt("GuardianStage") : 3); work(nbt.getInt("Work"));
-        weatherTicks = nbt.getInt("Weather"); energy = nbt.getDouble("Energy"); dataTracker.set(WEATHERED, weatherTicks >= 72000);
+        weatherTicks = nbt.getInt("Weather"); energy = nbt.getDouble("Energy");
+        home = nbt.contains("VillageHome") ? BlockPos.fromLong(nbt.getLong("VillageHome")) : null;
+        sentry = nbt.getBoolean("VillageSentry"); offender = nbt.containsUuid("VillageOffender") ? nbt.getUuid("VillageOffender") : null;
+        placedStatue = resident() && nbt.getBoolean("VillagePlacedStatue"); awake(!placedStatue && nbt.getBoolean("VillageAwake"));
+        alertUntil = nbt.getLong("VillageAlertUntil"); recaptureAfter = nbt.getLong("RecaptureAfter");
+        setAiDisabled(!resident()); syncAppearance();
     }
 }

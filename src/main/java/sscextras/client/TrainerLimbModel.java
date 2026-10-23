@@ -10,7 +10,7 @@ import sscextras.trainer.QuadrupedalTrainer;
 
 /** Articulated children of the actual native limb roots, using the wearer's skin UVs. */
 public final class TrainerLimbModel {
-    public interface Part { void sscExtras$reshaped(boolean active); boolean sscExtras$reshaped(); void sscExtras$pad(boolean active); boolean sscExtras$pad(); }
+    public interface Part { void sscExtras$reshaped(boolean active); boolean sscExtras$reshaped(); void sscExtras$padTint(float tint); float sscExtras$padTint(); }
     private static final String PREFIX = "ssc_trainer_";
     private TrainerLimbModel() { }
 
@@ -42,7 +42,7 @@ public final class TrainerLimbModel {
                 var tip=limb.addChild(PREFIX + "toe" + toe,
                     ModelPartBuilder.create().uv(u + 4, v + 8).cuboid(-.625f, 0, -2.5f, 1.25f, 1.7f, 2.5f, dilation), ModelTransform.NONE);
                 if(!outer)tip.addChild(PREFIX+"pad",ModelPartBuilder.create().uv(u+4,v+9)
-                        .cuboid(-.42f,1.7f,-2.2f,.84f,.16f,1.4f),ModelTransform.NONE);
+                        .cuboid(-.42f,0,-.7f,.84f,.16f,1.4f),ModelTransform.pivot(0,1.7f,-1.5f));
             }
         }
     }
@@ -103,7 +103,7 @@ public final class TrainerLimbModel {
                 boolean changed=arm?hands:feet;
                 boolean worn=!QuadrupedalTrainer.equipped(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET,false).isEmpty();
                 if(changed)contact=Math.max(contact,soleHeight(root,worn,QuadrupedalTrainer.progress(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET)));
-                else if(worn)contact=Math.max(contact,root.pivotY+MathHelper.cos(root.pitch)*moldAnkle(arm)+2.5f);
+                else if(worn)contact=Math.max(contact,root.pivotY+MathHelper.cos(root.pitch)*moldAnkle(arm,quad)+2.5f);
             }
             // SSC's global animation translation precedes the player's 15/16
             // render scale. Include it instead of treating model Y=24 as ground.
@@ -127,7 +127,10 @@ public final class TrainerLimbModel {
         float weight=MathHelper.clamp(1-Math.abs(root.pitch)/.55f,0,1);
         return -root.pitch*weight*weight*(3-2*weight);
     }
-    public static float moldAnkle(boolean arm) { return arm?9.3f:9.5f; }
+    // The untouched foot clothing ends at Y=12.25. Clear it with the bed's
+    // inner floor, extending the fore-frame equally when all four molds support
+    // the body. Upright hands retain their shorter, non-supporting reach.
+    public static float moldAnkle(boolean arm,boolean quadrupedal) { return arm?(quadrupedal?10.5f:9.3f):10.7f; }
     public static float floorHeight(PlayerEntity player) {
         float floor=24;
         if(player instanceof dev.kosmx.playerAnim.impl.IAnimatedPlayer animated && animated.playerAnimator_getAnimation().isActive())
@@ -137,12 +140,15 @@ public final class TrainerLimbModel {
     public static float soleHeight(ModelPart root,boolean worn,float progress) {
         var paw=root.getChild(PREFIX+"paw");
         float lowest=Float.NEGATIVE_INFINITY;
-        for(float x:new float[]{-1.4f,1.4f})for(float z:new float[]{worn?-3.9f:-1.35f,worn?1.4f:1.15f}) {
-            var point=localPoint(paw,x,worn?2.5f:1.8f+.18f*progress,z);
+        for(float x:new float[]{worn?-1.4f:-1.25f,worn?1.4f:1.25f})for(float z:new float[]{worn?-3.9f:-1.35f,worn?1.4f:1.15f}) {
+            var point=worn?new Vector3f(x,2.5f,z):localPoint(paw.getChild(PREFIX+"pad"),x,.18f,z);
+            point=localPoint(paw,point.x,point.y,point.z);
             lowest=Math.max(lowest,localPoint(root,point.x,point.y,point.z).y);
         }
-        if(!worn)for(int i=0;i<3;i++)for(float z:new float[]{-2.2f,-.8f}) {
-            var point=localPoint(root.getChild(PREFIX+"toe"+i),0,1.86f,z);
+        if(!worn)for(int i=0;i<3;i++)for(float z:new float[]{-.7f,.7f}) {
+            var toe=root.getChild(PREFIX+"toe"+i);
+            var point=localPoint(toe.getChild(PREFIX+"pad"),0,.16f,z);
+            point=localPoint(toe,point.x,point.y,point.z);
             lowest=Math.max(lowest,localPoint(root,point.x,point.y,point.z).y);
         }
         return lowest;
@@ -170,7 +176,7 @@ public final class TrainerLimbModel {
         paw.setPivot(ankle.x, ankle.y, ankle.z - .65f * p); paw.pitch = paw.yaw = paw.roll = 0;
         paw.xScale = 1 + .1f * p; paw.yScale = 1; paw.zScale = 1 + .15f * p;
         paw.visible=!outer;
-        if(!outer){var pad=paw.getChild(PREFIX+"pad");pad.xScale=pad.yScale=pad.zScale=p;((Part)(Object)pad).sscExtras$pad(true);}
+        if(!outer)pad(paw,1.1f,1.15f,p);
         toes(root,p,outer);
     }
 
@@ -187,8 +193,18 @@ public final class TrainerLimbModel {
             tip.pitch=paw.pitch; tip.roll=tip.yaw=0;
             tip.xScale=tip.yScale=size; tip.zScale=1;
             tip.visible=!outer;
-            if(!outer)((Part)(Object)tip.getChild(PREFIX+"pad")).sscExtras$pad(true);
+            if(!outer)pad(tip,1,1,progress);
         }
+    }
+
+    /** Pads begin at half width/depth, then grow, thicken and darken to their finished surface. */
+    public static float padTint(float progress) { return MathHelper.lerp(MathHelper.clamp(progress,0,1),.98f,.72f); }
+    private static void pad(ModelPart parent,float finalWidth,float finalDepth,float progress) {
+        var pad=parent.getChild(PREFIX+"pad");
+        float footprint=MathHelper.lerp(MathHelper.clamp(progress,0,1),.5f,1);
+        pad.xScale=finalWidth*footprint/parent.xScale;pad.zScale=finalDepth*footprint/parent.zScale;
+        pad.yScale=MathHelper.lerp(MathHelper.clamp(progress,0,1),.04f,1)/parent.yScale;
+        ((Part)(Object)pad).sscExtras$padTint(padTint(progress));
     }
 
     private static void segment(ModelPart part, Vector3f from, Vector3f to, float width) {

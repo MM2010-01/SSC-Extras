@@ -17,7 +17,7 @@ public final class PetrificationComponents implements EntityComponentInitializer
             server.execute(() -> {
                 if (!(player.getWorld().getEntityById(id) instanceof LivingEntity living)) return;
                 if (living != player && !net.fabricmc.fabric.api.networking.v1.PlayerLookup.tracking(living).contains(player)) return;
-                if (living.hasStatusEffect(Petrification.EFFECT))
+                if (living.hasStatusEffect(Petrification.EFFECT) || Petrification.poseLocked(living))
                     KEY.syncWith(player, (dev.onyxstudios.cca.api.v3.component.ComponentProvider)living);
             });
         });

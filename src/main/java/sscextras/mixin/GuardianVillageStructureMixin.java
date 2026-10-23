@@ -31,24 +31,29 @@ public abstract class GuardianVillageStructureMixin {
         if (!start.hasChildren() || !registries.get(RegistryKeys.STRUCTURE).getEntry((Structure)(Object)this).isIn(StructureTags.VILLAGE)
                 || start.getChildren().stream().anyMatch(p -> p instanceof GuardianPedestalPiece)) return;
         var center = start.getChildren().get(0).getBoundingBox().getCenter();
-        GuardianPedestalPiece pedestal = null;
-        search: for (int radius = 8; radius <= 112; radius += 4) for (int step = 0; step < 16; step++) {
-            double angle = step * Math.PI / 8;
-            int x = center.getX() + (int)Math.round(Math.cos(angle) * radius), z = center.getZ() + (int)Math.round(Math.sin(angle) * radius);
-            int y = generator.getHeight(x + 1, z + 1, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
-            if (y < generator.getSeaLevel()) continue;
-            var bounds = new BlockBox(x - 1, world.getBottomY(), z - 1, x + 4, world.getTopY() - 1, z + 4);
-            if (start.getChildren().stream().anyMatch(p -> p.getBoundingBox().intersects(bounds))) continue;
-            int farY = generator.getHeight(x + 3, z + 3, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
-            if (Math.abs(y - farY) > 2) continue;
-            pedestal = new GuardianPedestalPiece(x, Math.max(y, farY), z); break search;
+        var pieces = new ArrayList<>(start.getChildren());
+        var random = net.minecraft.util.math.random.Random.create(seed ^ chunk.toLong() ^ 0x475541524449414eL);
+        for (int kind = 0; kind <= 2; kind++) {
+            if (kind != 0 && !random.nextBoolean()) continue;
+            GuardianPedestalPiece pedestal = null;
+            search: for (int radius = 8; radius <= 112; radius += 4) for (int step = 0; step < 16; step++) {
+                double angle = step * Math.PI / 8;
+                int x = center.getX() + (int)Math.round(Math.cos(angle) * radius), z = center.getZ() + (int)Math.round(Math.sin(angle) * radius);
+                int y = generator.getHeight(x + 1, z + 1, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
+                if (y < generator.getSeaLevel()) continue;
+                var bounds = new BlockBox(x - 1, world.getBottomY(), z - 1, x + 4, world.getTopY() - 1, z + 4);
+                if (pieces.stream().anyMatch(p -> p.getBoundingBox().intersects(bounds))) continue;
+                int farY = generator.getHeight(x + 3, z + 3, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
+                if (Math.abs(y - farY) > 2) continue;
+                pedestal = new GuardianPedestalPiece(x, Math.max(y, farY), z, kind, random.nextBoolean()); break search;
+            }
+            if (pedestal == null && kind == 0) {
+                int x = start.getBoundingBox().getMaxX() + 3, z = center.getZ();
+                int y = generator.getHeight(x + 1, z + 1, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
+                pedestal = new GuardianPedestalPiece(x, y, z);
+            }
+            if (pedestal != null) pieces.add(pedestal);
         }
-        if (pedestal == null) {
-            int x = start.getBoundingBox().getMaxX() + 3, z = center.getZ();
-            int y = generator.getHeight(x + 1, z + 1, Heightmap.Type.WORLD_SURFACE_WG, world, noise) - 1;
-            pedestal = new GuardianPedestalPiece(x, y, z);
-        }
-        var pieces = new ArrayList<>(start.getChildren()); pieces.add(pedestal);
         cir.setReturnValue(new StructureStart(start.getStructure(), start.getPos(), start.getReferences(), new StructurePiecesList(pieces)));
     }
 }

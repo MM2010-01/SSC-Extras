@@ -56,10 +56,10 @@ public final class GuardianEquipment {
             if (stack.isOf(location.equals("necklace") ? COLLAR : CUFFS)) return stack;
         return ItemStack.EMPTY;
     }
-    private static String group(String location) {
+    public static String group(String location) {
         return CuriosCompat.instance != null ? "" : location.equals("wrist") ? "hand" : location.equals("ankle") ? "feet" : "chest";
     }
-    private static String slot(String location) {
+    public static String slot(String location) {
         return CuriosCompat.instance == null ? location : location.equals("wrist") ? "bracelet" : location.equals("ankle") ? "anklet" : "necklace";
     }
     public static boolean complete(PlayerEntity player) {
@@ -82,9 +82,21 @@ public final class GuardianEquipment {
         return true;
     }
     public static boolean fit(ServerPlayerEntity player, BlockPos pedestal) {
-        if (!eligible(player) || !hasSlots(player) || !GuardianPedestal.intact(player.getWorld(), pedestal)) return false;
+        return fit(player, pedestal, false);
+    }
+    /** Capture admits other living forms too; fitting and native Morphscale exceptions stay shared. */
+    static boolean fitCaptured(ServerPlayerEntity player, BlockPos pedestal) {
+        return fit(player, pedestal, true);
+    }
+    private static boolean fit(ServerPlayerEntity player, BlockPos pedestal, boolean captured) {
+        if (!(captured ? player.isAlive() && !player.isCreative() && !player.isSpectator() : eligible(player))
+                || !hasSlots(player) || !GuardianPedestal.intact(player.getWorld(), pedestal)) return false;
         var data = GuardianWorldState.get(player.getServer());
         if (data.villages.values().stream().anyMatch(v -> v.world.equals(player.getWorld().getRegistryKey()) && v.pedestal.equals(pedestal))) return false;
+        if (player.getWorld().getBlockEntity(pedestal) instanceof GuardianOffering offering && offering.hasResident()) return false;
+        var assignments = sscextras.drake.DrakeOutpostOwnership.get(player.getServer()).assignments();
+        var reserved = assignments.owner(GuardianPedestal.reservation(player.getServerWorld(), pedestal));
+        if (reserved != null && (!captured || reserved != assignments.owner(player.getUuid()))) return false;
         var io = DrakeEquipment.slots();
         // Clear all competing slots before onEquip can start any curse or transformation.
         for (var location : LOCATIONS) {
@@ -113,6 +125,28 @@ public final class GuardianEquipment {
         player.currentScreenHandler.sendContentUpdates();
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.set_bound"), false);
         return true;
+    }
+    /** Portable body accessory records use the active backend's actual slot names. */
+    static net.minecraft.nbt.NbtList bodySet() {
+        var result = new net.minecraft.nbt.NbtList();
+        for (var location : LOCATIONS) {
+            var entry = new net.minecraft.nbt.NbtCompound();
+            entry.putString("Group", group(location)); entry.putString("Slot", slot(location)); entry.putInt("Index", 0);
+            entry.put("Stack", (location.equals("necklace") ? COLLAR : CUFFS).getDefaultStack().writeNbt(new net.minecraft.nbt.NbtCompound()));
+            result.add(entry);
+        }
+        return result;
+    }
+    static int bodyVisuals(net.minecraft.nbt.NbtList accessories) {
+        int result = 0;
+        for (int i = 0; i < accessories.size(); i++) {
+            var entry = accessories.getCompound(i);
+            var stack = ItemStack.fromNbt(entry.getCompound("Stack"));
+            String slot = entry.getString("Slot");
+            if (stack.isOf(COLLAR)) result |= 4;
+            else if (stack.isOf(CUFFS)) result |= slot.equals("ankle") || slot.equals("anklet") ? 2 : 1;
+        }
+        return result;
     }
     private static void applyCurse(PlayerEntity player) {
         if (!player.isAlive() || player.isSpectator() || TransformManager.getPlayerTransformData(player).isTransforming

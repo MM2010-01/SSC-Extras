@@ -30,7 +30,7 @@ public final class RuneboundGuardian {
     static {
         var group = new PlayerFormGroup(id("runebound_guardian"));
         for (int stage = 0; stage < 4; stage++) {
-            var form = new sscextras.player.StoneGolemForm(id("runebound_guardian_" + stage), stage == 3, GuardianBodyPower.armor(stage))
+            var form = new GuardianForm(stage)
                     .setPhase(PlayerFormPhase.valueOf("PHASE_" + stage))
                     .setBodyType(PlayerFormBodyType.NORMAL).setIgnoreCursedMoon(stage == 3);
             FORMS[stage] = RegPlayerForms.registerPlayerForm(form);
@@ -82,6 +82,8 @@ public final class RuneboundGuardian {
         GuardianCombat.register();
         GuardianVillages.register();
         GuardianCores.register();
+        GuardianSpawnEgg.register();
+        GuardianVillageMobs.register();
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(GuardianPedestal.ITEM));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(GuardianEquipment.CUFFS); entries.add(GuardianEquipment.COLLAR);

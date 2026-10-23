@@ -22,6 +22,7 @@ public final class SscExtrasConfig {
     private static final Map<String, Float> lootChances = new LinkedHashMap<>();
     private static float instinctPerHit = 10.0f;
     private static float instinctPerPotion = 200.0f / 3.0f;
+    private static float petrificationIIIMovementBreakChance = .01f;
     private static double instinctPerIntLoss = 100, permanentFormIntLoss = 0.05;
     private static int permanentFormIntIntervalTicks = 200;
     private static Set<Identifier> permanentFormProgressionExceptions = Set.of();
@@ -60,6 +61,8 @@ public final class SscExtrasConfig {
         }
         boolean changed = config.putIfAbsent("instinctPerHit", "10.0") == null;
         changed |= config.putIfAbsent("instinctPerPotion", Float.toString(200.0f / 3.0f)) == null;
+        changed |= config.putIfAbsent("PetrificationIIIMovementBreakChance", "0.01") == null;
+        petrificationIIIMovementBreakChance = readValue(config, "PetrificationIIIMovementBreakChance", .01f, true);
         changed |= config.putIfAbsent("permanentFormProgressionExceptions", "") == null;
         changed |= config.putIfAbsent("instinctPerIntLoss", "100") == null;
         changed |= config.putIfAbsent("permanentFormIntLoss", "0.05") == null;
@@ -91,6 +94,7 @@ public final class SscExtrasConfig {
                             + "permanentFormIntLoss: INT lost each interval (0 to 400); permanentFormIntIntervalSeconds: 0.05 to 86400.\n"
                             + "Both INT drains also require their gamerule and EnableINTSystem.\n"
                             + "Loot/drop chances: 0 to 1 (0 disables, 1 guarantees; 0.25 = 25%).\n"
+                            + "PetrificationIIIMovementBreakChance: chance per fresh movement input to escape III into I (0 to 1; 0.01 = 1%).\n"
                             + "Collars: eligible dungeon chests. Drake Curse potions: pillager outpost chests.\n"
                             + "stable*LootChance: stable chests. stableDrake*DropChance: naturally equipped drake gear.\n"
                             + "Natural gear retains +0.01 per Looting level unless disabled. Player-supplied gear always drops.\n"
@@ -129,6 +133,7 @@ public final class SscExtrasConfig {
 
     public static float instinctPerHit() { return instinctPerHit; }
     public static float instinctPerPotion() { return instinctPerPotion; }
+    public static float petrificationIIIMovementBreakChance() { return petrificationIIIMovementBreakChance; }
     public static double instinctPerIntLoss() { return instinctPerIntLoss; }
     public static double permanentFormIntLoss() { return permanentFormIntLoss; }
     public static int permanentFormIntIntervalTicks() { return permanentFormIntIntervalTicks; }

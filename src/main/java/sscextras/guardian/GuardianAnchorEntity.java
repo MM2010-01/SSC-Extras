@@ -25,7 +25,7 @@ public final class GuardianAnchorEntity extends Entity {
         super.tick();
         if (!getWorld().isClient && age > 40) {
             var player = owner == null ? null : getServer().getPlayerManager().getPlayer(owner);
-            if (player == null || !RuneboundGuardian.state(player).detached) discard();
+            if (player == null || !RuneboundGuardian.state(player).detached && !sscextras.statue.StatueCrates.packed(player)) discard();
         }
     }
 }

@@ -20,6 +20,7 @@ public final class DrakeGolemPlayerModel extends AuthoredPlayerModel {
     private AbstractClientPlayerEntity player;
     private VertexConsumerProvider buffers;
     private float delta;
+    private FormTailPhysics.Drag tailDrag = FormTailPhysics.Drag.NONE;
 
     public DrakeGolemPlayerModel() { this(load()); }
     private DrakeGolemPlayerModel(RiggedMesh mesh) {
@@ -44,11 +45,19 @@ public final class DrakeGolemPlayerModel extends AuthoredPlayerModel {
         return new ModelPart(List.of(), children);
     }
     @Override public void prepare(AbstractClientPlayerEntity player, VertexConsumerProvider buffers) { this.player = player; this.buffers = buffers; }
-    @Override public void animate(float delta) { this.delta = delta; }
-    @Override public void clear() { player = null; buffers = null; delta = 0; }
+    @Override public void animate(float delta) {
+        this.delta = delta;
+        if (player.isInPose(net.minecraft.entity.EntityPose.SLEEPING) || sscextras.petrification.Petrification.poseLocked(player)) {
+            FormTailPhysics.reset(player);
+            tailDrag = FormTailPhysics.Drag.NONE;
+        } else tailDrag = FormTailPhysics.sample(player, delta);
+    }
+    @Override public void clear() { player = null; buffers = null; delta = 0; tailDrag = FormTailPhysics.Drag.NONE; }
+    public FormTailPhysics.Drag tailDrag() { return tailDrag; }
     @Override public float renderScale() { return 1 / .9375f; }
     public RiggedMesh mesh() { return mesh; }
     public ModelPart joint(String name) { return joints.get(name); }
+    @Override public Map<String, ModelPart> poseJoints() { return java.util.Collections.unmodifiableMap(joints); }
     public int jointCount() { return joints.size(); }
     public Vector3f rest(String name) { return new Vector3f(mesh.bones.get(name).pivot()); }
     public Vector3f posedPoint(String name, Vector3f point) { return transforms.get(name).transformPosition(point); }
@@ -64,7 +73,9 @@ public final class DrakeGolemPlayerModel extends AuthoredPlayerModel {
             matrix.translate(pivot).rotateZYX(angle.z, angle.y, angle.x).translate(-pivot.x,-pivot.y,-pivot.z);
             transforms.put(bone.name(), matrix);
             var part = joints.get(bone.name()); var position = matrix.transformPosition(new Vector3f(pivot));
-            var rotation = matrix.getUnnormalizedRotation(new Quaternionf()).getEulerAnglesZYX(new Vector3f());
+            // JOML 1.10.5's quaternion ZYX extraction loses pitch with combined
+            // yaw/pitch; the matrix extraction round-trips this exact joint basis.
+            var rotation = matrix.getEulerAnglesZYX(new Vector3f());
             part.setPivot(position.x*16, position.y*16, position.z*16);
             part.pitch = rotation.x; part.yaw = rotation.y; part.roll = rotation.z;
             part.xScale = part.yScale = part.zScale = 1;

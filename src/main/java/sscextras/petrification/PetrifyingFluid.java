@@ -14,6 +14,25 @@ import net.minecraft.world.*;
 import java.util.Optional;
 
 public abstract class PetrifyingFluid extends FlowableFluid {
+    private record ForgeEyes(java.lang.reflect.Method eyeType, java.lang.reflect.Method fluidType) { }
+    private static final ForgeEyes FORGE_EYES = forgeEyes();
+    private static ForgeEyes forgeEyes() {
+        try { Class.forName("net.minecraftforge.fluids.FluidType"); }
+        catch (ClassNotFoundException absent) { return null; }
+        try {
+            return new ForgeEyes(net.minecraft.entity.Entity.class.getMethod("getEyeInFluidType"),
+                    Fluid.class.getMethod("getFluidType"));
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException("Cannot bind Forge fluid eye contact", error); }
+    }
+    /** Native eye contact on both loaders; Forge does not populate arbitrary submerged-fluid tags. */
+    public static boolean headSubmerged(net.minecraft.entity.Entity entity) {
+        if (FORGE_EYES == null) return entity.isSubmergedIn(Petrification.FLUIDS);
+        try {
+            Object eyes = FORGE_EYES.eyeType().invoke(entity);
+            return eyes == FORGE_EYES.fluidType().invoke(Petrification.STILL)
+                    || eyes == FORGE_EYES.fluidType().invoke(Petrification.FLOWING);
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException("Cannot read Forge fluid eye contact", error); }
+    }
     @Override public Fluid getFlowing() { return Petrification.FLOWING; }
     @Override public Fluid getStill() { return Petrification.STILL; }
     @Override public Item getBucketItem() { return Petrification.BUCKET; }

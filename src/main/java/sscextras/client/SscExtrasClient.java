@@ -27,6 +27,9 @@ public final class SscExtrasClient implements ClientModInitializer {
             if (client.player == null || client.options.hudHidden) { intelligenceBar.reset(); quadBar.reset(); }
         });
         PetrificationClient.register();
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(sscextras.statue.StatueCrates.ITEM,
+                sscextras.petrification.Petrification.id("filled"),
+                (stack, world, entity, seed) -> sscextras.statue.StatueCrates.id(stack) == null ? 0 : 1);
         ClientPlayNetworking.registerGlobalReceiver(SscExtrasGameRules.TRANSFORMATION_BLACKOUT_SYNC, (client, handler, buf, sender) -> {
             boolean removeBlackout = buf.readBoolean();
             client.execute(() -> removeBlackoutDuringTransformation = removeBlackout);
@@ -40,6 +43,7 @@ public final class SscExtrasClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
                 SscExtrasGameRules.setClientPermanentProgression(true, java.util.Set.of()));
         GuardianClient.register();
+        GolemStatueControls.register();
         for (int stage = 0; stage < 4; stage++) {
             int index = stage;
             FormPlayerModels.register(sscextras.guardian.RuneboundGuardian.FORMS[stage].FormID, () -> new GuardianPlayerModel(index));

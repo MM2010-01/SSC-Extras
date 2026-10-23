@@ -317,7 +317,7 @@ public final class DrakeFeralization {
         ServerTickEvents.START_SERVER_TICK.register(server -> server.getPlayerManager().getPlayerList().forEach(DrakeFeralization::tick));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerManager().getPlayerList()) if (controlled(player)) {
-                player.networkHandler.requestTeleport(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
+                PlayerControl.syncPosition(player);
                 player.getServerWorld().getChunkManager().updatePosition(player);
             }
         });

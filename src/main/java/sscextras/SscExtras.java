@@ -22,10 +22,12 @@ public final class SscExtras implements ModInitializer {
         sscextras.drake.DrakeRitualCommands.register();
         sscextras.guardian.RuneboundGuardian.register();
         sscextras.golem.DrakeGolem.register();
+        sscextras.golem.GolemStatues.register();
         sscextras.player.PlayerAspects.register();
         sscextras.player.PlayerDebug.register();
         sscextras.trainer.QuadrupedalTrainer.register();
         sscextras.petrification.Petrification.register();
+        sscextras.statue.StatueCrates.register();
     }
 
     public static float instinctPerHit() {

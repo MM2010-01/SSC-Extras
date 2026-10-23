@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ModelPart.class)
 public abstract class TrainerModelPartMixin implements sscextras.client.TrainerLimbModel.Part {
     @Unique private boolean sscExtras$reshaped;
-    @Unique private boolean sscExtras$pad;
+    @Unique private float sscExtras$padTint=1;
     @Shadow public boolean hidden;
     @Unique private boolean sscExtras$previousHidden;
     public boolean sscExtras$reshaped() { return sscExtras$reshaped; }
@@ -22,11 +22,11 @@ public abstract class TrainerModelPartMixin implements sscextras.client.TrainerL
         else if (sscExtras$reshaped) hidden = sscExtras$previousHidden;
         sscExtras$reshaped = active;
     }
-    public void sscExtras$pad(boolean active) { sscExtras$pad = active; }
-    public boolean sscExtras$pad() { return sscExtras$pad; }
+    public void sscExtras$padTint(float tint) { sscExtras$padTint = tint; }
+    public float sscExtras$padTint() { return sscExtras$padTint; }
     @ModifyArgs(method="renderCuboids",at=@At(value="INVOKE",target="Lnet/minecraft/client/model/ModelPart$Cuboid;renderCuboid(Lnet/minecraft/client/util/math/MatrixStack$Entry;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V"))
     private void trainerPadTint(org.spongepowered.asm.mixin.injection.invoke.arg.Args args) {
-        if(sscExtras$pad)for(int i=4;i<=6;i++)args.set(i,(float)args.get(i)*.72f);
+        if(sscExtras$padTint!=1)for(int i=4;i<=6;i++)args.set(i,(float)args.get(i)*sscExtras$padTint);
     }
     @Inject(method = "renderCuboids", at = @At("HEAD"), cancellable = true)
     private void trainerArticulatedGeometry(CallbackInfo ci) { if (sscExtras$reshaped) ci.cancel(); }

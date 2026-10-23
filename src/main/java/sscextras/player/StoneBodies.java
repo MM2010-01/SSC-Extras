@@ -28,6 +28,16 @@ public final class StoneBodies {
         var form = form(entity);
         return entity.getType().isIn(TYPES) || form != null && form.solidStone();
     }
+    public static boolean petrificationImmune(LivingEntity entity, boolean concentrated) {
+        var form = form(entity);
+        return entity.getType().isIn(TYPES) || form != null && form.petrificationImmune(concentrated);
+    }
+    /** Reconcile form/load changes, including Petrification saved before stone-body immunity existed. */
+    public static void refresh(LivingEntity entity) {
+        if (entity.getWorld().isClient) return;
+        if (petrificationImmune(entity, true)) entity.removeStatusEffect(Petrification.EFFECT);
+        refreshArmor(entity);
+    }
     public static boolean physical(LivingEntity entity) { return entity.isAlive() && !entity.isSpectator() && (natural(entity) || Petrification.stone(entity)); }
     public static boolean mineable(LivingEntity entity) { return entity.isAlive() && !entity.isSpectator() && physical(entity); }
     public static SoundEvent sound(LivingEntity entity, SoundEvent original) {

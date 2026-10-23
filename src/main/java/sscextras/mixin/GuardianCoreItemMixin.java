@@ -13,6 +13,9 @@ import sscextras.guardian.GuardianCores;
 public abstract class GuardianCoreItemMixin {
     @Inject(method = "inventoryTick", at = @At("TAIL"))
     private void sscExtras$followCarriedCore(World world, Entity holder, int slot, boolean selected, CallbackInfo ci) {
-        if (!world.isClient && ((ItemStack)(Object)this).hasNbt()) GuardianCores.observe((ItemStack)(Object)this, holder, "entity");
+        if (!world.isClient && ((ItemStack)(Object)this).hasNbt()) {
+            GuardianCores.observe((ItemStack)(Object)this, holder, "entity");
+            sscextras.statue.StatueCrates.observe((ItemStack)(Object)this, holder);
+        }
     }
 }

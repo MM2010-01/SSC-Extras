@@ -28,7 +28,17 @@ public abstract class DrakeFeralNetworkMixin {
         if (DrakeFeralization.controlled(player)) ((ServerPlayNetworkHandler)(Object)this).syncWithPlayerPosition();
     }
 
-    @Inject(method = {"onPlayerMove", "onPlayerInput", "onClientCommand"}, at = @At(value = "INVOKE",
+    @Inject(method = "onPlayerMove", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
+            shift = At.Shift.AFTER), cancellable = true)
+    private void sscExtras$controlledMovement(PlayerMoveC2SPacket packet, CallbackInfo ci) {
+        if (DrakeFeralization.controlled(player) || sscextras.drake.DrakeSoulbinding.restrained(player)) {
+            sscextras.player.PlayerControl.look(player, packet.getYaw(player.getYaw()), packet.getPitch(player.getPitch()));
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = {"onPlayerInput", "onClientCommand"}, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
             shift = At.Shift.AFTER), cancellable = true)
     private void sscExtras$aiOwnsBody(CallbackInfo ci) {

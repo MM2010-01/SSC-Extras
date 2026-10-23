@@ -4,41 +4,35 @@ import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import org.joml.Matrix3f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-/** Mechanical gait: planted support, eased motor strokes and brief endpoint holds. No render-time state. */
+/** Drake-like diagonal strides retargeted to the stone rig, without stepped motor holds. */
 public final class DrakeGolemAnimation {
     private DrakeGolemAnimation() { }
-    private static float smooth(float value) { float t=MathHelper.clamp(value,0,1); return t*t*(3-2*t); }
-    private static float motor(float t) { return smooth((t-.12f)/.76f); }
     private static float wrap(float value) { return MathHelper.wrapDegrees(value*MathHelper.DEGREES_PER_RADIAN)*MathHelper.RADIANS_PER_DEGREE; }
-    private static float servo(float degrees) {
-        float step=degrees/5, base=(float)Math.floor(step);
-        return (base+motor(step-base))*5*MathHelper.RADIANS_PER_DEGREE;
-    }
     public static void pose(DrakeGolemPlayerModel model, AbstractClientPlayerEntity player, float angle, float distance,
             float age, float yaw, float pitch, float delta, float attack) {
         var rotations=new HashMap<String,Vector3f>();
         boolean frozen=sscextras.petrification.Petrification.poseLocked(player), sleeping=player.isInPose(net.minecraft.entity.EntityPose.SLEEPING);
         boolean crouch=player.isInSneakingPose(), airborne=!player.isOnGround() || player.isSwimming();
-        float weight=frozen||sleeping?0:MathHelper.clamp(distance*4,0,1);
+        float weight=frozen||sleeping?0:MathHelper.clamp(distance*1.5f,0,1);
         float drop=sleeping?.25f:crouch?.125f:0;
-        // Native limbAngle advances four units per travelled block. This cadence
-        // matches the support stroke to that distance, avoiding long sliding holds.
-        float cadence=crouch?2.5f:2f;
-        float phase=angle*cadence/(2*(float)Math.PI);
+        // Use native interpolated limb motion at SSC's Drake tail/stride cadence.
+        // The Drake clips contain anatomy-specific translations and a 90-degree
+        // torso, so the saved stone limbs retain their own ground-contact solve.
+        float phase=angle*.6662f;
         for (int side=0;side<2;side++) {
             String name=side==0?"left":"right", cap=side==0?"Left":"Right";
             for (boolean front:new boolean[]{true,false}) {
-                float cycle=(phase+(side==0?0:.5f)+(front?0:.5f))%1;
-                if (cycle<0) cycle++;
-                float stride=(float)Math.PI*.66f/(4*cadence)*weight;
-                float lift=0,z;
-                if (cycle<.34f) {
-                    float swing=cycle/.34f;
-                    z=MathHelper.lerp(motor(swing),stride,-stride);
-                    lift=(float)Math.sin(Math.PI*smooth(swing))*.14f*weight;
-                } else z=MathHelper.lerp((cycle-.34f)/.66f,-stride,stride);
+                float cycle=phase+(side==0?0:(float)Math.PI)+(front?0:(float)Math.PI);
+                // A small third harmonic rounds the motor reversal without stops
+                // or discontinuities. Lift eases to zero before the support stroke.
+                float stroke=.94f*MathHelper.cos(cycle)+.06f*MathHelper.cos(3*cycle);
+                float swing=Math.max(0,MathHelper.sin(cycle));
+                float z=stroke*(crouch?.19f:.25f)*weight;
+                float lift=swing*swing*(crouch?.11f:.16f)*weight;
                 if (!frozen && !sleeping && (airborne || player.hasVehicle())) lift+=player.hasVehicle()?.18f:.10f;
                 if (front && side==1 && attack>0 && !frozen) {
                     float strike=(float)Math.sin(Math.PI*attack); lift+=strike*.10f; z-=strike*.12f;
@@ -47,14 +41,24 @@ public final class DrakeGolemAnimation {
                         name+(front?"_front_paw":"_hock"),-lift,z,drop,front?-1:1);
             }
         }
-        rotations.put("neck",new Vector3f(sleeping?.10f:crouch?-.07f:0,0,0));
-        rotations.put("bipedHead",new Vector3f(servo(MathHelper.clamp(pitch,-22,28))+(crouch?.07f:0),
-                servo(MathHelper.clamp(yaw,-38,38)),0));
-        float jaw=!frozen&&!sleeping&&(player.isUsingItem()||attack>0)?.13f*motor((age%12)/12):0;
+        float lookYaw=MathHelper.clamp(yaw,-65,65)*MathHelper.RADIANS_PER_DEGREE;
+        float lookPitch=MathHelper.clamp(pitch,-40,45)*MathHelper.RADIANS_PER_DEGREE;
+        var neck=new Vector3f(sleeping?.10f:lookPitch*.30f+(crouch?-.07f:0),sleeping?0:lookYaw*.30f,0);
+        rotations.put("neck",neck);
+        // Share the camera direction between neck and head. Composition keeps the
+        // final head aim exact even when yaw and pitch are applied together.
+        rotations.put("bipedHead",new Matrix3f().rotation(new Quaternionf().rotationZYX(neck.z,neck.y,neck.x).invert()
+                .mul(new Quaternionf().rotationYXZ(sleeping?0:lookYaw,sleeping?0:lookPitch,0)))
+                .getEulerAnglesZYX(new Vector3f()));
+        float jaw=!frozen&&!sleeping&&(player.isUsingItem()||attack>0)?.065f*(1-MathHelper.cos(age*(float)Math.PI/6)):0;
         rotations.put("jaw",new Vector3f(jaw,0,0));
+        var drag=model.tailDrag();
         for (int i=0;i<6;i++) {
-            float turn=frozen||sleeping?0:(float)Math.sin(phase*2*Math.PI-i*.35f)*.025f*weight;
-            rotations.put("tail_"+i,new Vector3f(0,turn,0));
+            float idle=MathHelper.sin(age/6f-i*.75f)*.035f;
+            float balance=MathHelper.sin(phase-i*.45f)*weight*(i==0?.075f:.025f);
+            float turn=idle+balance+drag.horizontal()*(i==0?.22f:.12f);
+            float rise=-drag.vertical()*(i==0?.14f:.055f);
+            rotations.put("tail_"+i,frozen||sleeping?new Vector3f():new Vector3f(rise,turn,0));
         }
         model.applyPose(rotations,drop);
     }

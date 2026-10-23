@@ -71,7 +71,7 @@ public final class DrakeRiding {
     }
 
     public static boolean canCarryMob(PlayerEntity player) {
-        return player.isAlive() && mountForm(player) && !DrakeEquipment.saddle(player).isEmpty();
+        return player.isAlive() && (mountForm(player) || quadruped(player)) && !DrakeEquipment.saddle(player).isEmpty();
     }
 
     public static boolean inInteractionReach(PillagerEntity rider, Entity target) {

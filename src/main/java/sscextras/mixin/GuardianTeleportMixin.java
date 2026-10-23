@@ -29,6 +29,13 @@ public abstract class GuardianTeleportMixin {
     @Inject(method = "moveToWorld", at = @At("HEAD"), cancellable = true)
     private void sscExtras$cuffsPortal(ServerWorld world, CallbackInfoReturnable<Entity> cir) {
         var player = (ServerPlayerEntity)(Object)this;
-        if (GuardianEquipment.outside(player, world.getRegistryKey(), player.getPos())) cir.setReturnValue(null);
+        if (GuardianEquipment.outside(player, world.getRegistryKey(), player.getPos())) {
+            var state = sscextras.guardian.RuneboundGuardian.state(player);
+            if (state.cuffPortalHintAge == Integer.MIN_VALUE || player.age - state.cuffPortalHintAge >= 100) {
+                state.cuffPortalHintAge = player.age;
+                player.sendMessage(net.minecraft.text.Text.translatable("message.ssc-extras.guardian.cuffs_dimension"), true);
+            }
+            cir.setReturnValue(null);
+        }
     }
 }

@@ -10,6 +10,16 @@ import sscextras.petrification.Petrification;
 
 @Mixin(LivingEntity.class)
 public abstract class PetrificationLivingMixin {
+    @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
+    private void statueCrateNoExposedBody(net.minecraft.entity.damage.DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        if (sscextras.statue.StatueCrates.packed((LivingEntity)(Object)this)) cir.setReturnValue(false);
+    }
+    @Inject(method = "canHaveStatusEffect", at = @At("HEAD"), cancellable = true)
+    private void petrificationImmunity(StatusEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
+        Petrification.makePermanent(effect);
+        if (effect.getEffectType() == Petrification.EFFECT && Petrification.state((LivingEntity)(Object)this).rejectsDose())
+            cir.setReturnValue(false);
+    }
     @Inject(method = "onStatusEffectRemoved", at = @At("TAIL"))
     private void petrificationEffectChanged(StatusEffectInstance effect, CallbackInfo ci) {
         if (effect.getEffectType() == Petrification.EFFECT) Petrification.state((LivingEntity)(Object)this).effectRemoved();
@@ -38,15 +48,15 @@ public abstract class PetrificationLivingMixin {
     private void petrificationFacing(CallbackInfo ci) {
         var self = (LivingEntity)(Object)this;
         Petrification.state(self).updateLock();
-        if (Petrification.frozen(self)) Petrification.state(self).hold();
+        if (sscextras.statue.StatueBodies.locked(self)) Petrification.state(self).hold();
     }
     @Inject(method = "isImmobile", at = @At("HEAD"), cancellable = true)
     private void petrificationNoAi(CallbackInfoReturnable<Boolean> cir) {
-        if (Petrification.frozen((LivingEntity)(Object)this)) cir.setReturnValue(true);
+        if (sscextras.statue.StatueBodies.locked((LivingEntity)(Object)this)) cir.setReturnValue(true);
     }
     @Inject(method = "jump", at = @At("HEAD"), cancellable = true)
     private void petrificationNoJump(CallbackInfo ci) {
-        if (Petrification.frozen((LivingEntity)(Object)this)) ci.cancel();
+        if (sscextras.statue.StatueBodies.locked((LivingEntity)(Object)this)) ci.cancel();
     }
     @Inject(method = "dropLoot", at = @At("HEAD"), cancellable = true)
     private void petrificationStoneLoot(net.minecraft.entity.damage.DamageSource source, boolean player, CallbackInfo ci) {

@@ -44,6 +44,10 @@ public final class GuardianVillages {
         if (RuneboundGuardian.stage(player) < 0 || !player.isAlive() || player.isSpectator()
                 || GuardianCombat.locked(player) || !GuardianPedestal.intact(world, pos)
                 || world.getBlockState(pos).get(GuardianPedestal.OFFERING)) return;
+        if (world.getBlockEntity(pos) instanceof GuardianOffering offering && offering.hasResident()
+                || sscextras.drake.DrakeOutpostOwnership.get(player.getServer()).assignments().owner(GuardianPedestal.reservation(world, pos)) != null) {
+            player.sendMessage(Text.translatable("message.ssc-extras.guardian.pedestal_taken"), true); return;
+        }
         for (var entry : data.villages.entrySet()) if (!entry.getKey().equals(player.getUuid())
                 && entry.getValue().world.equals(world.getRegistryKey()) && entry.getValue().pedestal.equals(pos)) {
             player.sendMessage(Text.translatable("message.ssc-extras.guardian.pedestal_taken"), true); return;
@@ -70,6 +74,7 @@ public final class GuardianVillages {
     }
     public static void harmed(VillagerEntity villager, Entity attacker) {
         if (!(villager.getWorld() instanceof ServerWorld world) || !(attacker instanceof LivingEntity)) return;
+        GuardianVillageMobs.harmed(villager, attacker);
         rememberThreat(world, villager, attacker);
         if (attacker instanceof MobEntity mob) {
             var target = redirectTarget(mob, villager);

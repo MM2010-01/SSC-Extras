@@ -40,7 +40,6 @@ public final class GuardianCores {
             .dimensions(EntityDimensions.fixed(1.1f, 2.7f)).trackRangeBlocks(96).trackedUpdateRate(2).build();
     public static final EntityType<GuardianAnchorEntity> ANCHOR = FabricEntityTypeBuilder.create(SpawnGroup.MISC, GuardianAnchorEntity::new)
             .dimensions(EntityDimensions.fixed(.05f, .05f)).trackRangeBlocks(96).trackedUpdateRate(1).build();
-    private static final Map<ServerPlayerEntity, GuardianAnchorEntity> ANCHORS = new WeakHashMap<>();
     private static final Set<UUID> TRANSFERRING = new HashSet<>();
     private static final UUID SLOT_VISIBILITY = UUID.fromString("eadf266f-0e09-4370-951b-6ab1ebc42ad1");
     private static final boolean NATIVE_TRINKETS = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets")
@@ -272,6 +271,7 @@ public final class GuardianCores {
                 || !shell.isAlive() || shell.work() != 0 || !shell.core.isEmpty() && !record.id.equals(id(shell.core))
                 || !TRANSFERRING.add(player.getUuid())) return false;
         try {
+            if (shell.capture != null) shell.capture.finish();
             GuardianRecovery.stop(player);
             var state = RuneboundGuardian.state(player);
             player.setCameraEntity(player); removeAnchor(player);
@@ -285,6 +285,14 @@ public final class GuardianCores {
             player.changeGameMode(GameMode.byName(record.previousMode, GameMode.SURVIVAL));
             player.setHealth(Math.min(player.getMaxHealth(), Math.max(1, shell.getHealth()))); player.fallDistance = 0;
             update(record, player.getServerWorld(), "body", player.getBlockPos(), player.getUuid());
+            if (shell.resident()) {
+                shell.releaseHome();
+                var previous = GuardianVillages.claim(player);
+                var binding = previous == null ? new GuardianWorldState.Village() : previous;
+                binding.world = shell.getWorld().getRegistryKey(); binding.pedestal = shell.home();
+                GuardianWorldState.get(player.getServer()).villages.put(player.getUuid(), binding);
+                GuardianWorldState.get(player.getServer()).markDirty();
+            }
             shell.inventory = new NbtList(); shell.accessories = new NbtList(); shell.core = ItemStack.EMPTY; shell.discard();
             if (state.recoveryHintPending) {
                 state.recoveryHintPending = false;
@@ -370,18 +378,9 @@ public final class GuardianCores {
         record.lastSeen = world.getTime();
     }
     public static void forEachCore(ItemStack stack, Consumer<ItemStack> callback, int depth) {
-        if (stack.isEmpty() || depth > 16 || !stack.hasNbt()) return;
-        if (id(stack) != null) { callback.accept(stack); return; }
-        var tag = stack.getNbt();
-        if (tag.contains("BlockEntityTag")) tag = tag.getCompound("BlockEntityTag");
-        var items = tag.getList("Items", NbtElement.COMPOUND_TYPE);
-        if (depth == 16) return;
-        for (int i = 0; i < items.size(); i++) {
-            var item = items.getCompound(i);
-            if (item.contains("tag", NbtElement.COMPOUND_TYPE))
-                forEachCore(ItemStack.fromNbt(item), callback, depth + 1);
-        }
+        sscextras.inventory.NestedItemStacks.visit(stack, item -> id(item) != null, callback, depth);
     }
+
     public static void destroyed(ItemStack stack, MinecraftServer server) {
         if (server == null) return;
         forEachCore(stack, core -> {
@@ -398,6 +397,14 @@ public final class GuardianCores {
         RuneboundGuardian.state(player).sync();
         // Keep the destroyed record through ALLOW_DEATH so true core death cannot break another body.
         player.damage(player.getDamageSources().genericKill(), Float.MAX_VALUE);
+    }
+    /** Destruction of an enclosing occupied statue destroys its installed soul as well as its body. */
+    public static void destroyPackagedSoul(ServerPlayerEntity player) {
+        var record = record(player);
+        if (record == null) { initialize(player); record = record(player); }
+        if (record == null) return;
+        record.destroyed = true; GuardianWorldState.get(player.getServer()).markDirty();
+        destroyOwner(player);
     }
     private static void invalidate(ServerPlayerEntity player) {
         GuardianRecovery.stop(player);
@@ -461,15 +468,10 @@ public final class GuardianCores {
         if (record.location.equals("block") && world.isChunkLoaded(record.pos)) {
             var block = world.getBlockEntity(record.pos); if (block != null) observe(block);
         }
-        var anchor = ANCHORS.get(player);
-        if (anchor == null || anchor.isRemoved() || anchor.getWorld() != world) {
-            removeAnchor(player); anchor = ANCHOR.create(world); anchor.owner = player.getUuid(); anchor.setPosition(target); world.spawnEntity(anchor); ANCHORS.put(player, anchor);
-        } else anchor.setPosition(target);
-        anchor.source(holder);
-        player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
-        if (anchor.age >= 2 && player.getCameraEntity() != anchor) player.setCameraEntity(anchor);
+        sscextras.player.ItemBoundCamera.follow(player, world, target, holder);
     }
+
     private static void removeAnchor(ServerPlayerEntity player) {
-        var anchor = ANCHORS.remove(player); if (anchor != null) anchor.discard();
+        sscextras.player.ItemBoundCamera.remove(player);
     }
 }

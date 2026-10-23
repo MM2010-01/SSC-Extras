@@ -23,8 +23,9 @@ public abstract class TrainerOptimizedPartMixin {
     @ModifyVariable(method="render", at=@At("HEAD"), argsOnly=true, ordinal=2, require=0)
     private static int trainerPadColor(int color, MatrixStack matrices, @Coerce Object writer,
             ModelPart part, int light, int overlay, int originalColor) {
-        if (!((TrainerLimbModel.Part)(Object)part).sscExtras$pad()) return color;
-        return color & 0xff000000 | (int)((color & 255)*.72f)
-                | (int)(((color >>> 8)&255)*.72f)<<8 | (int)(((color >>> 16)&255)*.72f)<<16;
+        float tint=((TrainerLimbModel.Part)(Object)part).sscExtras$padTint();
+        if (tint==1) return color;
+        return color & 0xff000000 | (int)((color & 255)*tint)
+                | (int)(((color >>> 8)&255)*tint)<<8 | (int)(((color >>> 16)&255)*tint)<<16;
     }
 }

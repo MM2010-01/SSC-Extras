@@ -38,6 +38,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
     public boolean stageTwoHintShown;
     public Vec3d previousPosition;
     public Vec3d cuffPosition;
+    public int cuffPortalHintAge = Integer.MIN_VALUE;
     public int soulboundStage = -2;
     public GuardianProtectBrain brain;
     public GuardianEscort escort;
@@ -69,6 +70,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
 
     public boolean toggleStatueMode() {
         if (!(owner instanceof ServerPlayerEntity player) || RuneboundGuardian.stage(player) != 3
+                || sscextras.statue.StatueCrates.packed(player)
                 || !player.isAlive() || player.isSpectator() || player.isSleeping()
                 || detached || ritualTicks > 0 || player.hasVehicle() || player.hasPassengers()) return false;
         if (!statueMode) {
@@ -100,6 +102,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
 
     @Override public void serverTick() {
         if (!(owner instanceof ServerPlayerEntity player)) return;
+        if (sscextras.statue.StatueCrates.packed(player)) return;
         GuardianEquipment.tick(player);
         GuardianOffering.standing(player);
         int stage = RuneboundGuardian.stage(player);

@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_chest": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [{ "items": ["minecraft:chest"] }] }
+    },
+    "has_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": { "recipe": "ssc-extras:statue_package_crate" }
+    }
+  },
+  "requirements": [["has_chest", "has_recipe"]],
+  "rewards": { "recipes": ["ssc-extras:statue_package_crate"] }
+}

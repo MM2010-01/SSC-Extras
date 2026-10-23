@@ -15,4 +15,6 @@ public abstract class AuthoredPlayerModel extends PlayerEntityModel<AbstractClie
     public abstract void clear();
     public abstract void renderHand(MatrixStack matrices, int light, boolean left);
     public float renderScale() { return 1; }
+    /** Stable named parts outside vanilla's twelve player parts, for common frozen-pose persistence. */
+    public java.util.Map<String, ModelPart> poseJoints() { return java.util.Map.of(); }
 }

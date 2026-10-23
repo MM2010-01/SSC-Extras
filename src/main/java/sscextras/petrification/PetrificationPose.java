@@ -13,6 +13,16 @@ public final class PetrificationPose {
     private int bytes;
 
     public boolean isEmpty() { return values.isEmpty(); }
+    /** Renderer body matrices include absolute yaw; rotate them with the placed body, leaving bones and scale untouched. */
+    public void turn(float degrees) {
+        float radians = (float)Math.toRadians(-degrees);
+        for (var name : new String[]{"matrix/body", "matrix/stable_drake"}) {
+            var saved = values.get(name); if (saved == null) continue;
+            var position = new org.joml.Matrix4f().rotationY(radians).mul(new org.joml.Matrix4f().set(saved));
+            var normal = new org.joml.Matrix3f().rotationY(radians).mul(new org.joml.Matrix3f().set(java.util.Arrays.copyOfRange(saved, 16, 25)));
+            position.get(saved); normal.get(saved, 16);
+        }
+    }
     public float[] retain(String key, float[] value) {
         var saved = values.get(key);
         if (saved != null && saved.length == value.length) return saved.clone();

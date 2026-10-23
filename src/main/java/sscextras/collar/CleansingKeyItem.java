@@ -15,6 +15,7 @@ import net.minecraft.world.World;
 import net.onixary.shapeShifterCurseFabric.util.Accessory.AccessoryUtils;
 import sscextras.drake.DrakeAccessoryItem;
 import sscextras.drake.DrakeEquipment;
+import sscextras.guardian.GuardianEquipment;
 import java.util.List;
 
 public final class CleansingKeyItem extends Item {
@@ -38,6 +39,15 @@ public final class CleansingKeyItem extends Item {
             if (release(player, key, hand, slot.io(), slot.group(), "necklace", slot.index())) removed++;
         }
         var io = DrakeEquipment.slots();
+        if (io != null) for (String location : GuardianEquipment.LOCATIONS) {
+            if (location.equals("necklace")) continue; // Already covered by active/legacy collar slots.
+            String group = GuardianEquipment.group(location), name = GuardianEquipment.slot(location);
+            var stacks = io.getEntitySlot(player, group, name);
+            if (stacks != null) for (int i = 0; i < stacks.size(); i++) {
+                if (stacks.get(i).isOf(GuardianEquipment.CUFFS)
+                        && release(player, key, hand, io, group, name, i)) removed++;
+            }
+        }
         if (io != null) for (DrakeAccessoryItem item : new DrakeAccessoryItem[]{DrakeEquipment.REINS, DrakeEquipment.SADDLE}) {
             String group = CuriosCompat.instance == null ? item.group : "";
             String name = CuriosCompat.instance == null ? item.slot : item.curiosSlot();
@@ -68,6 +78,7 @@ public final class CleansingKeyItem extends Item {
         if (key != null && (key.isEmpty() || key.getDamage() >= key.getMaxDamage())) return false;
         ItemStack stack = io.getEntitySlot(player, group, name, index);
         if (stack == null || !(stack.isOf(Collars.CURSED) || stack.isOf(Collars.TAMING) || DrakeEquipment.isReins(stack)
+                || stack.isOf(GuardianEquipment.COLLAR) || stack.isOf(GuardianEquipment.CUFFS)
                 || stack.isOf(DrakeEquipment.SADDLE) || stack.isOf(DrakeEquipment.SHOES)
                 || stack.isOf(sscextras.trainer.QuadrupedalTrainer.MOLD) || stack.isOf(sscextras.trainer.QuadrupedalTrainer.COLLAR))) return false;
         if (!AccessoryEquipment.clear(player, io, group, name, index, dropped -> {
