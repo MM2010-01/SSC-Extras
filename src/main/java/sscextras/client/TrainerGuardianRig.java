@@ -64,9 +64,13 @@ public final class TrainerGuardianRig {
         boolean quad=PlayerStance.quadrupedal(player)&&!player.isSwimming()&&!player.isFallFlying()&&!player.isSleeping()&&!player.hasVehicle();
         float target=quad?1.5f-root.pivotY/16:length;
         var output=new ArrayList<Float>();float[] input=source.vertices();
-        for(int i=0;i<input.length;i+=32){
+        // Clip the native 0-2 triangles separately: compact quads must retain
+        // their original diagonal through the trainer's piecewise deformation.
+        for(int i=0;i<input.length;i+=32) for(int triangle=0;triangle<2;triangle++){
+            if(triangle==1&&input[i+16]==input[i+24]&&input[i+17]==input[i+25]&&input[i+18]==input[i+26])continue;
+            int[] corners=triangle==0?new int[]{0,1,2,2}:new int[]{2,3,0,0};
             List<float[]> polygon=new ArrayList<>();
-            for(int v=0;v<4;v++)polygon.add(Arrays.copyOfRange(input,i+v*8,i+v*8+8));
+            for(int v:corners)polygon.add(Arrays.copyOfRange(input,i+v*8,i+v*8+8));
             float[] splits={Float.NEGATIVE_INFINITY,rest.y+length*JOINT_FRACTIONS[1],rest.y+length*JOINT_FRACTIONS[2],rest.y+length*JOINT_FRACTIONS[3],Float.POSITIVE_INFINITY};
             for(int section=0;section<4;section++){
                 var face=clip(clip(polygon,splits[section],true),splits[section+1],false);

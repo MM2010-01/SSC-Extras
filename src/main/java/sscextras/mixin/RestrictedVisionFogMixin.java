@@ -10,10 +10,10 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import sscextras.client.BlindingReinVision;
+import sscextras.client.RestrictedVision;
 
 @Mixin(BackgroundRenderer.class)
-public abstract class BlindingReinFogMixin {
+public abstract class RestrictedVisionFogMixin {
     @Shadow private static float red;
     @Shadow private static float green;
     @Shadow private static float blue;
@@ -21,7 +21,7 @@ public abstract class BlindingReinFogMixin {
     @Inject(method = "render", at = @At("TAIL"))
     private static void sscExtras$blindColor(Camera camera, float tickDelta, ClientWorld world, int viewDistance,
             float skyDarkness, CallbackInfo ci) {
-        if (!BlindingReinVision.blind(camera)) return;
+        if (!RestrictedVision.blind(camera)) return;
         red = green = blue = 0;
         RenderSystem.clearColor(0, 0, 0, 0);
     }
@@ -29,7 +29,7 @@ public abstract class BlindingReinFogMixin {
     @Inject(method = "applyFog", at = @At("TAIL"))
     private static void sscExtras$blindDistance(Camera camera, BackgroundRenderer.FogType type, float viewDistance,
             boolean thickFog, float tickDelta, CallbackInfo ci) {
-        if (!BlindingReinVision.blind(camera)) return;
+        if (!RestrictedVision.blind(camera)) return;
         boolean sky = type == BackgroundRenderer.FogType.FOG_SKY;
         RenderSystem.setShaderFogStart(Math.min(RenderSystem.getShaderFogStart(), sky ? 0 : 1.25f));
         RenderSystem.setShaderFogEnd(Math.min(RenderSystem.getShaderFogEnd(), sky ? 4 : 5));

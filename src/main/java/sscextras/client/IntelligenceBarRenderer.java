@@ -11,6 +11,7 @@ import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
 import net.onixary.shapeShifterCurseFabric.util.UIPositionUtils;
 import sscextras.player.PlayerMind;
+import sscextras.SscExtrasConfig;
 
 /** Read-only companion to SSC's native gauge; uses its textures, anchor and HUD lifecycle. */
 public final class IntelligenceBarRenderer {
@@ -51,6 +52,7 @@ public final class IntelligenceBarRenderer {
         previousPlayer = player; previousTick = player.age; previousPoints = points;
         // Compare saved reserve, so temporary caps cannot invent gains or losses.
         feedback.update(player, units, 100, tickDelta);
+        if (!feedback.visible(SscExtrasConfig.intHudAutoHide(), FormAbilityManager.getForm(player).FormID, points)) return;
         var config = ShapeShifterCurseFabric.clientConfig;
         var position = UIPositionUtils.getCorrectPosition(config.instinctBarPosType,
                 config.instinctBarPosOffsetX, config.instinctBarPosOffsetY);
@@ -71,12 +73,12 @@ public final class IntelligenceBarRenderer {
                 (sprite % 3) * 512f, (sprite / 3) * 512f, 512, 512, 1536, 1024);
         RenderSystem.disableBlend();
         Text label = level.text().copy().styled(style -> style.withInsertion("ssc-extras:mental_hint"));
-        float labelScale = Math.min(.75f, 55f / Math.max(1, client.textRenderer.getWidth(label)));
+        float labelScale = Math.min(.75f, 26f / Math.max(1, client.textRenderer.getWidth(label)));
         context.getMatrices().push();
         context.getMatrices().translate(x + 25, y - 19, 0);
         context.getMatrices().scale(labelScale, labelScale, 1);
         context.drawTextWithShadow(client.textRenderer, label, 0, 0, 0xfff0dce8);
         context.getMatrices().pop();
-        feedback.render(context, x, y);
+        feedback.render(context, x + 53, y - 9);
     }
 }

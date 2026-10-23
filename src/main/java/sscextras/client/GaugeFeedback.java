@@ -8,23 +8,30 @@ import net.minecraft.text.Text;
 
 /** Bounded, read-only delta feedback shared by native-style HUD gauges. */
 public final class GaugeFeedback {
-    private static final int LIFETIME = 32, MAX_VISIBLE = 48;
+    private static final int LIFETIME = 24, MAX_VISIBLE = 48;
+    private static final int IDLE_TICKS = 60 * 20;
     private record Popup(boolean gain, float born, float speed, int lane) { }
     private final ArrayDeque<Popup> popups = new ArrayDeque<>();
     private final Text loss, gain;
     private PlayerEntity previous;
     private int previousUnits, previousTick, sequence;
+    private int lastChangeTick;
+    private Object previousContext;
+    private double previousDisplay;
     private long pendingLoss, pendingGain;
     private float nextLoss, nextGain, now;
     public GaugeFeedback(String key, String insertion) {
         loss = Text.translatable(key + "loss").styled(style -> style.withInsertion(insertion));
         gain = Text.translatable(key + "gain").styled(style -> style.withInsertion(insertion));
     }
-    public void reset() { previous = null; popups.clear(); pendingLoss = pendingGain = 0; sequence = 0; }
+    public void reset() { previous = null; previousContext = null; popups.clear(); pendingLoss = pendingGain = 0; sequence = 0; }
     public void update(PlayerEntity player, int units, int unitsPerPoint, float delta) {
         now = player.age + delta;
-        if (previous != player || player.age < previousTick) reset();
+        if (previous != player || player.age < previousTick) {
+            reset(); lastChangeTick = player.age;
+        }
         else if (units != previousUnits) {
+            lastChangeTick = player.age;
             boolean up = units > previousUnits;
             long count = (Math.abs((long)units - previousUnits) + unitsPerPoint - 1) / unitsPerPoint;
             spawn(up, now, count - 1);
@@ -42,6 +49,14 @@ public final class GaugeFeedback {
             spawn(true, nextGain, pendingGain); pendingGain--; nextGain += spacing(pendingGain);
         }
     }
+    /** Call after update, even while idle-hidden, so real changes wake this gauge immediately. */
+    public boolean visible(boolean autoHide, Object context, double displayedValue) {
+        if (!java.util.Objects.equals(previousContext, context) || Double.compare(previousDisplay, displayedValue) != 0) {
+            previousContext = context; previousDisplay = displayedValue; lastChangeTick = previousTick;
+        }
+        return !autoHide || previousTick - lastChangeTick < IDLE_TICKS;
+    }
+    /** Draw from the supplied popup origin, rising at most 18 GUI pixels. */
     public void render(DrawContext context, int x, int y) {
         var renderer = MinecraftClient.getInstance().textRenderer;
         for (var popup : popups) {
@@ -51,7 +66,7 @@ public final class GaugeFeedback {
             Text text = popup.gain ? gain : loss;
             float scale = Math.min(.75f, 25f / Math.max(1, renderer.getWidth(text)));
             context.getMatrices().push();
-            context.getMatrices().translate(x + 25 + popup.lane, y - 34 - age, 0);
+            context.getMatrices().translate(x + popup.lane, y - age * .75f, 0);
             context.getMatrices().scale(scale, scale, 1);
             context.drawTextWithShadow(renderer, text, 0, 0, alpha << 24 | (popup.gain ? 0x91edb5 : 0xffa698));
             context.getMatrices().pop();

@@ -105,7 +105,6 @@ public final class StatueCrates {
             o.world = world.getRegistryKey(); o.position = position; o.yaw = facing; o.holder = null; o.status = RELEASED; data.markDirty();
             var player = world.getServer().getPlayerManager().getPlayer(o.entity);
             if (player != null) finish(player, o);
-            else actor.sendMessage(Text.translatable("message.ssc-extras.statue_crate.offline"), true);
         } else {
             for (var dimension : world.getServer().getWorlds()) if (dimension.getEntity(o.entity) != null) return fail(actor, "busy");
             var entity = EntityType.loadEntityWithPassengers(o.body.copy(), world, e -> e);

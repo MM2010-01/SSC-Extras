@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.10.5'
 }
 
-version = '1.31.26'
+version = '1.31.33'
 group = 'sscextras'
 
 repositories {

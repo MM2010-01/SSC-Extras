@@ -21,7 +21,9 @@ import java.util.WeakHashMap;
 
 public final class DrakeShoeModel {
     private static final Identifier TEXTURE = EarthenDrake.id("textures/entity/iron_drake_shoes.png");
+    private static final DrakeShoeModel TRAINED = new DrakeShoeModel(-1, false, true);
     private final Map<String, ModelPart> parts = new HashMap<>();
+    private final java.util.List<Vector3f> supportCorners = new java.util.ArrayList<>();
     private final Map<String, Vector3f> grips = new HashMap<>();
     private final Map<String, Integer> paws = new HashMap<>();
     private record Grip(Vec3d position, int age) { }
@@ -32,11 +34,20 @@ public final class DrakeShoeModel {
     }
 
     public DrakeShoeModel(int stage, boolean slim) {
+        this(stage, slim, false);
+    }
+
+    private DrakeShoeModel(int stage, boolean slim, boolean trained) {
         var data = new ModelData();
         var names = new java.util.ArrayList<String>();
         for (boolean hand : new boolean[]{true, false}) for (int side : new int[]{-1, 1}) {
             float x, y, z, width, depth, height;
-            if (stage < 0) {
+            if (trained) {
+                // The trainer's paw frame owns position, leveling and growth.
+                // Keep the shared iron shell, with room for its pads and toes.
+                x = 0; y = -2.35f; z = -2.425f;
+                width = depth = 4.85f; height = 2.65f;
+            } else if (stage < 0) {
                 x = side * (hand ? slim ? 5.5f : 6 : 1.9f);
                 y = hand ? slim ? 11.25f : 11.75f : -.3f;
                 z = -2.425f; width = hand && slim ? 3.85f : 4.85f; depth = 4.85f;
@@ -64,7 +75,7 @@ public final class DrakeShoeModel {
                     .cuboid(x - width / 2, y + height - .3f, z, width, .3f, depth)
                     .cuboid(x - width / 2, y, z + depth - .32f, width, height, .32f);
             float toeWidth = width / 3 - .14f;
-            float toeHeight = stage == 3 ? 1.25f : hand ? stage == 1 ? 2.6f : 2.1f : stage == 2 ? 1.85f : 1.2f;
+            float toeHeight = trained ? 2.35f : stage == 3 ? 1.25f : hand ? stage == 1 ? 2.6f : 2.1f : stage == 2 ? 1.85f : 1.2f;
             float toeLength = stage == 3 ? 1.65f : hand && stage == 2 ? 2.3f : 1.65f;
             for (int toe = 0; toe < 3; toe++) iron.cuboid(x - width / 2 + .07f + toe * width / 3,
                     y + .06f, z + depth - .4f, toeWidth, toeHeight, toeLength);
@@ -86,6 +97,12 @@ public final class DrakeShoeModel {
         }
         var model = TexturedModelData.of(data, 64, 64).createModel();
         for (var child : names) parts.put(child, model.getChild(child));
+        if (trained) parts.get("bipedLeftArm").forEachCuboid(new MatrixStack(), (entry, path, index, cube) -> {
+            for (float x : new float[]{cube.minX, cube.maxX})
+                for (float y : new float[]{cube.minY, cube.maxY})
+                    for (float z : new float[]{cube.minZ, cube.maxZ})
+                        supportCorners.add(new Vector3f(x, -y, -z));
+        });
     }
 
     public void captureGrip(PlayerEntity player, String bone, MatrixStack matrices) {
@@ -144,10 +161,30 @@ public final class DrakeShoeModel {
             MatrixStack matrices, VertexConsumerProvider buffers, int light) {
         matrices.push();
         limb.rotate(matrices);
+        if (((TrainerLimbModel.Part)(Object)limb).sscExtras$reshaped()) {
+            TrainerLimbModel.joint(limb, "paw").rotate(matrices);
+            matrices.scale(1, -1, -1);
+            TRAINED.render("bipedLeftArm", matrices, buffers, light, true, false);
+            matrices.pop();
+            return;
+        }
         matrices.scale(1, -1, -1);
         matrices.translate((left ? -1 : 1) * (hand ? 5 : 1.9f) / 16,
                 -(hand ? slim ? 21.5f : 22 : 12) / 16, 0);
         render("biped" + (left ? "Left" : "Right") + (hand ? "Arm" : "Leg"), matrices, buffers, light, hand, !hand);
         matrices.pop();
+    }
+
+    /** Lowest actual iron-shell point, in the same model pixels as trainer soleHeight. */
+    public static float trainedSoleHeight(ModelPart limb) {
+        var matrices = new MatrixStack();
+        limb.rotate(matrices);
+        TrainerLimbModel.joint(limb, "paw").rotate(matrices);
+        var transform = matrices.peek().getPositionMatrix();
+        float lowest = Float.NEGATIVE_INFINITY;
+        for (var point : TRAINED.supportCorners)
+            lowest = Math.max(lowest, transform.m01() * point.x + transform.m11() * point.y
+                    + transform.m21() * point.z + 16 * transform.m31());
+        return lowest;
     }
 }

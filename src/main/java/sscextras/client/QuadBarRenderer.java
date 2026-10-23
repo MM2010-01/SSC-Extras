@@ -1,11 +1,15 @@
 package sscextras.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.onixary.shapeShifterCurseFabric.ShapeShifterCurseFabric;
 import net.onixary.shapeShifterCurseFabric.util.UIPositionUtils;
+import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
+import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
+import sscextras.SscExtrasConfig;
 import sscextras.trainer.QuadrupedalTrainer;
 
 public final class QuadBarRenderer {
@@ -16,10 +20,13 @@ public final class QuadBarRenderer {
     public void reset() { feedback.reset(); }
     public void render(DrawContext context, float delta) {
         var client = MinecraftClient.getInstance(); var player = client.player;
-        if (player == null || client.options.hudHidden || client.interactionManager == null || !client.interactionManager.hasStatusBars()) { reset(); return; }
+        if (player == null || client.options.hudHidden || client.interactionManager == null || !client.interactionManager.hasStatusBars()
+                || FormAbilityManager.getForm(player).equals(RegPlayerForms.ORIGINAL_BEFORE_ENABLE)
+                || QuadrupedalTrainer.fit(player) != QuadrupedalTrainer.Fit.SUITABLE) { reset(); return; }
         float progress = QuadrupedalTrainer.quadProgress(player);
         int tenths = Math.min(1000, (int)(progress * 1000));
         feedback.update(player, tenths, 10, delta);
+        if (!feedback.visible(SscExtrasConfig.quadHudAutoHide(), FormAbilityManager.getForm(player).FormID, progress)) return;
         var config = ShapeShifterCurseFabric.clientConfig;
         var anchor = UIPositionUtils.getCorrectPosition(config.instinctBarPosType, config.instinctBarPosOffsetX, config.instinctBarPosOffsetY);
         int x = Math.max(0, Math.min(context.getScaledWindowWidth() - 80, anchor.getLeft()));
@@ -28,11 +35,13 @@ public final class QuadBarRenderer {
         int width = (int)(80 * progress);
         if (width > 0) context.drawTexture(FULL, x, y, 0, 0, width, 5, 80, 5);
         if (QuadrupedalTrainer.complete(player)) context.drawTexture(LOCK, x, y, 0, 0, 80, 5, 80, 5);
-        context.drawTexture(BIPED,x,y-32,0,0,24,24,24,24);
-        context.drawTexture(QUAD,x+56,y-32,0,0,24,24,24,24);
+        RenderSystem.enableBlend();
+        context.drawTexture(BIPED, x, y-32, 24, 24, 0, 0, 1254, 1254, 1254, 1254);
+        context.drawTexture(QUAD, x+56, y-32, 24, 24, 0, 0, 1254, 1254, 1254, 1254);
+        RenderSystem.disableBlend();
         label(context, Text.translatable("hud.ssc-extras.quad.biped"), x, y - 9, false);
         label(context, Text.translatable("hud.ssc-extras.quad.quad"), x + 80, y - 9, true);
-        feedback.render(context, x, y);
+        feedback.render(context, x + 26, y - 9);
     }
     private static void label(DrawContext context, Text text, int x, int y, boolean right) {
         var renderer = MinecraftClient.getInstance().textRenderer;

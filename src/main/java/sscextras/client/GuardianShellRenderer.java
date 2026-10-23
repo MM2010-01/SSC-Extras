@@ -19,7 +19,7 @@ public final class GuardianShellRenderer extends EntityRenderer<GuardianShellEnt
         float bodyYaw = net.minecraft.util.math.MathHelper.lerpAngleDegrees(delta, entity.prevBodyYaw, entity.bodyYaw);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180-bodyYaw));
         matrices.scale(-.9375f, -.9375f, .9375f); matrices.translate(0, -1.501, 0);
-        float stride = entity.awake() ? entity.limbAnimator.getSpeed(delta) : 0;
+        float stride = entity.awake() && !entity.flying() ? entity.limbAnimator.getSpeed(delta) : 0;
         float phase = entity.limbAnimator.getPos(delta);
         pose.head.pitch = pose.head.yaw = pose.head.roll = 0;
         pose.leftArm.pitch = pose.rightLeg.pitch = (float)Math.cos(phase * .6662f) * stride * .65f;
@@ -28,7 +28,8 @@ public final class GuardianShellRenderer extends EntityRenderer<GuardianShellEnt
         if (entity.grabbing()) { pose.leftArm.pitch = pose.rightArm.pitch = -1.05f; pose.leftArm.roll = -.18f; pose.rightArm.roll = .18f; }
         PetrificationModelPose.playerModel(pose);
         GuardianMesh.get(entity.stage()).render(matrices, buffers, light, pose, entity.awake(), entity.weathered(), 1, null,
-                entity.equipment(), new GuardianMesh.Motion(entity.corePresent(), false, entity.age + delta, phase, stride, !entity.awake()));
+                entity.equipment(), new GuardianMesh.Motion(entity.corePresent(), false, entity.age + delta, phase, stride, !entity.awake(),
+                        FormTailPhysics.Drag.NONE, entity.flying()));
         matrices.pop();
         super.render(entity, yaw, delta, matrices, buffers, light);
     }

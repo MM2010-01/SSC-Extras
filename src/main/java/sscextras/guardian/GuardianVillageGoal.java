@@ -14,10 +14,10 @@ final class GuardianVillageGoal extends Goal {
     GuardianVillageGoal(GuardianShellEntity guardian) {
         this.guardian = guardian; setControls(EnumSet.of(Control.MOVE, Control.LOOK, Control.JUMP));
     }
-    @Override public boolean canStart() { return guardian.resident() && !guardian.placedStatue() && guardian.work() == 0 && GuardianCores.id(guardian.core) == null; }
+    @Override public boolean canStart() { return guardian.resident() && guardian.powered() && !guardian.core.isEmpty() && !guardian.placedStatue() && guardian.work() == 0 && GuardianCores.id(guardian.core) == null; }
     @Override public boolean shouldRunEveryTick() { return true; }
     @Override public void stop() {
-        guardian.getNavigation().stop(); guardian.awake(false);
+        guardian.routes.stop(true); guardian.awake(false);
         if (guardian.capture != null) guardian.capture.finish();
     }
     @Override public void tick() {
@@ -26,7 +26,7 @@ final class GuardianVillageGoal extends Goal {
         if (routeCooldown > 0) routeCooldown--;
         if (captureCooldown > 0) captureCooldown--;
         var player = guardian.offender == null ? null : world.getServer().getPlayerManager().getPlayer(guardian.offender);
-        if (player != null && (!player.isAlive() || player.isCreative() || player.isSpectator() || player.getWorld() != world
+        if (player != null && (guardian.recharging() || !player.isAlive() || player.isCreative() || player.isSpectator() || player.getWorld() != world
                 || world.getTime() > guardian.alertUntil || player.squaredDistanceTo(Vec3d.ofCenter(guardian.home())) > 128 * 128)) player = null;
         if (guardian.capture != null) { guardian.awake(true); guardian.capture.tick(); return; }
         if (player != null) {
@@ -37,7 +37,7 @@ final class GuardianVillageGoal extends Goal {
                 if (guardian.capture != null) { guardian.capture.tick(); return; }
             }
             guardian.getLookControl().lookAt(player, 30, 30);
-            if (routeCooldown == 0) { guardian.getNavigation().startMovingTo(player, 1.15); routeCooldown = 10; }
+            if (routeCooldown == 0) { guardian.routes.moveTo(player.getPos(), 1.15, false); routeCooldown = 10; }
             if (world.getTime() >= guardian.recaptureAfter && guardian.squaredDistanceTo(player) < 6.25
                     && guardian.canSee(player) && attackCooldown == 0) {
                 guardian.tryAttack(player); guardian.swingHand(net.minecraft.util.Hand.MAIN_HAND); attackCooldown = 20;
@@ -45,7 +45,7 @@ final class GuardianVillageGoal extends Goal {
             return;
         }
         guardian.offender = null;
-        boolean returnHome = guardian.sentry() || world.isDay() || guardian.squaredDistanceTo(Vec3d.ofCenter(guardian.home())) > 40 * 40;
+        boolean returnHome = guardian.sentry() || world.isDay() || guardian.recharging() || guardian.squaredDistanceTo(Vec3d.ofCenter(guardian.home())) > 40 * 40;
         if (returnHome) {
             var destination = GuardianPedestal.position(guardian.home());
             if (GuardianPedestal.intact(world, guardian.home()) && guardian.squaredDistanceTo(destination) < 6.25
@@ -53,12 +53,12 @@ final class GuardianVillageGoal extends Goal {
                 // Ground navigation accepts a wide mob near its final node; finish centering with its native move control.
                 guardian.getNavigation().stop();
                 if (guardian.squaredDistanceTo(destination) < .16) {
-                    guardian.setPosition(destination); guardian.setVelocity(Vec3d.ZERO); guardian.awake(false);
+                    guardian.setPosition(destination); guardian.routes.stop(true); guardian.awake(false);
                 } else { guardian.awake(true); guardian.getMoveControl().moveTo(destination.x, destination.y, destination.z, .8); }
             } else {
                 guardian.awake(true);
                 if (routeCooldown == 0) {
-                    guardian.getNavigation().startMovingTo(destination.x, destination.y, destination.z, .8); routeCooldown = 40;
+                    guardian.routes.moveTo(destination, .8, false); routeCooldown = 40;
                 }
             }
         } else {
@@ -66,7 +66,7 @@ final class GuardianVillageGoal extends Goal {
             if (guardian.getNavigation().isIdle() && routeCooldown == 0) {
                 var destination = NoPenaltyTargeting.find(guardian, 12, 5);
                 if (destination != null && destination.squaredDistanceTo(Vec3d.ofCenter(guardian.home())) <= 40 * 40)
-                    guardian.getNavigation().startMovingTo(destination.x, destination.y, destination.z, .65);
+                    guardian.routes.moveTo(destination, .65, false);
                 routeCooldown = 60 + guardian.getRandom().nextInt(100);
             }
         }

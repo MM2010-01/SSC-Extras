@@ -14,7 +14,7 @@ import java.util.Locale;
 
 /** Player-owned reserves and presentation; core identity and village service live in world saved data. */
 public final class GuardianState implements AutoSyncedComponent, ServerTickingComponent {
-    private static final int SUNLIGHT_ESCALATION_TICKS = 30 * 20;
+    private static final int SUNLIGHT_ESCALATION_TICKS = GuardianEnergy.SUNLIGHT_ESCALATION_TICKS;
     public final PlayerEntity owner;
     public double energy = 100;
     public boolean vision = true, overdrive, detached, protecting, flightGranted, deactivated, statueMode;
@@ -56,7 +56,7 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
                 || detached || !RuneboundGuardian.construct(owner) || !GuardianPedestal.standing(owner)
                 || !GuardianSleep.statue(owner) && !deactivated) return false;
         double before = energy;
-        charge(ticks * .025);
+        charge(ticks * GuardianEnergy.PEDESTAL_RECHARGE);
         return energy != before;
     }
     public void spend(double amount) { charge(-amount * (overdrive ? 2 : 1)); }
@@ -155,16 +155,15 @@ public final class GuardianState implements AutoSyncedComponent, ServerTickingCo
             player.getHungerManager().setFoodLevel(20);
             player.getHungerManager().setSaturationLevel(0);
             if (!player.isCreative() && !player.isSpectator()) {
-                double cost = 100.0 / 24000;
-                if (previousPosition != null && previousPosition.squaredDistanceTo(player.getPos()) < 16)
-                    cost += player.getPos().subtract(previousPosition).length() * (player.isSprinting() ? .008 : .003);
-                if (player.getAbilities().flying) cost += stage == 3 ? .03 : .06;
+                double distance = previousPosition != null && previousPosition.squaredDistanceTo(player.getPos()) < 16
+                        ? player.getPos().subtract(previousPosition).length() : 0;
+                double cost = GuardianEnergy.activity(stage, distance, player.isSprinting(), player.getAbilities().flying);
                 if (protecting && player.isSprinting()) cost *= 1.2;
                 boolean pedestal = GuardianPedestal.standing(player);
                 boolean sunlit = GuardianBodyPower.sunlit(player);
                 sunlightTicks = sunlit && !pedestal ? Math.min(sunlightTicks + 1, SUNLIGHT_ESCALATION_TICKS + 1) : 0;
                 if (!pedestal && !deactivated) spend(cost);
-                if (sunlightTicks > 0) charge(-capacity() * (sunlightTicks > SUNLIGHT_ESCALATION_TICKS ? .04 : .02) / 20);
+                if (sunlightTicks > 0) charge(-GuardianEnergy.sunlight(capacity(), sunlightTicks));
                 if (stage == 3 && energy <= 0 && !deactivated) {
                     deactivate(player);
                     systemMessage(player, "power_empty");

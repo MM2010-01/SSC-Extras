@@ -31,15 +31,14 @@ public final class GuardianCaptureEvent extends AssignedNpcEvent {
         this.guardian = guardian; this.player = player; world = player.getServerWorld(); this.pedestal = pedestal;
     }
     static GuardianCaptureEvent start(GuardianShellEntity guardian, ServerPlayerEntity player) {
-        if (!PlayerControl.available(player) || PlayerControl.active(player) || !GuardianEquipment.hasSlots(player)) return null;
+        if (!guardian.powered() || guardian.core.isEmpty() || guardian.recharging() || guardian.energy < 20 || !PlayerControl.available(player) || PlayerControl.active(player) || !GuardianEquipment.hasSlots(player)) return null;
         var world = player.getServerWorld();
         var candidates = GuardianPedestal.nearby(world, guardian.home(), 128);
         candidates.sort(Comparator.comparingDouble(pos -> player.squaredDistanceTo(GuardianPedestal.position(pos))));
         var assignments = DrakeOutpostOwnership.get(world.getServer()).assignments();
         for (var pos : candidates) {
-            if (!GuardianPedestal.vacant(world, pos, null, null)) continue;
-            var path = guardian.getNavigation().findPathTo(pos.up(), 1);
-            if (path == null || !path.reachesTarget()) continue;
+            if (!GuardianPedestal.vacant(world, pos, player, null)) continue;
+            if (!guardian.routes.reachable(GuardianPedestal.position(pos).add(0, .5, 0))) continue;
             var event = new GuardianCaptureEvent(guardian, player, pos);
             if (event.reserve(assignments, List.of(guardian.getUuid(), player.getUuid(), GuardianPedestal.reservation(world, pos)))) {
                 event.resume(); return event;
@@ -54,7 +53,7 @@ public final class GuardianCaptureEvent extends AssignedNpcEvent {
             finish(); return;
         }
         if (control == null) {
-            if (ticks % 10 == 1) guardian.getNavigation().startMovingTo(player, 1.15);
+            if (ticks % 10 == 1) guardian.routes.moveTo(player.getPos(), 1.15, false);
             guardian.getLookControl().lookAt(player, 30, 30);
             if (guardian.squaredDistanceTo(player) > 4 || !guardian.canSee(player)) return;
             control = PlayerControl.tryStart(player, GuardianVillageMobs.STRUGGLE, () -> new Hold(), 0);
@@ -65,7 +64,7 @@ public final class GuardianCaptureEvent extends AssignedNpcEvent {
         if (!control.active()) { finish(); return; }
         Vec3d center = GuardianPedestal.position(pedestal);
         if (!arrived) {
-            if (ticks % 10 == 1) guardian.getNavigation().startMovingTo(center.x, center.y, center.z, .8);
+            if (ticks % 10 == 1 || !guardian.flying()) guardian.routes.moveTo(center.add(0, .5, 0), .8, false);
             if (!placeOnPedestal()) return;
         }
         heldTicks++;
@@ -92,9 +91,9 @@ public final class GuardianCaptureEvent extends AssignedNpcEvent {
     private boolean placeOnPedestal() {
         if (arrived) return true;
         var center = GuardianPedestal.position(pedestal);
-        if (guardian.squaredDistanceTo(center) > 6.25
+        if (guardian.squaredDistanceTo(center) > 2.25
                 || !world.isSpaceEmpty(player, player.getBoundingBox().offset(center.subtract(player.getPos())))) return false;
-        arrived = true; guardian.getNavigation().stop(); guardian.setVelocity(Vec3d.ZERO);
+        arrived = true; guardian.routes.stop(false);
         player.setVelocity(Vec3d.ZERO); player.fallDistance = 0; player.setPosition(center);
         PlayerControl.syncPosition(player);
         guardian.getLookControl().lookAt(player, 30, 30);
@@ -133,7 +132,9 @@ public final class GuardianCaptureEvent extends AssignedNpcEvent {
     }
     @Override protected void releaseParticipants() {
         if (guardian.capture == this) guardian.capture = null;
-        guardian.grabbing(false); guardian.getNavigation().stop(); guardian.recaptureAfter = world.getTime() + 100;
+        // A powered return from mid-air needs the existing flight controller until its home route lands.
+        guardian.grabbing(false); guardian.routes.stop(!guardian.recharging() || !guardian.powered());
+        guardian.recaptureAfter = world.getTime() + 100;
         if (worker != null && owns(worker.getUuid())) GuardianRitual.releaseWorker(worker);
         if (world.getBlockEntity(pedestal) instanceof GuardianOffering offering) offering.cancelFlight(player.getUuid());
         if (control != null && control.active()) control.close();
@@ -151,7 +152,24 @@ public final class GuardianCaptureEvent extends AssignedNpcEvent {
             double radians = Math.toRadians(guardian.bodyYaw);
             Vec3d destination = arrived ? GuardianPedestal.position(pedestal)
                     : guardian.getPos().add(-Math.sin(radians) * 1.05, .85, Math.cos(radians) * 1.05);
-            if (!world.isSpaceEmpty(player, player.getBoundingBox().offset(destination.subtract(player.getPos())))) { finish(); return; }
+            if (!arrived) {
+                Vec3d safe = null;
+                for (double lift = 0; lift <= 1.5; lift += .25) {
+                    var candidate = destination.add(0, lift, 0);
+                    // Clear the step vertically before moving forward; never drop a captive just for meeting a stair/base.
+                    double height = Math.max(player.getY(), candidate.y);
+                    var raised = player.getBoundingBox().offset(0, height - player.getY(), 0);
+                    if (world.isSpaceEmpty(player, player.getBoundingBox().stretch(0, height - player.getY(), 0))
+                            && world.isSpaceEmpty(player, raised.stretch(candidate.x - player.getX(), 0, candidate.z - player.getZ()))
+                            && world.isSpaceEmpty(player, player.getBoundingBox().offset(candidate.subtract(player.getPos())))) { safe = candidate; break; }
+                }
+                if (safe == null) {
+                    guardian.routes.stop(false);
+                    guardian.routes.moveTo(guardian.getPos().add(0, 1, 0), .8, true);
+                    player.setVelocity(Vec3d.ZERO); player.fallDistance = 0; return;
+                }
+                destination = safe;
+            } else if (!world.isSpaceEmpty(player, player.getBoundingBox().offset(destination.subtract(player.getPos())))) { finish(); return; }
             player.setVelocity(Vec3d.ZERO); player.fallDistance = 0;
             player.setPosition(destination);
         }

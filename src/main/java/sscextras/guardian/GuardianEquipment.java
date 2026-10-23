@@ -92,7 +92,7 @@ public final class GuardianEquipment {
         if (!(captured ? player.isAlive() && !player.isCreative() && !player.isSpectator() : eligible(player))
                 || !hasSlots(player) || !GuardianPedestal.intact(player.getWorld(), pedestal)) return false;
         var data = GuardianWorldState.get(player.getServer());
-        if (data.villages.values().stream().anyMatch(v -> v.world.equals(player.getWorld().getRegistryKey()) && v.pedestal.equals(pedestal))) return false;
+        if (GuardianPedestal.claimedByOther(player.getServerWorld(), pedestal, captured ? player : null)) return false;
         if (player.getWorld().getBlockEntity(pedestal) instanceof GuardianOffering offering && offering.hasResident()) return false;
         var assignments = sscextras.drake.DrakeOutpostOwnership.get(player.getServer()).assignments();
         var reserved = assignments.owner(GuardianPedestal.reservation(player.getServerWorld(), pedestal));
@@ -118,9 +118,13 @@ public final class GuardianEquipment {
             if (AccessoryEquipment.forceEquip(player, group(location), slot(location), stack,
                     worn -> worn.isOf(stack.getItem()), displaced -> player.dropItem(displaced, true, false)) == null) return false;
         }
-        var village = new GuardianWorldState.Village();
-        village.world = player.getWorld().getRegistryKey(); village.pedestal = pedestal.toImmutable();
-        data.villages.put(player.getUuid(), village); data.markDirty();
+        var village = GuardianVillages.claim(player);
+        if (village == null || !village.world.equals(player.getWorld().getRegistryKey()) || !village.pedestal.equals(pedestal)) {
+            village = new GuardianWorldState.Village();
+            village.world = player.getWorld().getRegistryKey(); village.pedestal = pedestal.toImmutable();
+            data.villages.put(player.getUuid(), village);
+        }
+        data.markDirty();
         applyCurse(player);
         player.currentScreenHandler.sendContentUpdates();
         player.sendMessage(Text.translatable("message.ssc-extras.guardian.set_bound"), false);

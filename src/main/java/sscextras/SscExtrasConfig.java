@@ -25,6 +25,7 @@ public final class SscExtrasConfig {
     private static float petrificationIIIMovementBreakChance = .01f;
     private static double instinctPerIntLoss = 100, permanentFormIntLoss = 0.05;
     private static int permanentFormIntIntervalTicks = 200;
+    private static boolean intHudAutoHide = true, quadHudAutoHide = true;
     private static Set<Identifier> permanentFormProgressionExceptions = Set.of();
 
     static {
@@ -67,6 +68,10 @@ public final class SscExtrasConfig {
         changed |= config.putIfAbsent("instinctPerIntLoss", "100") == null;
         changed |= config.putIfAbsent("permanentFormIntLoss", "0.05") == null;
         changed |= config.putIfAbsent("permanentFormIntIntervalSeconds", "10") == null;
+        changed |= config.putIfAbsent("intHudAutoHide", "true") == null;
+        changed |= config.putIfAbsent("quadHudAutoHide", "true") == null;
+        intHudAutoHide = readBoolean(config, "intHudAutoHide", true);
+        quadHudAutoHide = readBoolean(config, "quadHudAutoHide", true);
         instinctPerIntLoss = readRange(config, "instinctPerIntLoss", 100, 0.01, 1000000);
         permanentFormIntLoss = readRange(config, "permanentFormIntLoss", 0.05, 0, 400);
         permanentFormIntIntervalTicks = (int)Math.round(20 * readRange(config, "permanentFormIntIntervalSeconds", 10, 0.05, 86400));
@@ -90,6 +95,7 @@ public final class SscExtrasConfig {
                 Files.createDirectories(file.toAbsolutePath().getParent());
                 try (Writer writer = Files.newBufferedWriter(file)) {
                     config.store(writer, "Restart to apply. Instinct amounts: greater than 0, at most 100.\n"
+                            + "intHudAutoHide / quadHudAutoHide: client HUD hides after 60 seconds without changes (true/false; default true).\n"
                             + "instinctPerIntLoss: actual instinct gained per 1 INT lost (0.01 to 1000000).\n"
                             + "permanentFormIntLoss: INT lost each interval (0 to 400); permanentFormIntIntervalSeconds: 0.05 to 86400.\n"
                             + "Both INT drains also require their gamerule and EnableINTSystem.\n"
@@ -125,6 +131,14 @@ public final class SscExtrasConfig {
         return fallback;
     }
 
+    private static boolean readBoolean(Properties config, String key, boolean fallback) {
+        String value = config.getProperty(key).trim();
+        if (value.equalsIgnoreCase("true")) return true;
+        if (value.equalsIgnoreCase("false")) return false;
+        LOGGER.warn("Invalid {}: expected true or false; using {}", key, fallback);
+        return fallback;
+    }
+
     public static float lootChance(String key) {
         Float chance = lootChances.get(key);
         if (chance == null) throw new IllegalArgumentException("Unknown SSC Extras loot chance: " + key);
@@ -137,5 +151,7 @@ public final class SscExtrasConfig {
     public static double instinctPerIntLoss() { return instinctPerIntLoss; }
     public static double permanentFormIntLoss() { return permanentFormIntLoss; }
     public static int permanentFormIntIntervalTicks() { return permanentFormIntIntervalTicks; }
+    public static boolean intHudAutoHide() { return intHudAutoHide; }
+    public static boolean quadHudAutoHide() { return quadHudAutoHide; }
     public static Set<Identifier> permanentFormProgressionExceptions() { return permanentFormProgressionExceptions; }
 }

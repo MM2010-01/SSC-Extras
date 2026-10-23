@@ -7,17 +7,17 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import sscextras.client.BlindingReinVision;
+import sscextras.client.RestrictedVision;
 
 @Mixin(GameRenderer.class)
-public abstract class BlindingReinOverlayMixin {
+public abstract class RestrictedVisionOverlayMixin {
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/render/DiffuseLighting;enableGuiDepthLighting()V", shift = At.Shift.AFTER))
     private void sscExtras$blinkers(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
         var client = MinecraftClient.getInstance();
-        if (!tick || client.world == null || !client.options.getPerspective().isFirstPerson() || !BlindingReinVision.active()) return;
+        if (!tick || client.world == null || !RestrictedVision.firstPerson()) return;
         var context = new DrawContext(client, client.getBufferBuilders().getEntityVertexConsumers());
-        BlindingReinVision.renderBlinkers(context);
+        RestrictedVision.renderOverlay(context);
         context.draw();
     }
 }

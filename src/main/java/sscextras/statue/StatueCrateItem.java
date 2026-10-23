@@ -17,7 +17,5 @@ public final class StatueCrateItem extends Item {
     }
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> lines, TooltipContext context) {
         lines.add(Text.translatable("tooltip.ssc-extras.statue_crate." + (StatueCrates.id(stack) == null ? "empty" : "filled")).formatted(Formatting.GRAY));
-        if (stack.hasNbt() && stack.getNbt().getBoolean("StatuePlayer"))
-            lines.add(Text.translatable("tooltip.ssc-extras.statue_crate.player").formatted(Formatting.RED));
     }
 }

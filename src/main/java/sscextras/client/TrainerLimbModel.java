@@ -102,7 +102,7 @@ public final class TrainerLimbModel {
                 var root=arm?i==0?model.leftArm:model.rightArm:i==2?model.leftLeg:model.rightLeg;
                 boolean changed=arm?hands:feet;
                 boolean worn=!QuadrupedalTrainer.equipped(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET,false).isEmpty();
-                if(changed)contact=Math.max(contact,soleHeight(root,worn,QuadrupedalTrainer.progress(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET)));
+                if(changed)contact=Math.max(contact,supportHeight(player,root,arm));
                 else if(worn)contact=Math.max(contact,root.pivotY+MathHelper.cos(root.pitch)*moldAnkle(arm,quad)+2.5f);
             }
             // SSC's global animation translation precedes the player's 15/16
@@ -152,6 +152,14 @@ public final class TrainerLimbModel {
             lowest=Math.max(lowest,localPoint(root,point.x,point.y,point.z).y);
         }
         return lowest;
+    }
+
+    /** The same posed paw support, including a visible iron shoe when fitted. */
+    public static float supportHeight(PlayerEntity player, ModelPart root, boolean arm) {
+        boolean worn = !QuadrupedalTrainer.equipped(player, arm ? QuadrupedalTrainer.HANDS : QuadrupedalTrainer.FEET, false).isEmpty();
+        float sole = soleHeight(root, worn, QuadrupedalTrainer.progress(player, arm ? QuadrupedalTrainer.HANDS : QuadrupedalTrainer.FEET));
+        return DrakeShoesFeatureRenderer.supported(player, arm) && sscextras.drake.DrakeShoes.visible(player, !arm)
+                ? Math.max(sole, DrakeShoeModel.trainedSoleHeight(root)) : sole;
     }
 
     private static void reshape(ModelPart root, boolean arm, boolean left, boolean enabled, float amount, float end, boolean quad,boolean outer) {

@@ -78,7 +78,7 @@ public final class GuardianClient {
                 player.setYaw(state.frozenYaw); player.setHeadYaw(state.frozenYaw); player.setPitch(state.frozenPitch);
                 player.bodyYaw = state.frozenYaw;
             }
-            if (detached) client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+            if (detached && !sscextras.statue.StatueCrates.packed(player)) client.options.setPerspective(Perspective.THIRD_PERSON_BACK);
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             restore(client); THREATS.clear(); owner = null; FormTailPhysics.clear();

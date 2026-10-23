@@ -74,19 +74,25 @@ public final class GuardianPedestal extends BlockWithEntity {
         return java.util.UUID.nameUUIDFromBytes(("guardian-pedestal:" + world.getRegistryKey().getValue() + ":" + pos.asLong())
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
-    /** Loaded, intact, unclaimed and physically empty. The current event may retain its own reservation. */
+    /** Saved player claims only; a null occupant excludes every owner's pedestal. */
+    static boolean claimedByOther(ServerWorld world, BlockPos pos, PlayerEntity occupant) {
+        return GuardianWorldState.get(world.getServer()).villages.entrySet().stream()
+                .anyMatch(entry -> (occupant == null || !entry.getKey().equals(occupant.getUuid()))
+                        && entry.getValue().world.equals(world.getRegistryKey()) && entry.getValue().pedestal.equals(pos));
+    }
+    /** Loaded, intact and empty except for the occupant's own claim/body and the current event's participants. */
     public static boolean vacant(ServerWorld world, BlockPos pos, PlayerEntity occupant, sscextras.events.NpcEvent event) {
         if (!world.isChunkLoaded(pos) || !intact(world, pos)
                 || !(world.getBlockEntity(pos) instanceof GuardianOffering offering) || offering.hasResident()
                 || offering.target != null && (occupant == null || !offering.target.equals(occupant.getUuid()))) return false;
-        var owner = sscextras.drake.DrakeOutpostOwnership.get(world.getServer()).assignments().owner(reservation(world, pos));
+        var assignments = sscextras.drake.DrakeOutpostOwnership.get(world.getServer()).assignments();
+        var owner = assignments.owner(reservation(world, pos));
         if (owner != null && owner != event) return false;
-        if (GuardianWorldState.get(world.getServer()).villages.values().stream()
-                .anyMatch(v -> v.world.equals(world.getRegistryKey()) && v.pedestal.equals(pos))) return false;
+        if (claimedByOther(world, pos, occupant)) return false;
         var feet = position(pos);
         var box = new net.minecraft.util.math.Box(feet.x - .8, feet.y, feet.z - .8, feet.x + .8, feet.y + 3, feet.z + .8);
         return world.getEntitiesByClass(LivingEntity.class, box, e -> e != occupant && e.isAlive() && !e.isSpectator()
-                && !(e instanceof GuardianShellEntity shell && event != null && shell.capture == event)).isEmpty();
+                && !(event != null && assignments.owner(e.getUuid()) == event)).isEmpty();
     }
     public static java.util.List<BlockPos> nearby(ServerWorld world, BlockPos center, int radius) {
         var result = new java.util.ArrayList<BlockPos>();

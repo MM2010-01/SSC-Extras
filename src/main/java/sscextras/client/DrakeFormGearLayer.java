@@ -42,8 +42,9 @@ public final class DrakeFormGearLayer extends GeoRenderLayer<FormAnimatable> {
         vanillaSaddle = DrakeEquipment.saddle(player).isOf(net.minecraft.item.Items.SADDLE);
         chest = stage == 3 && DrakeEquipment.visible(player, DrakeEquipment.RIDERS_CHEST);
         claws = stage == 3 && DrakeEquipment.visible(player, DrakeEquipment.CLAW_TIPS);
-        handShoes = DrakeShoes.visible(player, false);
-        footShoes = DrakeShoes.visible(player, true);
+        // Reshaped early-stage limbs are drawn on the actual player paw joints.
+        handShoes = DrakeShoes.visible(player, false) && !TrainerLimbModel.active(player, true);
+        footShoes = DrakeShoes.visible(player, true) && !TrainerLimbModel.active(player, false);
     }
 
     @Override public void renderForBone(MatrixStack matrices, FormAnimatable animatable, GeoBone bone, RenderLayer renderType,

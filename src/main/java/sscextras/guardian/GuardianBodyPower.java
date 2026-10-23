@@ -84,7 +84,7 @@ public final class GuardianBodyPower extends Power {
         sscextras.player.AuthoredFormDimensions.reset(entity);
         if (entity instanceof PlayerEntity player) flight(player, false);
     }
-    public static boolean sunlit(PlayerEntity player) {
+    public static boolean sunlit(net.minecraft.entity.LivingEntity player) {
         var world = player.getWorld();
         var head = BlockPos.ofFloored(player.getX(), player.getEyeY(), player.getZ());
         return world.getDimension().hasSkyLight() && world.isDay() && !world.isRaining()
