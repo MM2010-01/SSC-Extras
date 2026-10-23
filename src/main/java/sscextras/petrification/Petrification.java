@@ -56,15 +56,24 @@ public final class Petrification {
     public static boolean stone(LivingEntity entity) {
         return frozen(entity) && entity.getStatusEffect(EFFECT).getAmplifier() >= 2;
     }
+    /** Visual state survives native death ticking; it does not grant a dead body gameplay abilities. */
+    public static boolean stoneAppearance(LivingEntity entity) {
+        var effect = entity.getStatusEffect(EFFECT);
+        return !entity.isSpectator() && effect != null && effect.getAmplifier() >= 2;
+    }
+    public static boolean poseLocked(LivingEntity entity) { return frozen(entity) || stoneAppearance(entity); }
     public static boolean stoneBody(LivingEntity entity) {
         return sscextras.player.StoneBodies.material(entity);
     }
-    public static boolean replaceTexture(LivingEntity entity) { return stone(entity) && !stoneBody(entity); }
+    public static boolean replaceTexture(LivingEntity entity) { return stoneAppearance(entity) && !stoneBody(entity); }
     public static ItemStack potion(Item item) { return PotionUtil.setPotion(new ItemStack(item), POTION); }
 
     public static void register() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-            if (entity instanceof LivingEntity living) sscextras.player.StoneBodies.refreshArmor(living);
+            if (entity instanceof LivingEntity living) {
+                sscextras.player.StoneBodies.refreshArmor(living);
+                state(living).updateLock();
+            }
         });
         Registry.register(Registries.STATUS_EFFECT, id("petrification"), EFFECT);
         Registry.register(Registries.POTION, id("petrification"), POTION);
@@ -86,6 +95,8 @@ public final class Petrification {
                 frozen(player) || !state(player).miningPermissionCheck && PetrificationMining.mineable(player, target)
                         ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
         PetrificationMining.register();
+        PetrificationPose.register();
+        PetrificationComponents.registerSync();
         net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) ->
                 frozen(player) ? net.minecraft.util.ActionResult.FAIL : net.minecraft.util.ActionResult.PASS);
         net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, target, hit) ->

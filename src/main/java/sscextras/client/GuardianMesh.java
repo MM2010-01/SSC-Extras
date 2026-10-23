@@ -78,15 +78,11 @@ public final class GuardianMesh {
             return bottom;
         });
     }
+    public Vector3f[] bounds(String name) { return RiggedMesh.bounds(bones.get(name).parts); }
     public Vector3f size(String name) {
         if (sizes.containsKey(name)) return sizes.get(name);
-        var min = new Vector3f(Float.POSITIVE_INFINITY);
-        var max = new Vector3f(Float.NEGATIVE_INFINITY);
-        for (var part : bones.get(name).parts) for (int i = 0; i < part.vertices().length; i += 8) {
-            var p = new Vector3f(part.vertices()[i], part.vertices()[i + 1], part.vertices()[i + 2]);
-            min.min(p); max.max(p);
-        }
-        var size = max.sub(min);
+        var box = bounds(name);
+        var size = box == null ? new Vector3f() : box[1].sub(box[0]);
         sizes.put(name, size);
         return size;
     }

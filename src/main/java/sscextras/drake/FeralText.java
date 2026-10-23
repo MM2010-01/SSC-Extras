@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 public final class FeralText {
+    private static final String STATIC_GIBBERISH = "ssc-extras:static_gibberish";
     private static final Text TAKEOVER = Text.translatable("message.ssc-extras.drake.feral_takeover");
     private static final Text RAW_FOOD = Text.translatable("item.ssc-extras.feral_raw_food");
     private static final Text OTHER_FOOD = Text.translatable("item.ssc-extras.feral_other_food");
@@ -18,7 +19,20 @@ public final class FeralText {
     public static Text itemName(net.minecraft.item.ItemStack stack, Text original) {
         return DrakeFeralization.rawFood(stack) ? Text.translatable("item.ssc-extras.feral_raw_food")
                 : stack.isFood() ? Text.translatable("item.ssc-extras.feral_other_food")
-                : Text.literal(original.getString()).setStyle(Style.EMPTY.withObfuscated(true));
+                : unreadable(original);
+    }
+
+    /** Mark only our unreadable text; ordinary Minecraft obfuscation remains animated. */
+    public static Text unreadable(Text original) {
+        return Text.literal(original.getString()).setStyle(unreadableStyle(original.getStyle()));
+    }
+
+    public static boolean staticGibberish(Style style) {
+        return style.isObfuscated() && STATIC_GIBBERISH.equals(style.getInsertion());
+    }
+
+    private static Style unreadableStyle(Style style) {
+        return style.withObfuscated(true).withHoverEvent(null).withClickEvent(null).withInsertion(STATIC_GIBBERISH);
     }
 
     public static OrderedText scramble(OrderedText original, String mountName) {
@@ -40,15 +54,24 @@ public final class FeralText {
         var readable = new boolean[value.length()];
         var matches = readablePattern(mountName).matcher(value);
         while (matches.find()) java.util.Arrays.fill(readable, matches.start(), matches.end(), true);
+        int offset = 0;
+        for (int i = 0; i < points.size(); i++) {
+            int point = points.getInt(i);
+            var style = styles.get(i);
+            int order = Math.floorMod(Integer.rotateLeft(point * 0x9e3779b9, i & 31) ^ i * 0x85ebca6b, 100);
+            if (!readableHint(style)) {
+                boolean hidden = !readable[offset] && (style.isObfuscated() || order < strength * 100);
+                styles.set(i, hidden ? unreadableStyle(style)
+                        : style.withObfuscated(false).withHoverEvent(null).withClickEvent(null).withInsertion(null));
+            }
+            offset += Character.charCount(point);
+        }
         return visitor -> {
-            int offset = 0;
+            int index = 0;
             for (int i = 0; i < points.size(); i++) {
                 int point = points.getInt(i);
-                int order = Math.floorMod(Integer.rotateLeft(point * 0x9e3779b9, i & 31) ^ i * 0x85ebca6b, 100);
-                var style = readableHint(styles.get(i)) ? styles.get(i) : styles.get(i).withObfuscated(!readable[offset] && (styles.get(i).isObfuscated() || order < strength * 100))
-                        .withHoverEvent(null).withClickEvent(null).withInsertion(null);
-                if (!visitor.accept(offset, style, point)) return false;
-                offset += Character.charCount(point);
+                if (!visitor.accept(index, styles.get(i), point)) return false;
+                index += Character.charCount(point);
             }
             return true;
         };

@@ -24,10 +24,39 @@ public final class PetrificationState implements AutoSyncedComponent, ServerTick
     private record Crack(int stage, long expires) { }
     private final java.util.Map<java.util.UUID, Crack> cracks = new java.util.HashMap<>();
     private int crackStage = -1;
+    private java.util.UUID poseToken;
+    private PetrificationPose pose = new PetrificationPose();
+    private boolean poseSaved, poseSent, effectDirty;
+
+    public java.util.UUID poseToken() { return poseToken; }
+    public PetrificationPose pose() { return pose; }
+    public boolean poseSaved() { return poseSaved; }
+    public boolean submitPose() {
+        if (poseToken == null || poseSaved || poseSent || !pose.hasBody()) return false;
+        poseSent = true;
+        return true;
+    }
+    public boolean acceptPose(java.util.UUID token, PetrificationPose snapshot) {
+        if (owner.getWorld().isClient || !Petrification.poseLocked(owner) || poseSaved
+                || poseToken == null || !poseToken.equals(token) || !snapshot.hasBody()) return false;
+        pose = snapshot; poseSaved = true;
+        PetrificationComponents.KEY.sync(owner);
+        return true;
+    }
+    public void effectChanged() { if (!owner.getWorld().isClient) effectDirty = true; }
+    public void effectRemoved() {
+        // clearStatusEffects notifies before removing its map entry; do not query it here.
+        locked = false; poseToken = null; pose = new PetrificationPose(); poseSaved = poseSent = false;
+        effectChanged();
+    }
 
     public PetrificationState(LivingEntity owner) { this.owner = owner; }
 
-    public int crackStage() { return crackStage; }
+    public int crackStage() {
+        int healthCracks = Petrification.stoneAppearance(owner) && owner.getHealth() < owner.getMaxHealth()
+                ? net.minecraft.util.math.MathHelper.clamp((int)((1 - owner.getHealth() / owner.getMaxHealth()) * 10), 0, 9) : -1;
+        return Math.max(crackStage, healthCracks);
+    }
     void miningCracks(java.util.UUID miner, float progress) {
         cracks.put(miner, new Crack(Math.min(9, (int)(progress * 10)), owner.getWorld().getTime() + 8));
         syncCracks();
@@ -108,12 +137,19 @@ public final class PetrificationState implements AutoSyncedComponent, ServerTick
         }
         updateLock();
         hold();
+        if (effectDirty) { effectDirty = false; PetrificationComponents.KEY.sync(owner); }
     }
 
     public void updateLock() {
-        boolean next = Petrification.frozen(owner);
-        if (next == locked) return;
+        boolean next = Petrification.poseLocked(owner);
+        if (next == locked) {
+            // Upgrade older locked saves without discarding their original animation inputs.
+            if (next && poseToken == null && !owner.getWorld().isClient) poseToken = java.util.UUID.randomUUID();
+            return;
+        }
         locked = next;
+        pose = new PetrificationPose(); poseSaved = poseSent = false;
+        poseToken = next && !owner.getWorld().isClient ? java.util.UUID.randomUUID() : null;
         if (next) {
             yaw = owner.getYaw(); pitch = owner.getPitch(); headYaw = owner.headYaw; bodyYaw = owner.bodyYaw;
             limbPos = owner.limbAnimator.getPos(); limbSpeed = owner.limbAnimator.getSpeed();
@@ -121,7 +157,7 @@ public final class PetrificationState implements AutoSyncedComponent, ServerTick
             if (!owner.getWorld().isClient) owner.stopRiding();
             if (owner instanceof MobEntity mob) mob.getNavigation().stop();
         }
-        if (!owner.getWorld().isClient) PetrificationComponents.KEY.sync(owner);
+        if (!owner.getWorld().isClient) { effectDirty = false; PetrificationComponents.KEY.sync(owner); }
     }
 
     public void hold() {
@@ -147,6 +183,8 @@ public final class PetrificationState implements AutoSyncedComponent, ServerTick
         tag.putFloat("HeadYaw", headYaw); tag.putFloat("BodyYaw", bodyYaw);
         tag.putFloat("LimbPos", limbPos); tag.putFloat("LimbSpeed", limbSpeed);
         tag.putFloat("AnimationAge", animationAge); tag.putFloat("Swing", swing);
+        if (poseToken != null) tag.putUuid("PoseToken", poseToken);
+        if (poseSaved) tag.put("ModelPose", pose.write());
     }
     @Override public void readFromNbt(NbtCompound tag) {
         cracks.clear(); crackStage = -1;
@@ -155,13 +193,23 @@ public final class PetrificationState implements AutoSyncedComponent, ServerTick
         headYaw = tag.getFloat("HeadYaw"); bodyYaw = tag.getFloat("BodyYaw");
         limbPos = tag.getFloat("LimbPos"); limbSpeed = tag.getFloat("LimbSpeed");
         animationAge = tag.getFloat("AnimationAge"); swing = tag.getFloat("Swing");
+        var token = tag.containsUuid("PoseToken") ? tag.getUuid("PoseToken") : null;
+        if (!java.util.Objects.equals(token, poseToken)) poseSent = false;
+        poseToken = token;
+        pose = PetrificationPose.read(tag.getCompound("ModelPose")); poseSaved = pose.hasBody();
     }
     @Override public void writeSyncPacket(net.minecraft.network.PacketByteBuf buffer, net.minecraft.server.network.ServerPlayerEntity recipient) {
         AutoSyncedComponent.super.writeSyncPacket(buffer, recipient);
         buffer.writeVarInt(crackStage);
+        var effect = owner.getStatusEffect(Petrification.EFFECT);
+        buffer.writeNbt(effect == null ? null : effect.writeNbt(new NbtCompound()));
     }
     @Override public void applySyncPacket(net.minecraft.network.PacketByteBuf buffer) {
         AutoSyncedComponent.super.applySyncPacket(buffer);
         crackStage = buffer.readVarInt();
+        var tag = buffer.readNbt();
+        var effect = tag == null ? null : StatusEffectInstance.fromNbt(tag);
+        if (effect != null && effect.getEffectType() == Petrification.EFFECT) owner.setStatusEffect(effect, null);
+        else owner.removeStatusEffect(Petrification.EFFECT);
     }
 }

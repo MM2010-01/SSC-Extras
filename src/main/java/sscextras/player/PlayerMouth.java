@@ -17,10 +17,15 @@ public final class PlayerMouth {
     private PlayerMouth() { }
 
     public static boolean active(PlayerEntity player) {
+        return withoutTrainer(player) || !player.isSpectator() && QuadrupedalTrainer.mouth(player);
+    }
+
+    /** Existing form/feral/shoe mouth handling, before the trainer adds its own attachment. */
+    public static boolean withoutTrainer(PlayerEntity player) {
         return !player.isSpectator() && (FormAbilityManager.getForm(player).getBodyType() == PlayerFormBodyType.FERAL
                 || DrakeFeralization.permanent(player)
                 || DrakeFeralization.temporary(player) && EarthenDrake.stage(player) >= 0
-                || DrakeShoes.hands(player) || QuadrupedalTrainer.mouth(player));
+                || DrakeShoes.hands(player));
     }
 
     public static boolean ranged(ItemStack stack) {

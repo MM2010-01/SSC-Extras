@@ -9,7 +9,17 @@ import net.onixary.shapeShifterCurseFabric.player_animation.v3.AnimStateEnum;
 import net.onixary.shapeShifterCurseFabric.player_animation.v3.AnimUtils;
 
 /** SSC selects and blends these states; the animations use the authored quadruped rest pose. */
-final class DrakeQuadrupedAnimations {
+public final class DrakeQuadrupedAnimations {
+    // SSC's humanoid feral rig is also the stage-two Drake's running rig. This
+    // unregistered selector owns no player/form state and reuses native controllers.
+    private static final net.onixary.shapeShifterCurseFabric.player_form.forms.Form_FeralBase HUMANOID =
+            new net.onixary.shapeShifterCurseFabric.player_form.forms.Form_FeralBase(EarthenDrake.id("quadruped_animation_selector"));
+
+    public static AbstractAnimStateController humanoidController(net.minecraft.entity.player.PlayerEntity player,
+            net.onixary.shapeShifterCurseFabric.player_animation.v3.AnimSystem.AnimSystemData data,
+            net.minecraft.util.Identifier state) {
+        return HUMANOID.getAnimStateController(player, data, state);
+    }
     private final AbstractAnimStateController idle = new WithSneakAnimController(data("idle"), data("sneak_idle"));
     private final AbstractAnimStateController walk = new WithSneakAnimController(data("walk"), data("sneak_walk"));
     private final AbstractAnimStateController run = new WithSneakAnimController(data("run"), data("sneak_walk"));
@@ -24,7 +34,7 @@ final class DrakeQuadrupedAnimations {
 
     private static AbstractAnimStateController one(String name) { return new OneAnimController(data(name)); }
 
-    AbstractAnimStateController controller(AnimStateEnum state) {
+    public AbstractAnimStateController controller(AnimStateEnum state) {
         if (state == null) return idle;
         return switch (state) {
             case ANIM_STATE_WALK -> walk;

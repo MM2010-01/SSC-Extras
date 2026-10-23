@@ -50,13 +50,13 @@ public final class TrainerFormSkin {
                 matrices.push();root.rotate(matrices);
                 for(String name:new String[]{"upper","lower","pastern","knee_joint","hock_joint","paw","toe0","toe1","toe2"}) {
                     var joint=TrainerLimbModel.joint(root,name);if(!joint.visible)continue;
-                    joint.forEachCuboid(matrices,(entry,path,index,cuboid)->emit(material.cube,cuboid,entry,vertices,light));
+                    joint.forEachCuboid(matrices,(entry,path,index,cuboid)->emit(material.cube,cuboid,entry,vertices,light,path.contains("ssc_trainer_pad")?.72f:1));
                 }
                 matrices.pop();
             }
         }
     }
-    private static void emit(GeoCube source,ModelPart.Cuboid target,MatrixStack.Entry entry,VertexConsumer vertices,int light) {
+    private static void emit(GeoCube source,ModelPart.Cuboid target,MatrixStack.Entry entry,VertexConsumer vertices,int light,float tint) {
         var min=new org.joml.Vector3f(Float.POSITIVE_INFINITY);var max=new org.joml.Vector3f(Float.NEGATIVE_INFINITY);
         for(var face:source.quads())if(face!=null)for(var v:face.vertices()){min.min(v.position());max.max(v.position());}
         for(var face:source.quads())if(face!=null)for(var v:face.vertices()) {
@@ -64,7 +64,7 @@ public final class TrainerFormSkin {
             float x=map(q.x,min.x,max.x,target.minX,target.maxX)/16;
             float y=map(q.y,min.y,max.y,target.maxY,target.minY)/16;
             float z=map(q.z,min.z,max.z,target.minZ,target.maxZ)/16;
-            vertices.vertex(entry.getPositionMatrix(),x,y,z).color(1f,1f,1f,1f).texture(v.texU(),v.texV())
+            vertices.vertex(entry.getPositionMatrix(),x,y,z).color(tint,tint,tint,1f).texture(v.texU(),v.texV())
                     .overlay(OverlayTexture.DEFAULT_UV).light(light).normal(entry.getNormalMatrix(),n.x,-n.y,n.z).next();
         }
     }

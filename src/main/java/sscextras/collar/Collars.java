@@ -85,6 +85,10 @@ public final class Collars {
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.POTION));
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.SPLASH_POTION));
             entries.add(sscextras.drake.EarthenDrake.potion(net.minecraft.item.Items.LINGERING_POTION));
+            entries.add(sscextras.petrification.Petrification.BUCKET);
+            entries.add(sscextras.petrification.Petrification.potion(net.minecraft.item.Items.POTION));
+            entries.add(sscextras.petrification.Petrification.potion(net.minecraft.item.Items.SPLASH_POTION));
+            entries.add(sscextras.petrification.Petrification.potion(net.minecraft.item.Items.LINGERING_POTION));
         }).build());
         CollarLoot.register();
     }

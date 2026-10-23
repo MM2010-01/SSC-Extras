@@ -23,6 +23,7 @@ public final class SscExtras implements ModInitializer {
         sscextras.guardian.RuneboundGuardian.register();
         sscextras.golem.DrakeGolem.register();
         sscextras.player.PlayerAspects.register();
+        sscextras.player.PlayerDebug.register();
         sscextras.trainer.QuadrupedalTrainer.register();
         sscextras.petrification.Petrification.register();
     }

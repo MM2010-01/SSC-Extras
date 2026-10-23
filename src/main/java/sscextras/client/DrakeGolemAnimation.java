@@ -19,7 +19,7 @@ public final class DrakeGolemAnimation {
     public static void pose(DrakeGolemPlayerModel model, AbstractClientPlayerEntity player, float angle, float distance,
             float age, float yaw, float pitch, float delta, float attack) {
         var rotations=new HashMap<String,Vector3f>();
-        boolean frozen=sscextras.petrification.Petrification.frozen(player), sleeping=player.isInPose(net.minecraft.entity.EntityPose.SLEEPING);
+        boolean frozen=sscextras.petrification.Petrification.poseLocked(player), sleeping=player.isInPose(net.minecraft.entity.EntityPose.SLEEPING);
         boolean crouch=player.isInSneakingPose(), airborne=!player.isOnGround() || player.isSwimming();
         float weight=frozen||sleeping?0:MathHelper.clamp(distance*4,0,1);
         float drop=sleeping?.25f:crouch?.125f:0;

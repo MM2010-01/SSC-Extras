@@ -13,6 +13,7 @@ public final class DrakeGearModel {
     public static final Identifier TEXTURE = EarthenDrake.id("textures/entity/drake_gear.png");
     private static final Identifier VANILLA_SADDLE_TEXTURE = EarthenDrake.id("textures/entity/drake_gear_vanilla.png");
     private final ModelPart reins, reinsMetal, blinkers, saddle, saddleMetal, chest, chestMetal, leftClaws, rightClaws;
+    private final ModelPart bodySaddle, bodyBuckle, bodyPadding;
     private final float shieldX, openShieldX;
 
     public DrakeGearModel(int stage) {
@@ -117,12 +118,40 @@ public final class DrakeGearModel {
             for (int i = 0; i < 3; i++) claws.cuboid(center - 1.08f + i * .75f, .11f, 5.15f, .66f, .65f, 1.65f);
             root.addChild(left ? "left_claws" : "right_claws", claws, ModelTransform.NONE);
         }
+        root.addChild("body_saddle", ModelPartBuilder.create().uv(0, 16)
+                .cuboid(-4, -.4f, -3.5f, 8, .5f, 7)
+                .cuboid(-3.6f, -.9f, -3.2f, 1.1f, .5f, 6.4f)
+                .cuboid(2.5f, -.9f, -3.2f, 1.1f, .5f, 6.4f)
+                .cuboid(-2.5f, -.65f, -3.2f, 5, .35f, 6.4f)
+                .cuboid(-3.7f, -1.2f, -3.5f, 7.4f, .8f, .6f)
+                .cuboid(-3.7f, -1.2f, 2.9f, 7.4f, .8f, .6f)
+                .cuboid(-4.2f, -.1f, -.45f, .4f, 4.5f, .9f)
+                .cuboid(3.8f, -.1f, -.45f, .4f, 4.5f, .9f)
+                .cuboid(-4.2f, 4, -.45f, 8.4f, .4f, .9f), ModelTransform.NONE);
+        root.addChild("body_buckle", ModelPartBuilder.create().uv(16, 0)
+                .cuboid(3.9f, 2.1f, -.65f, .4f, 1.1f, 1.3f), ModelTransform.NONE);
+        root.addChild("body_padding", ModelPartBuilder.create().uv(0, 16)
+                .cuboid(-3.7f, 0, -3.2f, 1.2f, 1, 6.4f)
+                .cuboid(2.5f, 0, -3.2f, 1.2f, 1, 6.4f), ModelTransform.NONE);
         var model = TexturedModelData.of(data, 64, 64).createModel();
         reins = model.getChild("reins"); reinsMetal = model.getChild("rings");
         blinkers = model.getChild("blinkers");
         saddle = model.getChild("saddle"); saddleMetal = model.getChild("saddle_metal");
         chest = model.getChild("chests"); chestMetal = model.getChild("chest_metal");
         leftClaws = model.getChild("left_claws"); rightClaws = model.getChild("right_claws");
+        bodySaddle = model.getChild("body_saddle"); bodyBuckle = model.getChild("body_buckle");
+        bodyPadding = model.getChild("body_padding");
+    }
+
+    /** Horizontal seat at the back surface, scaled by the owning rig's actual torso bounds. */
+    public void renderBodySaddle(MatrixStack matrices, VertexConsumerProvider buffers, int light, boolean vanilla, float padding) {
+        var buffer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(vanilla ? VANILLA_SADDLE_TEXTURE : TEXTURE));
+        bodySaddle.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
+        bodyBuckle.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV);
+        if (padding > 0) {
+            matrices.push(); matrices.scale(1, padding, 1);
+            bodyPadding.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV); matrices.pop();
+        }
     }
 
     private static void snoutBand(ModelPartBuilder straps, float half, float bottom, float top, float z) {

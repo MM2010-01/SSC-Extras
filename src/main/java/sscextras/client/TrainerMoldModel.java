@@ -17,14 +17,15 @@ public final class TrainerMoldModel {
         foot = data.getRoot().addChild("mold", ModelPartBuilder.create().uv(0,0)
             .cuboid(-2.65f,1.55f,-4.1f,5.3f,.55f,6.7f)
             .cuboid(-2.65f,-.45f,-2.8f,.45f,2,5.4f).cuboid(2.2f,-.45f,-2.8f,.45f,2,5.4f)
-            .cuboid(-2.65f,-.45f,2.15f,5.3f,2,.45f),ModelTransform.NONE).createPart(32,32);
+            .cuboid(-2.65f,-.45f,2.15f,5.3f,2,.45f)
+            .cuboid(-.75f,.15f,-4.1f,.18f,1.4f,2.1f).cuboid(.57f,.15f,-4.1f,.18f,1.4f,2.1f),ModelTransform.NONE).createPart(32,32);
         brace = new ModelData().getRoot().addChild("brace", ModelPartBuilder.create().uv(0,0)
             .cuboid(-2.25f,-.1f,-2.45f,.4f,4.2f,.45f).cuboid(1.85f,-.1f,-2.45f,.4f,4.2f,.45f)
             .cuboid(-2.25f,-.1f,2,.4f,4.2f,.45f).cuboid(1.85f,-.1f,2,.4f,4.2f,.45f),ModelTransform.NONE).createPart(32,32);
         pads = new ModelData().getRoot().addChild("pads", ModelPartBuilder.create().uv(0,0)
-            .cuboid(-1.6f,2.1f,-1.75f,3.2f,.4f,3.25f)
-            .cuboid(-2.15f,2.1f,-3.7f,1.2f,.4f,1.4f).cuboid(-.6f,2.1f,-3.9f,1.2f,.4f,1.4f)
-            .cuboid(.95f,2.1f,-3.7f,1.2f,.4f,1.4f),ModelTransform.NONE).createPart(32,32);
+            .cuboid(-1.4f,2.1f,-1.5f,2.8f,.4f,2.9f)
+            .cuboid(-1.94f,2.1f,-3.7f,.9f,.4f,1.4f).cuboid(-.45f,2.1f,-3.9f,.9f,.4f,1.4f)
+            .cuboid(1.04f,2.1f,-3.7f,.9f,.4f,1.4f),ModelTransform.NONE).createPart(32,32);
     }
     public void foot(MatrixStack m, VertexConsumerProvider b, int light) {
         var vertex = b.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));

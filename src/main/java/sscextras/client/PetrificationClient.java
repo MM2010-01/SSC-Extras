@@ -18,10 +18,14 @@ public final class PetrificationClient {
         var stone = new Identifier("minecraft", "block/stone");
         FluidRenderHandlerRegistry.INSTANCE.register(Petrification.STILL, Petrification.FLOWING, new SimpleFluidRenderHandler(stone, stone));
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
-            if (entity instanceof net.minecraft.entity.player.PlayerEntity player) PetrificationFormPose.forget(player);
+        // Connector can deliver CCA's initial tracking packet before the entity exists client-side.
+        // Request that same component once from the actual entity-load event; no polling or second state owner.
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (!(entity instanceof net.minecraft.entity.LivingEntity)
+                    || !net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(sscextras.petrification.PetrificationComponents.SYNC_REQUEST)) return;
+            var buffer = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create(); buffer.writeVarInt(entity.getId());
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(sscextras.petrification.PetrificationComponents.SYNC_REQUEST, buffer);
         });
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> PetrificationFormPose.releaseCured());
         net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.resource.ResourceType.CLIENT_RESOURCES).registerReloadListener(
                 new net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener() {
                     @Override public Identifier getFabricId() { return Petrification.id("petrified_textures"); }
@@ -33,7 +37,7 @@ public final class PetrificationClient {
     private static void clear() {
         var textures = MinecraftClient.getInstance().getTextureManager();
         TEXTURES.values().stream().filter(id -> !id.equals(STONE)).distinct().forEach(textures::destroyTexture);
-        TEXTURES.clear(); PetrificationFormPose.clear();
+        TEXTURES.clear();
     }
     public static Identifier texture(Identifier original) { return TEXTURES.computeIfAbsent(original, PetrificationClient::tileStone); }
     private static Identifier tileStone(Identifier original) {

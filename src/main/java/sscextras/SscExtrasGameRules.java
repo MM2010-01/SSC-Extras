@@ -1,5 +1,7 @@
 package sscextras;
 
+import java.util.Set;
+
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -9,7 +11,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.GameRules;
-import java.util.Set;
 
 public final class SscExtrasGameRules {
     public static final Identifier TRANSFORMATION_BLACKOUT_SYNC = new Identifier("ssc-extras", "transformation_blackout");
@@ -45,7 +46,7 @@ public final class SscExtrasGameRules {
     public static final GameRules.Key<GameRules.BooleanRule> INSTINCT_GAIN_INT_DRAIN = GameRuleRegistry.register(
             "InstinctGainINTDrain", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
     public static final GameRules.Key<GameRules.BooleanRule> PERMANENT_FORM_INT_DRAIN = GameRuleRegistry.register(
-            "PermanentFormINTDrain", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+            "PermanentFormINTDrain", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(false));
 
     private SscExtrasGameRules() { }
 

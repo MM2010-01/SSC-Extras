@@ -147,6 +147,19 @@ public final class EarthenDrakeAnimation extends DefaultModelAnimationSystem {
         if ((!sscextras.drake.DrakeFeralization.forcedQuadruped(player)
                 && (stage < 0 || stage >= 2 || !EarthenDrake.onAllFours(player)))
                 || sscextras.drake.DrakeSoulbinding.shoeing(player) || player.isSleeping()) return;
+        if (sscextras.player.PlayerStance.genericQuadruped(player)
+                && player instanceof dev.kosmx.playerAnim.impl.IAnimatedPlayer animated
+                && animated.playerAnimator_getAnimation().isActive()) {
+            // Keep SSC's strides and state blending, but attach the actual hips
+            // to the animated pelvis. Native jump/fall clips translate them
+            // independently of the torso, leaving a gap when the back tilts.
+            for (var leg : new ModelPart[]{model.leftLeg,model.rightLeg}) {
+                var hip=TrainerLimbModel.localPoint(model.body,leg==model.leftLeg?2:-2,11,0);
+                leg.setPivot(hip.x,hip.y,hip.z);
+            }
+            model.leftPants.copyTransform(model.leftLeg); model.rightPants.copyTransform(model.rightLeg);
+            return;
+        }
         poseAllFours(model, limbAngle, limbDistance, age, yaw, pitch);
     }
 

@@ -16,19 +16,27 @@ public final class TrainerState {
         void sscExtras$trainerSnapshot(int hands, int feet, int quad, int equipment);
     }
     public int handsTicks, feetTicks;
-    public int quad, recoveryTicks, milestones;
+    public int handsQuad, feetQuad, recoveryTicks, milestones;
     public final int[] activityTicks = new int[3];
     public net.minecraft.util.math.Vec3d previousPosition;
+    public boolean moving;
+    public int walkingTicks, standingTicks;
     public int lastHint = Integer.MIN_VALUE;
     public net.minecraft.util.Identifier autoRejectedForm;
     public int lastTick = Integer.MIN_VALUE;
     public PlayerStance.Request stance;
 
     public static TrainerState get(PlayerEntity player) { return ((Owner)player).sscExtras$trainer(); }
+    public int quad() { return (handsQuad + feetQuad) / 2; }
+    public void quad(int hands, int feet) {
+        handsQuad = MathHelper.clamp(hands, 0, QuadrupedalTrainer.MAX_PROGRESS);
+        feetQuad = MathHelper.clamp(feet, 0, QuadrupedalTrainer.MAX_PROGRESS);
+    }
     public void write(NbtCompound root) {
         var nbt = new NbtCompound();
         nbt.putInt("Hands", handsTicks); nbt.putInt("Feet", feetTicks);
-        nbt.putInt("Quad", quad); nbt.putInt("Milestones", milestones);
+        nbt.putInt("HandsQuad", handsQuad); nbt.putInt("FeetQuad", feetQuad);
+        nbt.putInt("Quad", quad()); nbt.putInt("Milestones", milestones);
         root.put("SscExtrasQuadrupedalTrainer", nbt);
     }
     public void read(NbtCompound root) {
@@ -36,14 +44,28 @@ public final class TrainerState {
         handsTicks = MathHelper.clamp(nbt.getInt("Hands"), 0, QuadrupedalTrainer.MAX_PROGRESS);
         feetTicks = MathHelper.clamp(nbt.getInt("Feet"), 0, QuadrupedalTrainer.MAX_PROGRESS);
         // Version 1.31.6 stored anatomy only; keep its visible training progress.
-        quad = MathHelper.clamp(nbt.contains("Quad") ? nbt.getInt("Quad") : (handsTicks + feetTicks) / 2, 0, QuadrupedalTrainer.MAX_PROGRESS);
+        if (nbt.contains("HandsQuad") && nbt.contains("FeetQuad")) quad(nbt.getInt("HandsQuad"), nbt.getInt("FeetQuad"));
+        else if (!nbt.contains("Quad")) quad(handsTicks, feetTicks);
+        else {
+            // Preserve the prior gauge exactly, including recovery or ritual gain.
+            // Allocate its halves as close to the saved limb proportions as possible.
+            int total = 2 * MathHelper.clamp(nbt.getInt("Quad"), 0, QuadrupedalTrainer.MAX_PROGRESS);
+            int hands = MathHelper.clamp((total + handsTicks - feetTicks) / 2,
+                    Math.max(0, total - QuadrupedalTrainer.MAX_PROGRESS), Math.min(QuadrupedalTrainer.MAX_PROGRESS, total));
+            quad(hands, total - hands);
+        }
+        int quad = quad();
         milestones = nbt.contains("Milestones") ? nbt.getInt("Milestones") : (quad >= 1200 ? 1 : 0) | (quad >= 12000 ? 2 : 0) | (quad == 24000 ? 4 : 0);
         lastTick = Integer.MIN_VALUE; autoRejectedForm = null;
-        resetActivity(); recoveryTicks = 0; previousPosition = null;
+        resetActivity(); resetGait(); recoveryTicks = 0; previousPosition = null; moving = false;
     }
     public void resetActivity() { java.util.Arrays.fill(activityTicks, 0); }
+    public void resetGait() {
+        walkingTicks = standingTicks = 0;
+        if (stance != null) { stance.close(); stance = null; }
+    }
     public void sync(PlayerEntity player, int equipment) {
-        ((Owner)player).sscExtras$trainerSnapshot(units(handsTicks), units(feetTicks), quad, equipment);
+        ((Owner)player).sscExtras$trainerSnapshot(units(handsTicks), units(feetTicks), quad(), equipment);
     }
     private static int units(int ticks) {
         // Preserve the old anatomy scale without rounding up to completion.

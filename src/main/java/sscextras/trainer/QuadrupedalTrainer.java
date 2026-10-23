@@ -28,7 +28,10 @@ public final class QuadrupedalTrainer {
     public static void register() {
         Registry.register(Registries.ITEM, id("digitigrade_mold"), MOLD);
         Registry.register(Registries.ITEM, id("feral_neck_support"), COLLAR);
-        CuriosCompat.register(MOLD, COLLAR);
+        // Two arguments select register(Item, AccessoryItem), which would give
+        // the mold the collar's necklace-only rules. Register each item itself.
+        CuriosCompat.register(MOLD);
+        CuriosCompat.register(COLLAR);
         ServerPlayerEvents.COPY_FROM.register((oldPlayer, player, alive) -> {
             var nbt = new net.minecraft.nbt.NbtCompound();
             TrainerState.get(oldPlayer).write(nbt); TrainerState.get(player).read(nbt);
@@ -80,19 +83,27 @@ public final class QuadrupedalTrainer {
     public enum Fit { SUITABLE, FRAME, EXOTIC, FERAL, DIGITIGRADE }
     public static Fit fit(PlayerEntity player) {
         var form = FormAbilityManager.getForm(player);
-        if (form.getGroup() == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.SPIDER_FORM) return Fit.EXOTIC;
+        if (form.getGroup() == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.SPIDER_FORM
+                || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ALLAY_SP) return Fit.EXOTIC;
         if (form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.BAT_2
-                || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.BAT_3
-                || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.ALLAY_SP) return Fit.FRAME;
-        if (nativeQuadruped(player) || sscextras.drake.DrakeFeralization.permanent(player)) return Fit.FERAL;
+                || form == net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms.BAT_3) return Fit.FRAME;
+        if (nativeQuadruped(player) || sscextras.drake.DrakeFeralization.permanent(player)) return Fit.SUITABLE;
+        // Stage two can stand upright; molds use its existing native digitigrade
+        // limbs and must remain compatible across its voluntary stance changes.
+        if (EarthenDrake.stage(player) == 2) return Fit.SUITABLE;
+        if (PlayerStance.quadrupedal(player)) return Fit.SUITABLE;
         if (nativeDigitigrade(player)) return Fit.DIGITIGRADE;
         if (!PlayerStance.supports(player, PlayerStance.Stance.QUADRUPEDAL)) return Fit.EXOTIC;
         return Fit.SUITABLE;
     }
+    public static Fit fit(PlayerEntity player,int location) {
+        if(location==HANDS&&sscextras.guardian.RuneboundGuardian.stage(player)==1)return Fit.FRAME;
+        return fit(player);
+    }
     public static float quadProgress(PlayerEntity player) {
         if (nativeQuadruped(player) || sscextras.drake.DrakeFeralization.permanent(player)
                 || sscextras.drake.DrakeSoulbinding.bound(player)) return 1;
-        return (player.getWorld().isClient ? ((TrainerState.Owner)player).sscExtras$trainerQuad() : TrainerState.get(player).quad) / (float)MAX_PROGRESS;
+        return (player.getWorld().isClient ? ((TrainerState.Owner)player).sscExtras$trainerQuad() : TrainerState.get(player).quad()) / (float)MAX_PROGRESS;
     }
     public static void reject(PlayerEntity player, Fit fit) {
         if (player.getWorld().isClient) return;
@@ -109,6 +120,14 @@ public final class QuadrupedalTrainer {
         return (location == HANDS ? state.handsTicks : state.feetTicks) / (float)MAX_PROGRESS;
     }
     public static boolean complete(PlayerEntity player) { return quadProgress(player) >= 1; }
+    public static boolean fullSet(PlayerEntity player) { return equipment(player) == (HANDS | FEET | NECK); }
+    /** Individual molds bind only until their own anatomy is complete; a full course binds as a set. */
+    public static boolean bound(PlayerEntity player, int location) {
+        if (complete(player)) return false;
+        if(player.getWorld().isClient)return EnchantmentHelper.hasBindingCurse(equipped(player,location,false));
+        if(PlayerStance.quadrupedal(player)&&PlayerStance.snapshot(player).sources().stream().anyMatch(source->!source.equals(STANCE)))return false;
+        return fullSet(player) || location == NECK || progress(player, location) < 1;
+    }
     public static boolean mouth(PlayerEntity player) {
         return (equipment(player) & HANDS) != 0 || (player.getWorld().isClient
                 ? ((TrainerState.Owner)player).sscExtras$trainerHands() > 0 : TrainerState.get(player).handsTicks > 0);
@@ -116,7 +135,7 @@ public final class QuadrupedalTrainer {
     public static boolean reshapes(PlayerEntity player, int location) {
         // Already digitigrade species retain all of their authored limbs, including
         // forepaws. Training still owns posture and mouth handling, never a replacement rig.
-        Fit fit = fit(player);
+        Fit fit = fit(player,location);
         if (nativeDigitigrade(player) || fit == Fit.FRAME || fit == Fit.EXOTIC) return false;
         return progress(player, location) > 0;
     }
@@ -127,48 +146,74 @@ public final class QuadrupedalTrainer {
     public static float pitch(PlayerEntity player) {
         return PlayerStance.quadrupedal(player) || nativeQuadruped(player) || player.isSwimming() || player.isFallFlying() ? 0 : -90;
     }
+    public static float clampPitch(PlayerEntity player, float requested) {
+        float center = pitch(player);
+        return net.minecraft.util.math.MathHelper.clamp(requested, Math.max(-90, center - 45), Math.min(90, center + 45));
+    }
+    /** Continuous walking starts at ten seconds; the inverse delay governs standing recovery. */
+    public static int walkingDelay(PlayerEntity player) { return (int)Math.ceil(200 * (1 - quadProgress(player))); }
+    public static int standingDelay(PlayerEntity player) { return (int)Math.ceil(200 * quadProgress(player)); }
+    private static boolean gaitEligible(PlayerEntity player, TrainerState state, int worn) {
+        return ((worn & (HANDS | FEET)) != 0 || state.handsTicks > 0 || state.feetTicks > 0 || state.quad() > 0)
+                && !player.hasVehicle() && !player.isSwimming() && !player.isFallFlying()
+                && !player.isSleeping() && !player.getAbilities().flying;
+    }
     public static void refresh(ServerPlayerEntity player) {
         var state = TrainerState.get(player); int worn = equipment(player);
-        Fit fit = fit(player);
         if (worn != 0 && player.isAlive() && !player.isSpectator()) {
-            if (fit != Fit.SUITABLE) {
-                if (release(player) > 0) reject(player, fit);
-                worn = equipment(player);
-            } else if (complete(player)) {
-                // Accessories may invoke refresh separately while the set changes.
-                // Reserve the course's release feedback before touching any slots.
-                boolean announce = (state.milestones & 8) == 0;
-                state.milestones |= 8;
-                int released = release(player);
-                if (released > 0 && announce) {
-                    player.sendMessage(Text.translatable("message.ssc-extras.trainer.released"), false);
-                    player.getWorld().playSound(null, player.getBlockPos(), net.minecraft.sound.SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN,
-                            player.getSoundCategory(), .8f, .7f);
-                }
-                if (released == 0 && announce) state.milestones &= ~8;
-                worn = equipment(player);
-            }
+            for(int location:new int[]{HANDS,FEET,NECK})if((worn&location)!=0&&fit(player,location)!=Fit.SUITABLE)
+                if(release(player,location)>0)reject(player,fit(player,location));
+            worn=equipment(player);
         }
-        boolean require = player.isAlive() && !player.isSpectator() && ((worn & (HANDS | FEET)) != 0
-                || state.quad == MAX_PROGRESS || quadProgress(player) > .5f && (player.isSprinting() || player.isSneaking()));
+        boolean require = player.isAlive() && !player.isSpectator() && (worn == (HANDS | FEET | NECK)
+                || state.quad() == MAX_PROGRESS
+                || (worn & (HANDS | FEET)) != 0 && player.isSprinting()
+                || gaitEligible(player, state, worn) && (state.walkingTicks >= walkingDelay(player)
+                        && (state.moving || state.standingTicks <= 2)
+                    || state.stance != null && state.stance.active()
+                        && (state.moving || state.walkingTicks > 0 && state.standingTicks <= 2
+                            || !player.isOnGround() || state.standingTicks < standingDelay(player))));
+        var previousStance = PlayerStance.current(player);
+        boolean hadRequest = state.stance != null && state.stance.active();
         if (require && !nativeQuadruped(player)) {
             if (state.stance == null || !state.stance.active()) state.stance = PlayerStance.request(player, STANCE, PlayerStance.Stance.QUADRUPEDAL);
         } else if (state.stance != null) { state.stance.close(); state.stance = null; }
+        // Roll only on the actual timed posture edge. Repeated accessory/tick
+        // refreshes and other sources retaining all fours cannot repeat a hint.
+        if (player.isAlive() && !player.isSpectator() && worn != (HANDS | FEET | NECK)
+                && player.isOnGround() && !player.isSprinting() && gaitEligible(player, state, worn)) {
+            var currentStance = PlayerStance.current(player);
+            float quad = quadProgress(player);
+            String hint = null;
+            if (previousStance == PlayerStance.Stance.UPRIGHT && currentStance == PlayerStance.Stance.QUADRUPEDAL
+                    && state.moving && state.walkingTicks >= walkingDelay(player) && quad <= .25f)
+                hint = "trembling";
+            else if (hadRequest && !require && previousStance == PlayerStance.Stance.QUADRUPEDAL
+                    && currentStance == PlayerStance.Stance.UPRIGHT && !state.moving
+                    && state.standingTicks >= standingDelay(player) && quad >= .9f && quad < 1)
+                hint = "standing_effort";
+            if (hint != null && player.getRandom().nextFloat() < .1f)
+                player.sendMessage(Text.translatable("message.ssc-extras.trainer." + hint), false);
+        }
         state.sync(player, worn);
         if (mouth(player) && !player.isSpectator() && !player.getOffHandStack().isEmpty()) {
             var previous = player.getOffHandStack(); player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
             player.getInventory().offerOrDrop(previous); player.currentScreenHandler.sendContentUpdates();
         }
         for (int location : new int[]{HANDS, FEET, NECK}) for (var stack : stacks(player, location)) {
-            if (stack.isOf(location == NECK ? COLLAR : MOLD)) binding(stack, !complete(player));
+            if (stack.isOf(location == NECK ? COLLAR : MOLD)) binding(stack, bound(player, location));
         }
-        if (neckLocked(player)) player.setPitch(pitch(player));
+        if (neckLocked(player)) player.setPitch(clampPitch(player, player.getPitch()));
     }
     /** Verified removal uses the shared active accessory backend, preserving every item. */
     public static int release(ServerPlayerEntity player) {
+        return release(player,HANDS|FEET|NECK);
+    }
+    public static int release(ServerPlayerEntity player,int locations) {
         var io = AccessoryEquipment.slots(); if (io == null) return 0;
         int removed = 0;
         for (int location : new int[]{HANDS, FEET, NECK}) {
+            if((locations&location)==0)continue;
             var stacks = stacks(player, location);
             for (int i = 0; i < stacks.size(); i++) {
                 if (!stacks.get(i).isOf(location == NECK ? COLLAR : MOLD)) continue;
@@ -185,13 +230,27 @@ public final class QuadrupedalTrainer {
         state.lastTick = player.age;
         double distance = state.previousPosition == null ? 0 : player.getPos().subtract(state.previousPosition).horizontalLengthSquared();
         state.previousPosition = player.getPos();
+        state.moving = distance > .000001 && distance < 1
+                && !player.hasVehicle() && !player.isSwimming() && !player.isFallFlying() && !player.getAbilities().flying;
+        if (!player.isAlive() || player.isSpectator() || !gaitEligible(player, state, equipment(player))) {
+            state.walkingTicks = state.standingTicks = 0;
+        } else if (state.moving) {
+            // Movement packets can straddle a server tick while the player keeps
+            // walking. Bridge at most two empty samples, using the same idle
+            // counter; an actual stop still resets the continuous interval.
+            int gap=state.walkingTicks > 0 && state.standingTicks <= 2 ? state.standingTicks : 0;
+            state.walkingTicks = player.isOnGround() ? Math.min(200, state.walkingTicks + gap + 1) : 0;
+            state.standingTicks = 0;
+        } else {
+            if (player.isOnGround()) state.standingTicks = Math.min(200, state.standingTicks + 1);
+            if (state.standingTicks > 2 || !player.isOnGround()) state.walkingTicks = 0;
+        }
         refresh(player);
         if (!player.isAlive() || player.isSpectator()) return;
         int worn = equipment(player);
         if ((worn & (HANDS | FEET)) != 0 && fit(player) == Fit.SUITABLE) {
             // Mounted transport, swimming, flying and teleports do not train a walking gait.
-            boolean moving = distance > .000001 && distance < 1 && player.isOnGround()
-                    && !player.hasVehicle() && !player.isSwimming() && !player.isFallFlying() && !player.getAbilities().flying;
+            boolean moving = state.moving && player.isOnGround();
             int mode = !moving ? 0 : player.isSprinting() || player.isSneaking() ? 2 : 1;
             if (++state.activityTicks[mode] >= (mode == 0 ? 100 : 20)) {
                 state.activityTicks[mode] = 0;
@@ -206,25 +265,57 @@ public final class QuadrupedalTrainer {
             boolean upright = worn == 0 && PlayerStance.current(player) == PlayerStance.Stance.UPRIGHT
                     && !player.isSneaking() && !player.isSwimming() && !player.isFallFlying()
                     && !player.isSleeping() && !player.hasVehicle() && player.isOnGround();
-            if (upright && state.quad > 0 && state.quad < MAX_PROGRESS) {
-                if (++state.recoveryTicks >= 100) { state.recoveryTicks = 0; state.quad = Math.max(0, state.quad - 48); }
+            if (upright && state.quad() > 0 && state.quad() < MAX_PROGRESS) {
+                if (++state.recoveryTicks >= 100) {
+                    state.recoveryTicks = 0;
+                    int hands = Math.min(state.handsQuad, 48), feet = Math.min(state.feetQuad, 96 - hands);
+                    hands = Math.min(state.handsQuad, 96 - feet);
+                    state.quad(state.handsQuad - hands, state.feetQuad - feet);
+                }
             } else state.recoveryTicks = 0;
         }
         refresh(player);
         if (sscextras.player.PlayerMouth.preventsUse(player, player.getActiveItem())) player.clearActiveItem();
     }
     private static void advance(ServerPlayerEntity player, int amount, boolean molds) {
-        var state = TrainerState.get(player); int previous = state.quad;
-        state.quad = Math.min(MAX_PROGRESS, state.quad + Math.max(0, amount));
+        var state = TrainerState.get(player); int previous = state.quad();
+        int trained = molds ? equipment(player) : HANDS | FEET;
+        state.quad(state.handsQuad + ((trained & HANDS) != 0 ? amount : 0),
+                state.feetQuad + ((trained & FEET) != 0 ? amount : 0));
+        int current = state.quad();
         if (molds) {
             int[] thresholds = {1200, 12000, MAX_PROGRESS};
             String[] keys = {"first_change", "halfway", "complete"};
-            for (int i = 0; i < thresholds.length; i++) if (previous < thresholds[i] && state.quad >= thresholds[i]
+            for (int i = 0; i < thresholds.length; i++) if (previous < thresholds[i] && current >= thresholds[i]
                     && (state.milestones & (1 << i)) == 0) {
                 state.milestones |= 1 << i;
                 player.sendMessage(Text.translatable("message.ssc-extras.trainer." + keys[i]), false);
             }
         }
+        if(previous<MAX_PROGRESS&&current==MAX_PROGRESS&&fullSet(player)&&(state.milestones&8)==0) {
+            // Only the completion crossing releases a course. Voluntary re-equipping
+            // must stay equipped, including after ritual or native quadrupedal changes.
+            state.milestones|=8;
+            if(release(player)>0) {
+                player.sendMessage(Text.translatable("message.ssc-extras.trainer.released"),false);
+                player.getWorld().playSound(null,player.getBlockPos(),net.minecraft.sound.SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN,player.getSoundCategory(),.8f,.7f);
+            }
+        }
+    }
+    /** Debug adjustment uses the same anatomy, stance, milestones and sync owner. */
+    public static void adjustTraining(ServerPlayerEntity player, int amount) {
+        var state = TrainerState.get(player); int worn = equipment(player);
+        amount = net.minecraft.util.math.MathHelper.clamp(amount, -MAX_PROGRESS, MAX_PROGRESS);
+        if ((worn & HANDS) != 0) state.handsTicks = net.minecraft.util.math.MathHelper.clamp(state.handsTicks + amount, 0, MAX_PROGRESS);
+        if ((worn & FEET) != 0) state.feetTicks = net.minecraft.util.math.MathHelper.clamp(state.feetTicks + amount, 0, MAX_PROGRESS);
+        advance(player, amount, (worn & (HANDS | FEET)) != 0);
+        if (amount < 0) {
+            if (state.quad() < MAX_PROGRESS) state.milestones &= ~12;
+            if (state.quad() < 12000) state.milestones &= ~2;
+            if (state.quad() < 1200) state.milestones &= ~1;
+        }
+        state.resetActivity(); state.resetGait(); state.recoveryTicks = 0;
+        refresh(player);
     }
     /** Called once after a ritual dose is swallowed. It never changes limb anatomy. */
     public static void ritualCatalyst(ServerPlayerEntity player) { advance(player, (MAX_PROGRESS + 8) / 9, false); refresh(player); }
@@ -237,9 +328,10 @@ public final class QuadrupedalTrainer {
     }
     public static void cure(ServerPlayerEntity player) {
         var state = TrainerState.get(player);
-        if (state.handsTicks == 0 && state.feetTicks == 0 && state.quad == 0) return;
-        state.handsTicks = state.feetTicks = state.quad = state.milestones = 0;
-        state.resetActivity(); state.recoveryTicks = 0;
+        if (state.handsTicks == 0 && state.feetTicks == 0 && state.quad() == 0) return;
+        state.handsTicks = state.feetTicks = state.milestones = 0;
+        state.quad(0, 0);
+        state.resetActivity(); state.resetGait(); state.recoveryTicks = 0;
         refresh(player);
         player.sendMessage(Text.translatable("message.ssc-extras.trainer.cured"), false);
     }

@@ -13,7 +13,7 @@ public final class TrainerMeshMolds {
     private TrainerMeshMolds() { }
     public static void rails(List<RiggedMesh.Part> upper,List<RiggedMesh.Part> lower,List<RiggedMesh.Part> paw,
             MatrixStack m,VertexConsumerProvider b,int light,UnaryOperator<Vector3f> pose) {
-        var first=bounds(upper);var second=bounds(lower);var foot=footFit(paw,pose);
+        var first=RiggedMesh.bounds(upper);var second=RiggedMesh.bounds(lower);var foot=footFit(paw,pose);
         if(first==null||second==null||foot==null)return;
         for(int x:new int[]{0,1})for(int z:new int[]{0,1}){
             Vector3f previous=null;
@@ -26,13 +26,8 @@ public final class TrainerMeshMolds {
                     foot.y*16,foot.z*16+(z==0?-2.22f:2.22f)*foot.sz));
         }
     }
-    private static Vector3f[] bounds(List<RiggedMesh.Part> parts){
-        var min=new Vector3f(Float.POSITIVE_INFINITY);var max=new Vector3f(Float.NEGATIVE_INFINITY);
-        for(var part:parts)for(int i=0;i<part.vertices().length;i+=8){var v=part.vertices();min.min(new Vector3f(v[i],v[i+1],v[i+2]));max.max(new Vector3f(v[i],v[i+1],v[i+2]));}
-        return Float.isFinite(min.x)?new Vector3f[]{min,max}:null;
-    }
     public static void band(List<RiggedMesh.Part> parts,MatrixStack m,VertexConsumerProvider b,int light,UnaryOperator<Vector3f> pose){
-        var box=bounds(parts);if(box==null)return;var min=box[0];var max=box[1];
+        var box=RiggedMesh.bounds(parts);if(box==null)return;var min=box[0];var max=box[1];
         var center=new Vector3f(min).add(max).mul(.5f);
         var top=pose.apply(new Vector3f(center.x,min.y,center.z));var bottom=pose.apply(new Vector3f(center.x,max.y,center.z));
         var fitted=pose.apply(center);
@@ -53,6 +48,6 @@ public final class TrainerMeshMolds {
         var min=new Vector3f(Float.POSITIVE_INFINITY);var max=new Vector3f(Float.NEGATIVE_INFINITY);
         for(var p:points)if(p.y>=bottom-Math.max(.08f,(bottom-top)*.45f)){min.min(p);max.max(p);}
         float sx=Math.max(.35f,(max.x-min.x)*16/4.8f),sz=Math.max(.35f,(max.z-min.z)*16/6);
-        return new FootFit((min.x+max.x)/2,bottom-2.05f/16,(min.z+max.z)/2+.75f/16*sz,sx,sz);
+        return new FootFit((min.x+max.x)/2,bottom-2.5f/16,(min.z+max.z)/2+.75f/16*sz,sx,sz);
     }
 }

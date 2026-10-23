@@ -54,7 +54,7 @@ public final class DrakeEquipment {
                 }
                 return ActionResult.SUCCESS;
             }
-            if (!(entity instanceof PlayerEntity drake) || !DrakeRiding.mountForm(drake)) return ActionResult.PASS;
+            if (!(entity instanceof PlayerEntity drake) || !(DrakeRiding.mountForm(drake) || DrakeRiding.quadruped(drake))) return ActionResult.PASS;
             ItemStack held = player.getStackInHand(hand);
             if (isReins(held) || isSaddle(held) || held.isOf(RIDERS_CHEST)) {
                 return tryEquip(drake, held, !player.isCreative()) ? ActionResult.SUCCESS : ActionResult.FAIL;
@@ -199,7 +199,7 @@ public final class DrakeEquipment {
     }
 
     public static boolean canRide(Entity entity) {
-        return entity instanceof PlayerEntity player && player.isAlive() && (EarthenDrake.stage(player) == 3
+        return entity instanceof PlayerEntity player && player.isAlive() && !player.isSpectator() && (DrakeRiding.quadruped(player) || EarthenDrake.stage(player) == 3
                 || EarthenDrake.stage(player) >= 0 && DrakeSoulbinding.drakeSoul(player))
                 && !saddle(player).isEmpty() || entity instanceof StableDrakeEntity drake && drake.isSaddled();
     }

@@ -33,5 +33,5 @@ public final class MentalPerception {
                 || screen.getScreenHandler() == client.player.playerScreenHandler) return false;
         return !PlayerMind.permits(client.player, MentalRequirements.screen(screen.getScreenHandler()));
     }
-    public static Text scramble(Text text) { return Text.literal(text.getString()).setStyle(text.getStyle().withObfuscated(true)); }
+    public static Text scramble(Text text) { return sscextras.drake.FeralText.unreadable(text); }
 }

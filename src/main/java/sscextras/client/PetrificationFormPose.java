@@ -1,39 +1,42 @@
 package sscextras.client;
 
-import java.util.*;
 import mod.azure.azurelib.cache.object.GeoBone;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.onixary.shapeShifterCurseFabric.render.form_render.FormModel;
 import sscextras.petrification.Petrification;
 
-/** Snapshots the existing SSC bones; never substitutes a model or a player body. */
+/** Save and restore the existing Azure/SSC rig by resource and bone name. */
 public final class PetrificationFormPose {
-    private record Bone(GeoBone bone, float x, float y, float z, float rx, float ry, float rz, float sx, float sy, float sz) {
-        Bone(GeoBone bone) { this(bone, bone.getPosX(), bone.getPosY(), bone.getPosZ(), bone.getRotX(), bone.getRotY(), bone.getRotZ(), bone.getScaleX(), bone.getScaleY(), bone.getScaleZ()); }
-        void apply() {
-            bone.setPosX(x); bone.setPosY(y); bone.setPosZ(z);
-            bone.setRotX(rx); bone.setRotY(ry); bone.setRotZ(rz);
-            bone.setScaleX(sx); bone.setScaleY(sy); bone.setScaleZ(sz);
-        }
-    }
-    private record Pose(float epoch, List<Bone> bones) { }
-    private static final Map<PlayerEntity, Map<FormModel, Pose>> POSES = new WeakHashMap<>();
     private PetrificationFormPose() { }
-    public static void apply(PlayerEntity player, FormModel model) {
-        if (!Petrification.frozen(player)) { POSES.remove(player); return; }
-        var models = POSES.computeIfAbsent(player, key -> new IdentityHashMap<>());
-        float epoch = Petrification.state(player).animationAge;
-        var pose = models.get(model);
-        var bones = model.getAnimationProcessor().getRegisteredBones();
-        if (pose == null || pose.epoch != epoch || pose.bones.size() != bones.size()
-                || !pose.bones.isEmpty() && !bones.contains(pose.bones.get(0).bone)) {
-            var snapshot = new ArrayList<Bone>();
-            for (var bone : bones) snapshot.add(new Bone((GeoBone)bone));
-            pose = new Pose(epoch, snapshot); models.put(model, pose);
+    public static void apply(PlayerEntity player, FormModel model, net.minecraft.client.render.entity.PlayerEntityRenderer renderer) {
+        var offsets=new java.util.HashMap<String,net.minecraft.util.math.Vec3d>();
+        if (model.AnimationSystem instanceof net.onixary.shapeShifterCurseFabric.render.form_render.DefaultModelAnimationSystem system) {
+            var rig=renderer.getModel();
+            offsets.put(system.RM_HeadGeoBoneID,PetrificationModelPose.playerRenderOffset(rig.head));
+            offsets.put(system.RM_BodyGeoBoneID,PetrificationModelPose.playerRenderOffset(rig.body));
+            offsets.put(system.RM_LeftArmGeoBoneID,PetrificationModelPose.playerRenderOffset(rig.leftArm));
+            offsets.put(system.RM_RightArmGeoBoneID,PetrificationModelPose.playerRenderOffset(rig.rightArm));
+            offsets.put(system.RM_LeftLegGeoBoneID,PetrificationModelPose.playerRenderOffset(rig.leftLeg));
+            offsets.put(system.RM_RightLegGeoBoneID,PetrificationModelPose.playerRenderOffset(rig.rightLeg));
         }
-        pose.bones.forEach(Bone::apply);
+        boolean slim=player instanceof net.minecraft.client.network.AbstractClientPlayerEntity client && client.getModel().equals("slim");
+        apply(player, model.getModelResource(slim).toString(), model.getAnimationProcessor().getRegisteredBones(), offsets);
     }
-    public static void clear() { POSES.clear(); }
-    public static void forget(PlayerEntity player) { POSES.remove(player); }
-    public static void releaseCured() { POSES.keySet().removeIf(player -> !Petrification.frozen(player)); }
+    public static void apply(LivingEntity entity, String resource, Iterable<?> bones) {
+        apply(entity,resource,bones,java.util.Map.of());
+    }
+    private static void apply(LivingEntity entity, String resource, Iterable<?> bones, java.util.Map<String,net.minecraft.util.math.Vec3d> offsets) {
+        if (!Petrification.poseLocked(entity)) return;
+        for (var item : bones) {
+            var bone = (GeoBone)item;
+            var offset=offsets.getOrDefault(bone.getName(),net.minecraft.util.math.Vec3d.ZERO);
+            var v = Petrification.state(entity).pose().retain("bone/" + resource + "/" + bone.getName(), new float[]{
+                    bone.getPosX()-(float)offset.x,bone.getPosY()-(float)offset.y,bone.getPosZ()-(float)offset.z,
+                    bone.getRotX(),bone.getRotY(),bone.getRotZ(),bone.getScaleX(),bone.getScaleY(),bone.getScaleZ()});
+            bone.setPosX(v[0]+(float)offset.x); bone.setPosY(v[1]+(float)offset.y); bone.setPosZ(v[2]+(float)offset.z);
+            bone.setRotX(v[3]); bone.setRotY(v[4]); bone.setRotZ(v[5]);
+            bone.setScaleX(v[6]); bone.setScaleY(v[7]); bone.setScaleZ(v[8]);
+        }
+    }
 }

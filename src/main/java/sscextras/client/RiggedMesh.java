@@ -61,6 +61,16 @@ public final class RiggedMesh {
         return result;
     }
 
+    /** Unposed bounds in mesh coordinates; empty geometry has no bounds. */
+    public static Vector3f[] bounds(List<Part> parts) {
+        var min = new Vector3f(Float.POSITIVE_INFINITY); var max = new Vector3f(Float.NEGATIVE_INFINITY);
+        for (var part : parts) for (int i = 0; i < part.vertices().length; i += 8) {
+            var v = part.vertices(); var point = new Vector3f(v[i], v[i + 1], v[i + 2]);
+            min.min(point); max.max(point);
+        }
+        return Float.isFinite(min.x) ? new Vector3f[]{min, max} : null;
+    }
+
     public static void emit(Part mesh, MatrixStack matrices, MatrixStack.Entry[] perVertexJoints,
             VertexConsumer consumer, int light, float red, float green, float blue, float alpha, int overlay) {
         float[] v = mesh.vertices();

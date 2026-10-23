@@ -41,7 +41,14 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
 
     @Override protected void applyRotations(StableDrakeEntity drake, MatrixStack matrices, float age, float yaw,
             float tickDelta, float nativeScale) {
-        super.applyRotations(drake, matrices, age, yaw + 180, tickDelta, nativeScale);
+        PetrificationModelPose.transform("stable_drake", matrices,
+                () -> super.applyRotations(drake, matrices, age, yaw + 180, tickDelta, nativeScale));
+    }
+    @Override protected float getDeathMaxRotation(StableDrakeEntity drake) {
+        return drake.deathTime > 0 && sscextras.petrification.Petrification.stoneAppearance(drake) ? 0 : super.getDeathMaxRotation(drake);
+    }
+    @Override public int getPackedOverlay(StableDrakeEntity drake, float u) {
+        return sscextras.petrification.Petrification.stoneAppearance(drake) ? OverlayTexture.DEFAULT_UV : super.getPackedOverlay(drake, u);
     }
 
     private static final class Model extends GeoModel<StableDrakeEntity> {
@@ -53,7 +60,7 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
         @Override public void setCustomAnimations(StableDrakeEntity drake, long instanceId, AnimationState<StableDrakeEntity> state) {
             float time = drake.age + state.getPartialTick();
             float swing = MathHelper.sin(state.getLimbSwing() * .65f) * Math.min(.5f, state.getLimbSwingAmount()) * .7f;
-            if (sscextras.petrification.Petrification.frozen(drake)) {
+            if (sscextras.petrification.Petrification.poseLocked(drake)) {
                 var frozen = sscextras.petrification.Petrification.state(drake);
                 time = frozen.animationAge;
                 swing = MathHelper.sin(frozen.limbPos * .65f) * Math.min(.5f, frozen.limbSpeed) * .7f;
@@ -72,6 +79,7 @@ public final class StableDrakeRenderer extends GeoEntityRenderer<StableDrakeEnti
                 bone.setRotY(MathHelper.clamp(MathHelper.wrapDegrees(drake.headYaw - drake.bodyYaw), -12, 12) * MathHelper.RADIANS_PER_DEGREE);
                 bone.setRotX(MathHelper.clamp(drake.getPitch(), -8, 8) * MathHelper.RADIANS_PER_DEGREE);
             });
+            PetrificationFormPose.apply(drake, getModelResource(drake).toString(), getAnimationProcessor().getRegisteredBones());
         }
     }
 }

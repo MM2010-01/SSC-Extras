@@ -20,7 +20,7 @@ public abstract class TrainerMouthAttachmentMixin {
     @Shadow @Final private HeldItemRenderer heldItemRenderer;
     @Inject(method="renderItemInMouth",at=@At("HEAD"),cancellable=true)
     private void trainerMouth(MatrixStack matrices,VertexConsumerProvider buffers,int light,LivingEntity entity,ItemStack stack,float yaw,float pitch,CallbackInfo ci){
-        if(!(entity instanceof net.minecraft.client.network.AbstractClientPlayerEntity player)||!QuadrupedalTrainer.mouth(player)||QuadrupedalTrainer.nativeQuadruped(player)
+        if(!(entity instanceof net.minecraft.client.network.AbstractClientPlayerEntity player)||!QuadrupedalTrainer.mouth(player)||sscextras.player.PlayerMouth.withoutTrainer(player)
                 ||!(MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(player) instanceof PlayerEntityRenderer renderer))return;
         var model=renderer.getModel();
         if(model instanceof sscextras.client.AuthoredPlayerModel)return;

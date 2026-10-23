@@ -22,16 +22,25 @@ public final class TrainerItem extends AccessoryItem {
                 ? collar ? name.equals("necklace") : name.equals("hands") || name.equals("feet")
                 : collar ? name.equals("chest/necklace") : name.equals("hand/glove") || name.equals("feet/shoes");
         if (!matches) return false;
-        var fit = QuadrupedalTrainer.fit(player);
-        if (fit == QuadrupedalTrainer.Fit.SUITABLE && !QuadrupedalTrainer.complete(player)) return true;
-        QuadrupedalTrainer.reject(player, fit == QuadrupedalTrainer.Fit.SUITABLE ? QuadrupedalTrainer.Fit.FERAL : fit);
+        int location=collar?QuadrupedalTrainer.NECK:name.equals("feet")||name.equals("feet/shoes")?QuadrupedalTrainer.FEET:QuadrupedalTrainer.HANDS;
+        var fit = QuadrupedalTrainer.fit(player,location);
+        if (fit == QuadrupedalTrainer.Fit.SUITABLE) return true;
+        QuadrupedalTrainer.reject(player, fit);
         return false;
     }
     @Override public boolean canUnequip(ItemStack stack, LivingEntity entity, SlotData slot) {
-        return entity instanceof PlayerEntity player && (player.isCreative() || QuadrupedalTrainer.complete(player));
+        int location=collar?QuadrupedalTrainer.NECK:slot.slot().getPath().equals("feet")
+                ||slot.slot().getPath().equals("feet/shoes")?QuadrupedalTrainer.FEET:QuadrupedalTrainer.HANDS;
+        return entity instanceof PlayerEntity player && (player.isCreative() || !QuadrupedalTrainer.bound(player,location));
     }
     @Override public ItemStack getDefaultStack() {
         var stack = super.getDefaultStack(); QuadrupedalTrainer.binding(stack, true); return stack;
+    }
+    @Override public net.minecraft.util.TypedActionResult<ItemStack> use(World world, PlayerEntity player, net.minecraft.util.Hand hand) {
+        var stack = player.getStackInHand(hand);
+        if (world.isClient) return net.minecraft.util.TypedActionResult.success(stack);
+        return player instanceof ServerPlayerEntity serverPlayer && TrainerLoot.equipHeld(serverPlayer, stack)
+                ? net.minecraft.util.TypedActionResult.consume(stack) : net.minecraft.util.TypedActionResult.fail(stack);
     }
     @Override public void onEquip(ItemStack stack, LivingEntity entity, SlotData slot) {
         if (entity instanceof ServerPlayerEntity player && CollarSlots.isActive(slot)) QuadrupedalTrainer.refresh(player);
@@ -39,12 +48,18 @@ public final class TrainerItem extends AccessoryItem {
     @Override public void inventoryTick(ItemStack stack, World world, net.minecraft.entity.Entity entity, int slot, boolean selected) {
         if (world.isClient || !(entity instanceof ServerPlayerEntity player) || slot < 0
                 || slot >= player.getInventory().size() || player.getInventory().getStack(slot) != stack) return;
-        // One set scan per inventory tick, owned by its necklace rather than both molds.
-        if (collar) TrainerLoot.equipCarried(player);
+        // The first carried trainer piece owns the scan, including a lone removed
+        // mold while the necklace and other mold remain equipped.
+        for (int i = 0; i < slot; i++) {
+            var earlier = player.getInventory().getStack(i);
+            if (earlier.isOf(QuadrupedalTrainer.MOLD) || earlier.isOf(QuadrupedalTrainer.COLLAR)) return;
+        }
+        TrainerLoot.equipCarried(player);
     }
     @Override public void appendTooltip(ItemStack stack, World world, List<Text> lines, TooltipContext context) {
         lines.add(Text.translatable(collar ? "tooltip.ssc-extras.trainer.neck" : "tooltip.ssc-extras.trainer.mold").formatted(Formatting.GRAY));
         if (!collar) lines.add(Text.translatable("tooltip.ssc-extras.trainer.mouth").formatted(Formatting.GRAY));
+        lines.add(Text.translatable("tooltip.ssc-extras.trainer.equip").formatted(Formatting.GRAY));
         lines.add(Text.translatable("tooltip.ssc-extras.trainer.set").formatted(Formatting.DARK_PURPLE));
         lines.add(Text.translatable("tooltip.ssc-extras.trainer.rates").formatted(Formatting.GRAY));
         lines.add(Text.translatable("tooltip.ssc-extras.trainer.binding").formatted(Formatting.DARK_PURPLE));

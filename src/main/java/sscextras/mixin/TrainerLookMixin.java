@@ -11,12 +11,13 @@ import sscextras.trainer.QuadrupedalTrainer;
 public abstract class TrainerLookMixin {
     @ModifyVariable(method = "setPitch", at = @At("HEAD"), argsOnly = true)
     private float trainerPitch(float pitch) {
-        return (Object)this instanceof PlayerEntity player && QuadrupedalTrainer.neckLocked(player) ? QuadrupedalTrainer.pitch(player) : pitch;
+        return (Object)this instanceof PlayerEntity player && QuadrupedalTrainer.neckLocked(player) ? QuadrupedalTrainer.clampPitch(player, pitch) : pitch;
     }
     @Inject(method = "changeLookDirection", at = @At("RETURN"))
     private void trainerMouse(double x, double y, CallbackInfo ci) {
         if ((Object)this instanceof PlayerEntity player && QuadrupedalTrainer.neckLocked(player)) {
-            player.setPitch(QuadrupedalTrainer.pitch(player)); player.prevPitch = player.getPitch();
+            player.setPitch(QuadrupedalTrainer.clampPitch(player, player.getPitch()));
+            player.prevPitch = QuadrupedalTrainer.clampPitch(player, player.prevPitch);
         }
     }
 }

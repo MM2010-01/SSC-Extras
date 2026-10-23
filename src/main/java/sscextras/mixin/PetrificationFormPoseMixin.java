@@ -17,6 +17,6 @@ public abstract class PetrificationFormPoseMixin {
     private void petrificationPose(IModelAnimationSystem system, FormRenderer form, FormModel model, PlayerEntityRenderer renderer,
             PlayerEntity player, float limb, float speed, float delta, float age, float yaw, float pitch, Operation<Void> original) {
         original.call(system, form, model, renderer, player, limb, speed, delta, age, yaw, pitch);
-        PetrificationFormPose.apply(player, model);
+        PetrificationFormPose.apply(player, model, renderer);
     }
 }

@@ -10,7 +10,7 @@ import sscextras.trainer.QuadrupedalTrainer;
 
 /** Articulated children of the actual native limb roots, using the wearer's skin UVs. */
 public final class TrainerLimbModel {
-    public interface Part { void sscExtras$reshaped(boolean active); }
+    public interface Part { void sscExtras$reshaped(boolean active); boolean sscExtras$reshaped(); void sscExtras$pad(boolean active); boolean sscExtras$pad(); }
     private static final String PREFIX = "ssc_trainer_";
     private TrainerLimbModel() { }
 
@@ -34,10 +34,16 @@ public final class TrainerLimbModel {
                     .cuboid(-2, -1.65f, -2, 4, 3.3f, 4, dilation), ModelTransform.NONE);
             limb.addChild(PREFIX + "hock_joint", ModelPartBuilder.create().uv(u, v + 7)
                     .cuboid(-1.65f, -1.45f, -1.65f, 3.3f, 2.9f, 3.3f, dilation), ModelTransform.NONE);
-            limb.addChild(PREFIX + "paw", ModelPartBuilder.create().uv(u, v + 5)
+            var paw=limb.addChild(PREFIX + "paw", ModelPartBuilder.create().uv(u, v + 5)
                     .cuboid(-2, 0, -2, 4, 1.8f, 4, dilation), ModelTransform.NONE);
-            for (int toe = 0; toe < 3; toe++) limb.addChild(PREFIX + "toe" + toe,
-                    ModelPartBuilder.create().uv(u + 4, v + 8).cuboid(-.55f, 0, -2.1f, 1.1f, 1.1f, 2.1f, dilation), ModelTransform.NONE);
+            if(!outer)paw.addChild(PREFIX+"pad",ModelPartBuilder.create().uv(u+4,v+9)
+                    .cuboid(-1.25f,0,-1.35f,2.5f,.18f,2.5f),ModelTransform.pivot(0,1.8f,0));
+            for (int toe = 0; toe < 3; toe++) {
+                var tip=limb.addChild(PREFIX + "toe" + toe,
+                    ModelPartBuilder.create().uv(u + 4, v + 8).cuboid(-.625f, 0, -2.5f, 1.25f, 1.7f, 2.5f, dilation), ModelTransform.NONE);
+                if(!outer)tip.addChild(PREFIX+"pad",ModelPartBuilder.create().uv(u+4,v+9)
+                        .cuboid(-.42f,1.7f,-2.2f,.84f,.16f,1.4f),ModelTransform.NONE);
+            }
         }
     }
 
@@ -47,43 +53,102 @@ public final class TrainerLimbModel {
 
     public static void apply(PlayerEntityModel<?> model, PlayerEntity player) {
         boolean quad = PlayerStance.quadrupedal(player);
-        boolean ground = quad && !player.isSwimming() && !player.isFallFlying() && !player.hasVehicle() && !player.isSleeping();
+        boolean canPlant = player.isOnGround() && !player.isSwimming() && !player.isFallFlying() && !player.hasVehicle() && !player.isSleeping();
         boolean hands = active(player, true), feet = active(player, false);
         // Native shoulders/hips keep their owner and animation; the new joints
         // grow beneath them. Cloth and skin receive the exact same articulation.
         for (int i = 0; i < 4; i++) {
             boolean arm = i < 2, left = i % 2 == 0;
+            boolean ground=canPlant&&(quad||!arm);
             var root = arm ? left ? model.leftArm : model.rightArm : left ? model.leftLeg : model.rightLeg;
             var cloth = arm ? left ? model.leftSleeve : model.rightSleeve : left ? model.leftPants : model.rightPants;
             boolean enabled = arm ? hands : feet;
             float progress = QuadrupedalTrainer.progress(player, arm ? QuadrupedalTrainer.HANDS : QuadrupedalTrainer.FEET);
+            boolean worn=!QuadrupedalTrainer.equipped(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET,false).isEmpty();
+            if (!arm && (enabled || worn) && canPlant && !quad && !(model instanceof AuthoredPlayerModel)) {
+                // A short, smooth stride keeps the fixed bones' support arc low.
+                // The former full vanilla swing needed a large whole-body bob.
+                root.pitch=.38f*(float)Math.tanh(root.pitch/.65f);
+                cloth.copyTransform(root);
+            }
+            if(!arm&&(enabled||worn)&&!QuadrupedalTrainer.nativeDigitigrade(player)) {
+                // The hips spread with the growing hind paws; the rigid mold needs
+                // its own initial clearance before the anatomy fills it.
+                float half=worn?2.9f+.65f*progress:2+.75f*progress;
+                root.pivotX=(left?1:-1)*Math.max(Math.abs(root.pivotX),half);
+                cloth.pivotX=root.pivotX;
+            }
             float end = arm ? 10 : 12;
-            float bottom = 24 - Math.max(0, root.pitch) * 4
-                    - (QuadrupedalTrainer.equipped(player,arm ? QuadrupedalTrainer.HANDS : QuadrupedalTrainer.FEET,false).isEmpty() ? 0 : .7f);
-            if (ground) end = (bottom - root.pivotY - 1.8f + MathHelper.sin(root.pitch) * -1.2f * progress)
-                    / Math.max(.5f, MathHelper.cos(root.pitch)) + 1.8f;
-            reshape(root, arm, left, enabled, progress, end, ground);
-            reshape(cloth, arm, left, enabled, progress, end, ground);
+            // Articulated bones retain their length during a stride. Projecting
+            // the paw onto the floor divided by cos(pitch) stretched the shin.
+            if (quad || !arm) end = 12 - (worn ? .7f : .18f*progress);
+            reshape(root, arm, left, enabled, progress, end, ground,false);
+            reshape(cloth, arm, left, enabled, progress, end, ground,true);
             if (enabled && ground) {
-                // A planted foot's support surface remains level as the leg swings.
-                root.getChild(PREFIX + "paw").pitch = -root.pitch;
-                cloth.getChild(PREFIX + "paw").pitch = -root.pitch;
-                for (int toe = 0; toe < 3; toe++) {
-                    root.getChild(PREFIX + "toe" + toe).pitch = -root.pitch;
-                    cloth.getChild(PREFIX + "toe" + toe).pitch = -root.pitch;
-                    var tip=root.getChild(PREFIX+"toe"+toe);
-                    tip.pivotY=(bottom-root.pivotY-1.1f+MathHelper.sin(root.pitch)*tip.pivotZ)/Math.max(.5f,MathHelper.cos(root.pitch));
-                    cloth.getChild(PREFIX+"toe"+toe).pivotY=tip.pivotY;
-                }
+                // Only the near-vertical support phase levels the paw. As the
+                // limb swings clear it rolls with the leg; airborne paws are free.
+                float pawPitch = supportPitch(root);
+                root.getChild(PREFIX + "paw").pitch = pawPitch;
+                cloth.getChild(PREFIX + "paw").pitch = pawPitch;
+                toes(root, progress, false);
+                toes(cloth, progress, true);
             }
         }
+        if (canPlant && (feet || (QuadrupedalTrainer.equipment(player)&QuadrupedalTrainer.FEET)!=0 || quad&&hands)
+                && !(model instanceof AuthoredPlayerModel) && !QuadrupedalTrainer.nativeDigitigrade(player)) {
+            float contact=Float.NEGATIVE_INFINITY;
+            for(int i=quad?0:2;i<4;i++) {
+                boolean arm=i<2;
+                var root=arm?i==0?model.leftArm:model.rightArm:i==2?model.leftLeg:model.rightLeg;
+                boolean changed=arm?hands:feet;
+                boolean worn=!QuadrupedalTrainer.equipped(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET,false).isEmpty();
+                if(changed)contact=Math.max(contact,soleHeight(root,worn,QuadrupedalTrainer.progress(player,arm?QuadrupedalTrainer.HANDS:QuadrupedalTrainer.FEET)));
+                else if(worn)contact=Math.max(contact,root.pivotY+MathHelper.cos(root.pitch)*moldAnkle(arm)+2.5f);
+            }
+            // SSC's global animation translation precedes the player's 15/16
+            // render scale. Include it instead of treating model Y=24 as ground.
+            float settle=floorHeight(player)-contact;
+            // Standing and walking need contact in both directions. Only the
+            // native sprint bound deliberately lifts every supporting paw.
+            if(quad && player.isSprinting())settle=Math.min(0,settle);
+            for(var part:new ModelPart[]{model.head,model.hat,model.body,model.jacket,
+                    model.leftArm,model.rightArm,model.leftSleeve,model.rightSleeve,
+                    model.leftLeg,model.rightLeg,model.leftPants,model.rightPants}) part.pivotY+=settle;
+        }
         if (QuadrupedalTrainer.neckLocked(player)) {
-            model.head.pitch = QuadrupedalTrainer.pitch(player) * MathHelper.RADIANS_PER_DEGREE;
+            // The supported head follows real aim throughout the permitted range,
+            // including past the generic all-fours pose's narrower clamp.
+            model.head.pitch = QuadrupedalTrainer.clampPitch(player, player.getPitch()) * MathHelper.RADIANS_PER_DEGREE;
             model.hat.copyTransform(model.head);
         }
     }
 
-    private static void reshape(ModelPart root, boolean arm, boolean left, boolean enabled, float amount, float end, boolean quad) {
+    public static float supportPitch(ModelPart root) {
+        float weight=MathHelper.clamp(1-Math.abs(root.pitch)/.55f,0,1);
+        return -root.pitch*weight*weight*(3-2*weight);
+    }
+    public static float moldAnkle(boolean arm) { return arm?9.3f:9.5f; }
+    public static float floorHeight(PlayerEntity player) {
+        float floor=24;
+        if(player instanceof dev.kosmx.playerAnim.impl.IAnimatedPlayer animated && animated.playerAnimator_getAnimation().isActive())
+            floor+=animated.playerAnimator_getAnimation().get3DTransform("body",dev.kosmx.playerAnim.api.TransformType.POSITION,dev.kosmx.playerAnim.core.util.Vec3f.ZERO).getY()*16/.9375f;
+        return floor;
+    }
+    public static float soleHeight(ModelPart root,boolean worn,float progress) {
+        var paw=root.getChild(PREFIX+"paw");
+        float lowest=Float.NEGATIVE_INFINITY;
+        for(float x:new float[]{-1.4f,1.4f})for(float z:new float[]{worn?-3.9f:-1.35f,worn?1.4f:1.15f}) {
+            var point=localPoint(paw,x,worn?2.5f:1.8f+.18f*progress,z);
+            lowest=Math.max(lowest,localPoint(root,point.x,point.y,point.z).y);
+        }
+        if(!worn)for(int i=0;i<3;i++)for(float z:new float[]{-2.2f,-.8f}) {
+            var point=localPoint(root.getChild(PREFIX+"toe"+i),0,1.86f,z);
+            lowest=Math.max(lowest,localPoint(root,point.x,point.y,point.z).y);
+        }
+        return lowest;
+    }
+
+    private static void reshape(ModelPart root, boolean arm, boolean left, boolean enabled, float amount, float end, boolean quad,boolean outer) {
         if (!root.hasChild(PREFIX + "upper")) return;
         ((Part)(Object)root).sscExtras$reshaped(enabled);
         for (String name : new String[]{"upper", "lower", "pastern", "knee_joint", "hock_joint", "paw", "toe0", "toe1", "toe2"}) root.getChild(PREFIX + name).visible = enabled;
@@ -102,13 +167,27 @@ public final class TrainerLimbModel {
         var kneeCap=root.getChild(PREFIX+"knee_joint");kneeCap.setPivot(knee.x,knee.y,knee.z);kneeCap.pitch=kneeCap.yaw=kneeCap.roll=0;
         var hockCap=root.getChild(PREFIX+"hock_joint");hockCap.setPivot(hock.x,hock.y,hock.z);hockCap.pitch=hockCap.yaw=hockCap.roll=0;
         var paw = root.getChild(PREFIX + "paw");
-        paw.setPivot(ankle.x, ankle.y, ankle.z - .8f * p); paw.pitch = paw.yaw = paw.roll = 0;
-        paw.xScale = 1 + .25f * p; paw.yScale = 1; paw.zScale = 1 + .3f * p;
+        paw.setPivot(ankle.x, ankle.y, ankle.z - .65f * p); paw.pitch = paw.yaw = paw.roll = 0;
+        paw.xScale = 1 + .1f * p; paw.yScale = 1; paw.zScale = 1 + .15f * p;
+        paw.visible=!outer;
+        if(!outer){var pad=paw.getChild(PREFIX+"pad");pad.xScale=pad.yScale=pad.zScale=p;((Part)(Object)pad).sscExtras$pad(true);}
+        toes(root,p,outer);
+    }
+
+    private static void toes(ModelPart root, float progress, boolean outer) {
+        var paw=root.getChild(PREFIX+"paw");
+        float size=.8f+.2f*progress;
         for (int toe = 0; toe < 3; toe++) {
             var tip = root.getChild(PREFIX + "toe" + toe);
-            tip.setPivot(center + (toe - 1) * 1.55f * p, end - 1.1f, ankle.z - 2.3f * p);
-            tip.pitch = tip.roll = 0; tip.yaw = (toe - 1) * .10f * p;
-            tip.xScale = tip.yScale = tip.zScale = p;
+            // Medium-width toes extend from inside the paw along the mold's
+            // three channels. Their spacing never collapses into the dividers.
+            var offset=new Vector3f((toe-1)*1.45f*paw.xScale,1.8f-1.7f*size,
+                    -2*paw.zScale+2.5f-1.55f*progress).rotateX(paw.pitch);
+            tip.setPivot(paw.pivotX+offset.x,paw.pivotY+offset.y,paw.pivotZ+offset.z);
+            tip.pitch=paw.pitch; tip.roll=tip.yaw=0;
+            tip.xScale=tip.yScale=size; tip.zScale=1;
+            tip.visible=!outer;
+            if(!outer)((Part)(Object)tip.getChild(PREFIX+"pad")).sscExtras$pad(true);
         }
     }
 

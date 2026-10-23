@@ -47,7 +47,7 @@ public class DrakeAccessoryItem extends AccessoryItem {
                 && (data.slot().getPath().equals(data.slot().getNamespace().equals("curios") ? curiosSlot() : group + "/" + slot)
                     || this == DrakeEquipment.CLAW_TIPS && data.slot().getPath().equals(
                             data.slot().getNamespace().equals("curios") ? "feet" : "feet/shoes"))
-                && (!stack.isOf(Items.SADDLE) || EarthenDrake.stage(player) >= 0)
+                && (!stack.isOf(Items.SADDLE) || EarthenDrake.stage(player) >= 0 || DrakeRiding.quadruped(player))
                 && (!permanentOnly || EarthenDrake.stage(player) == 3);
     }
 

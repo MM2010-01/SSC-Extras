@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:item/generated",
-  "textures": {"layer0": "minecraft:item/structure_void"}
+  "textures": {"layer0": "ssc-extras:item/empty_slot"}
 }

@@ -14,7 +14,8 @@ public abstract class DrakeFormGearMixin {
     private void sscExtras$drakeGear(JsonObject config, CallbackInfo ci) {
         ((FormRenderer)(Object)this).addRenderLayer(new sscextras.client.CuffsFormLayer((FormRenderer)(Object)this));
         ((FormRenderer)(Object)this).addRenderLayer(new sscextras.client.TrainerFormLayer((FormRenderer)(Object)this));
-        if (config.has("model") && config.get("model").getAsString().startsWith("ssc-extras:geo/form/earthen_drake_"))
+        if (((FormRenderer)(Object)this).realModel.Hidden_Body
+                || config.has("model") && config.get("model").getAsString().startsWith("ssc-extras:geo/form/earthen_drake_"))
             ((FormRenderer)(Object)this).addRenderLayer(new DrakeFormGearLayer((FormRenderer)(Object)this));
     }
 }

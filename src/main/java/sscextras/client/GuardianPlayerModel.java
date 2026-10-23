@@ -38,7 +38,7 @@ public final class GuardianPlayerModel extends AuthoredPlayerModel {
 
     public void animateTail(float tickDelta) {
         var state = RuneboundGuardian.state(player);
-        if (state.pedestalSleeping || state.deactivated || state.detached || sscextras.petrification.Petrification.frozen(player)) {
+        if (state.pedestalSleeping || state.deactivated || state.detached || sscextras.petrification.Petrification.poseLocked(player)) {
             FormTailPhysics.reset(player);
             tailDrag = FormTailPhysics.Drag.NONE;
         } else tailDrag = FormTailPhysics.sample(player, tickDelta);
@@ -105,7 +105,7 @@ public final class GuardianPlayerModel extends AuthoredPlayerModel {
         boolean hideHead = player == client.getCameraEntity() && client.options.getPerspective().isFirstPerson()
                 && client.currentScreen == null;
         motion = new GuardianMesh.Motion(stage < 3 || state.coreId != null, hideHead, age, limbAngle, limbDistance, statue, tailDrag,
-                state.flying() && !sscextras.petrification.Petrification.frozen(player));
+                state.flying() && !sscextras.petrification.Petrification.poseLocked(player));
     }
 
     public void transform(MatrixStack matrices, String name) {

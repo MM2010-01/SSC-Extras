@@ -48,6 +48,23 @@ public final class DrakeRiding {
         int stage = EarthenDrake.stage(player);
         return stage >= 2 || stage >= 0 && DrakeSoulbinding.drakeSoul(player);
     }
+    /** Shared posture admission for player saddles; NPC faction and ownership rules stay in mountForm. */
+    public static boolean quadruped(PlayerEntity player) {
+        return sscextras.player.PlayerStance.quadrupedal(player) || sscextras.trainer.QuadrupedalTrainer.nativeQuadruped(player);
+    }
+    public static double seatHeight(PlayerEntity player) {
+        int stage=EarthenDrake.stage(player);
+        if(stage==3)return 1.15;
+        if(stage==2)return .95;
+        if(stage>=0&&mountForm(player))return stage==1?.87:.78;
+        if(net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager.getForm(player).getBodyType()
+                ==net.onixary.shapeShifterCurseFabric.player_form.PlayerFormBodyType.FERAL)
+            // SSC's common feral torso carries the saddle one model block above ground.
+            // The seated player's pelvis is .4 blocks above its vehicle offset.
+            return Math.max(.05,virtuoel.pehkui.util.ScaleUtils.getModelHeightScale(player)-.4);
+        // Vanilla adds the passenger's own height offset; this is the saddle seat above the current body's back.
+        return Math.max(.2,player.getHeight()*.75);
+    }
 
     public static boolean canCarryPillager(PlayerEntity player) {
         return player.isAlive() && mountForm(player) && DrakeFaction.harnessed(player);

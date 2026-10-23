@@ -13,7 +13,7 @@ import sscextras.player.StoneBodies;
 public final class PetrificationCracks {
     private PetrificationCracks() { }
     public static VertexConsumerProvider buffers(Entity entity, MatrixStack matrices, VertexConsumerProvider original) {
-        if (!(entity instanceof LivingEntity living) || !StoneBodies.mineable(living)) return original;
+        if (!(entity instanceof LivingEntity living) || !(StoneBodies.mineable(living) || Petrification.stoneAppearance(living))) return original;
         int stage = Petrification.state(living).crackStage();
         if (stage < 0 || stage > 9) return original;
         var entry = matrices.peek();
