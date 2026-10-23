@@ -26,7 +26,7 @@ public final class SscExtrasGameRules {
     public static final GameRules.Key<GameRules.BooleanRule> PILLAGER_RECRUIT_DRAKE = GameRuleRegistry.register(
             "PillagerMountRecruitingForDrake", GameRules.Category.MOBS, GameRuleFactory.createBooleanRule(true));
     public static final GameRules.Key<GameRules.BooleanRule> PILLAGER_RECRUIT_UNCURSED = GameRuleRegistry.register(
-            "PillagerMountRecruitingForUncursed", GameRules.Category.MOBS, GameRuleFactory.createBooleanRule(false));
+            "PillagerMountRecruitingForUncursed", GameRules.Category.MOBS, GameRuleFactory.createBooleanRule(true));
     public static final GameRules.Key<GameRules.BooleanRule> REMOVE_BLACKOUT_DURING_TRANSFORMATION = GameRuleRegistry.register(
             "RemoveBlackoutDuringTransformation", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true,
                     (server, rule) -> server.getPlayerManager().getPlayerList().forEach(player -> syncBlackoutRule(player, rule.get()))));

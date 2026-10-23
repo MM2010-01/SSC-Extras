@@ -50,11 +50,9 @@ final class GuardianVillageGoal extends Goal {
             var destination = GuardianPedestal.position(guardian.home());
             if (GuardianPedestal.intact(world, guardian.home()) && guardian.squaredDistanceTo(destination) < 6.25
                     && world.isSpaceEmpty(guardian, guardian.getBoundingBox().offset(destination.subtract(guardian.getPos())))) {
-                // Ground navigation accepts a wide mob near its final node; finish centering with its native move control.
-                guardian.getNavigation().stop();
                 if (guardian.squaredDistanceTo(destination) < .16) {
                     guardian.setPosition(destination); guardian.routes.stop(true); guardian.awake(false);
-                } else { guardian.awake(true); guardian.getMoveControl().moveTo(destination.x, destination.y, destination.z, .8); }
+                } else { guardian.awake(true); guardian.routes.moveTo(destination, .8, false); }
             } else {
                 guardian.awake(true);
                 if (routeCooldown == 0) {

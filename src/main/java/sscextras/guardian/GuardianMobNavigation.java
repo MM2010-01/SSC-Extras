@@ -36,9 +36,11 @@ final class GuardianMobNavigation {
         }
         var path = !requireFlight ? ground.findPathTo(BlockPos.ofFloored(target), 1) : null;
         boolean fly = path == null || !path.reachesTarget();
-        if (fly && body.squaredDistanceTo(target) < 9
+        // Wide mobs can finish a native ground path outside interaction range, especially at a corner.
+        // Close a clear final gap with the selected native controller instead of restarting that finished path.
+        if (body.squaredDistanceTo(target) < 9
                 && body.getWorld().isSpaceEmpty(body, body.getBoundingBox().stretch(target.subtract(body.getPos())))) {
-            body.flightMode(true); body.getNavigation().stop();
+            body.flightMode(fly); body.getNavigation().stop();
             body.getMoveControl().moveTo(target.x, target.y, target.z, speed); return true;
         }
         if (fly) path = air.findPathTo(airTarget(target), 0);
