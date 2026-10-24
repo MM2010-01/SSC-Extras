@@ -3,7 +3,6 @@ package sscextras.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.onixary.shapeShifterCurseFabric.ShapeShifterCurseFabric;
@@ -16,19 +15,14 @@ import sscextras.SscExtrasConfig;
 /** Read-only companion to SSC's native gauge; uses its textures, anchor and HUD lifecycle. */
 public final class IntelligenceBarRenderer {
     private static final Identifier FULL = texture("instinct_bar_full"), EMPTY = texture("instinct_bar_empty");
-    private static final Identifier FALLING = texture("instinct_bar_decrease"), FALLING_EMPTY = texture("instinct_bar_decrease_empty");
     private static final Identifier LOCK = texture("instinct_bar_lock");
     private static final Identifier BRAINS = new Identifier("ssc-extras", "textures/gui/int_brains.png");
-    private final GaugeFeedback feedback = new GaugeFeedback("hud.ssc-extras.int.", "ssc-extras:mental_hint");
-    private PlayerEntity previousPlayer;
-    private double previousPoints = -1;
-    private int previousTick, fallingUntil;
+    private final GaugeFeedback feedback = new GaugeFeedback("hud.ssc-extras.int.", "ssc-extras:mental_hint", 5);
 
     private static Identifier texture(String name) { return new Identifier("shape-shifter-curse", "textures/gui/" + name + ".png"); }
     /** Also called when the native HUD callback is skipped (F1 or no world). */
     public void reset() {
-        previousPlayer = null;
-        feedback.reset(); fallingUntil = 0;
+        feedback.reset();
     }
 
     public void render(DrawContext context, float tickDelta) {
@@ -42,14 +36,6 @@ public final class IntelligenceBarRenderer {
         }
         double points = PlayerMind.effectivePoints(player);
         int units = (int)Math.round(PlayerMind.points(player) * 100);
-        float now = player.age + tickDelta;
-        if (previousPlayer != player || player.age < previousTick) {
-            reset();
-        } else {
-            if (points < previousPoints) fallingUntil = player.age + 20;
-            else if (points > previousPoints) fallingUntil = 0;
-        }
-        previousPlayer = player; previousTick = player.age; previousPoints = points;
         // Compare saved reserve, so temporary caps cannot invent gains or losses.
         feedback.update(player, units, 100, tickDelta);
         if (!feedback.visible(SscExtrasConfig.intHudAutoHide(), FormAbilityManager.getForm(player).FormID, points)) return;
@@ -62,10 +48,9 @@ public final class IntelligenceBarRenderer {
         int tier = level.ordinal();
         double remaining = tier == 0 ? 0 : points - (tier - 1) * PlayerMind.POINTS_PER_LEVEL;
         int width = Math.max(0, Math.min(80, (int)Math.ceil(80 * remaining / PlayerMind.POINTS_PER_LEVEL)));
-        boolean falling = player.age < fallingUntil;
-        context.drawTexture(falling ? FALLING_EMPTY : EMPTY, x, y, 0, 0, 80, 5, 80, 5);
+        context.drawTexture(EMPTY, x, y, 0, 0, 80, 5, 80, 5);
         // Fill from the left edge; losing points retreats the right edge.
-        if (width > 0) context.drawTexture(falling ? FALLING : FULL, x, y, 0, 0, width, 5, 80, 5);
+        if (width > 0) context.drawTexture(FULL, x, y, 0, 0, width, 5, 80, 5);
         if (PlayerMind.effectiveInt(player) != PlayerMind.baseInt(player)) context.drawTexture(LOCK, x, y, 0, 0, 80, 5, 80, 5);
         int sprite = tier == 4 ? 0 : 5 - tier;
         RenderSystem.enableBlend();

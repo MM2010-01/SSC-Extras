@@ -22,5 +22,6 @@ public abstract class DrakeSoulboundRespawnMixin {
         sscextras.drake.DrakeFeralization.copyMind(oldPlayer, cir.getReturnValue());
         DrakeSoulbinding.afterRespawn(cir.getReturnValue(), alive);
         sscextras.drake.DrakeFeralization.afterRespawn(cir.getReturnValue(), alive);
+        if (!alive) sscextras.player.PlayerMind.reset(cir.getReturnValue());
     }
 }

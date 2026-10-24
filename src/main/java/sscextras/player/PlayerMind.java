@@ -218,4 +218,12 @@ public final class PlayerMind {
         to.sscExtras$mind().loaded = from.sscExtras$mind().loaded;
         MentalProgression.copy(oldPlayer, newPlayer);
     }
+
+    /** Death starts a new reserve after body/feral respawn cleanup has finished. */
+    public static void reset(ServerPlayerEntity player) {
+        read(player, new NbtCompound());
+        runtime(player).loaded = true;
+        runtime(player).nextHint = 0;
+        refresh(player);
+    }
 }

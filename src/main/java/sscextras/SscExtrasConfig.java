@@ -24,9 +24,9 @@ public final class SscExtrasConfig {
     private static float instinctPerHit = 10.0f;
     private static float instinctPerPotion = 200.0f / 3.0f;
     private static float petrificationIIIMovementBreakChance = .01f;
-    private static double instinctPerIntLoss = 100, permanentFormIntLoss = 0.05;
+    private static double instinctPerIntLoss = 10, permanentFormIntLoss = 0.05;
     private static Map<Identifier, Double> instinctPerIntLossOverrides = Map.of(
-            new Identifier("ssc-extras", "earthen_drake"), 5.0);
+            new Identifier("ssc-extras", "earthen_drake"), 2.5);
     private static int permanentFormIntIntervalTicks = 200;
     private static boolean intHudAutoHide = true, quadHudAutoHide = true;
     private static Set<Identifier> permanentFormProgressionExceptions = Set.of();
@@ -68,15 +68,15 @@ public final class SscExtrasConfig {
         changed |= config.putIfAbsent("PetrificationIIIMovementBreakChance", "0.01") == null;
         petrificationIIIMovementBreakChance = readValue(config, "PetrificationIIIMovementBreakChance", .01f, true);
         changed |= config.putIfAbsent("permanentFormProgressionExceptions", "") == null;
-        changed |= config.putIfAbsent("instinctPerIntLoss", "100") == null;
-        changed |= config.putIfAbsent("instinctPerIntLossOverrides", "ssc-extras:earthen_drake=5") == null;
+        changed |= config.putIfAbsent("instinctPerIntLoss", "10") == null;
+        changed |= config.putIfAbsent("instinctPerIntLossOverrides", "ssc-extras:earthen_drake=2.5") == null;
         changed |= config.putIfAbsent("permanentFormIntLoss", "0.05") == null;
         changed |= config.putIfAbsent("permanentFormIntIntervalSeconds", "10") == null;
         changed |= config.putIfAbsent("intHudAutoHide", "true") == null;
         changed |= config.putIfAbsent("quadHudAutoHide", "true") == null;
         intHudAutoHide = readBoolean(config, "intHudAutoHide", true);
         quadHudAutoHide = readBoolean(config, "quadHudAutoHide", true);
-        instinctPerIntLoss = readRange(config, "instinctPerIntLoss", 100, 0.01, 1000000);
+        instinctPerIntLoss = readRange(config, "instinctPerIntLoss", 10, 0.01, 1000000);
         var ratios = new LinkedHashMap<Identifier, Double>();
         for (String entry : config.getProperty("instinctPerIntLossOverrides").split(",")) {
             if (entry.isBlank()) continue;
@@ -116,7 +116,7 @@ public final class SscExtrasConfig {
                             + "intHudAutoHide / quadHudAutoHide: client HUD hides after 60 seconds without changes (true/false; default true).\n"
                             + "instinctPerIntLoss: actual instinct gained per 1 INT lost (0.01 to 1000000).\n"
                             + "instinctPerIntLossOverrides: comma-separated namespace:form_or_group_id=ratio; same range.\n"
-                            + "Exact form overrides group, then instinctPerIntLoss. Default: ssc-extras:earthen_drake=5. Empty disables overrides.\n"
+                            + "Exact form overrides group, then instinctPerIntLoss. Default: ssc-extras:earthen_drake=2.5. Empty disables overrides.\n"
                             + "permanentFormIntLoss: INT lost each interval (0 to 400); permanentFormIntIntervalSeconds: 0.05 to 86400.\n"
                             + "Both INT drains also require their gamerule and EnableINTSystem.\n"
                             + "Loot/drop chances: 0 to 1 (0 disables, 1 guarantees; 0.25 = 25%).\n"

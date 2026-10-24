@@ -34,7 +34,8 @@ public final class QuadrupedalTrainer {
         CuriosCompat.register(COLLAR);
         ServerPlayerEvents.COPY_FROM.register((oldPlayer, player, alive) -> {
             var nbt = new net.minecraft.nbt.NbtCompound();
-            TrainerState.get(oldPlayer).write(nbt); TrainerState.get(player).read(nbt);
+            if (alive) TrainerState.get(oldPlayer).write(nbt);
+            TrainerState.get(player).read(nbt);
             TrainerState.get(player).sync(player, 0);
         });
     }

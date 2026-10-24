@@ -10,21 +10,37 @@ import net.minecraft.text.Text;
 public final class GaugeFeedback {
     private static final int LIFETIME = 24, MAX_VISIBLE = 48;
     private static final int IDLE_TICKS = 60 * 20;
+    private static final int POOL_TICKS = 10 * 20;
     private record Popup(boolean gain, float born, float speed, int lane) { }
     private final ArrayDeque<Popup> popups = new ArrayDeque<>();
     private final Text loss, gain;
+    private final int pooledPointsPerPopup;
     private PlayerEntity previous;
     private int previousUnits, previousTick, sequence;
     private int lastChangeTick;
     private Object previousContext;
     private double previousDisplay;
     private long pendingLoss, pendingGain;
+    private long lossRemainder, gainRemainder;
+    private boolean lossStarted, gainStarted;
+    private int lastLossTick, lastGainTick;
     private float nextLoss, nextGain, now;
     public GaugeFeedback(String key, String insertion) {
+        this(key, insertion, 0);
+    }
+    /** Positive values show the first change, then pool each direction for up to ten seconds. */
+    public GaugeFeedback(String key, String insertion, int pooledPointsPerPopup) {
+        if (pooledPointsPerPopup < 0) throw new IllegalArgumentException("Popup pool must be nonnegative");
+        this.pooledPointsPerPopup = pooledPointsPerPopup;
         loss = Text.translatable(key + "loss").styled(style -> style.withInsertion(insertion));
         gain = Text.translatable(key + "gain").styled(style -> style.withInsertion(insertion));
     }
-    public void reset() { previous = null; previousContext = null; popups.clear(); pendingLoss = pendingGain = 0; sequence = 0; }
+    public void reset() {
+        previous = null; previousContext = null; popups.clear();
+        pendingLoss = pendingGain = lossRemainder = gainRemainder = 0; sequence = 0;
+        lossStarted = gainStarted = false;
+        lastLossTick = lastGainTick = 0;
+    }
     public void update(PlayerEntity player, int units, int unitsPerPoint, float delta) {
         now = player.age + delta;
         if (previous != player || player.age < previousTick) {
@@ -33,10 +49,31 @@ public final class GaugeFeedback {
         else if (units != previousUnits) {
             lastChangeTick = player.age;
             boolean up = units > previousUnits;
-            long count = (Math.abs((long)units - previousUnits) + unitsPerPoint - 1) / unitsPerPoint;
-            spawn(up, now, count - 1);
-            if (up) { if (pendingGain == 0) nextGain = now + spacing(count - 1); pendingGain += count - 1; }
-            else { if (pendingLoss == 0) nextLoss = now + spacing(count - 1); pendingLoss += count - 1; }
+            long changed = Math.abs((long)units - previousUnits);
+            long count;
+            if (pooledPointsPerPopup > 0) {
+                long threshold = (long)unitsPerPoint * pooledPointsPerPopup;
+                boolean fresh = !(up ? gainStarted : lossStarted)
+                        || player.age - (up ? lastGainTick : lastLossTick) >= POOL_TICKS;
+                long pooled = changed + (fresh ? 0 : up ? gainRemainder : lossRemainder);
+                count = pooled / threshold;
+                long remainder = pooled % threshold;
+                if (fresh && count == 0) {
+                    count = 1;
+                    remainder = 0; // This first small change already has its indicator.
+                }
+                if (up) { gainStarted = true; gainRemainder = remainder; }
+                else { lossStarted = true; lossRemainder = remainder; }
+                if (count > 0) {
+                    if (up) lastGainTick = player.age;
+                    else lastLossTick = player.age;
+                }
+            } else count = (changed + unitsPerPoint - 1) / unitsPerPoint;
+            if (count > 0) {
+                spawn(up, now, count - 1);
+                if (up) { if (pendingGain == 0) nextGain = now + spacing(count - 1); pendingGain += count - 1; }
+                else { if (pendingLoss == 0) nextLoss = now + spacing(count - 1); pendingLoss += count - 1; }
+            }
         }
         previous = player; previousTick = player.age; previousUnits = units;
         popups.removeIf(popup -> (now - popup.born) * popup.speed >= LIFETIME);

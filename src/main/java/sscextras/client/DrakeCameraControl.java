@@ -111,6 +111,10 @@ public final class DrakeCameraControl {
         return owner != null && (ritual || ridden) && (owner == entity || ritual && entity == MinecraftClient.getInstance().getCameraEntity());
     }
     public static boolean free(Entity entity) { return owner == entity && ritual; }
+    /** Native picking follows independent mounted mouse look, not the rider-steered body. */
+    public static Vec3d aim(Entity entity, float delta, Vec3d ordinary) {
+        return owner == entity && ridden ? Vec3d.fromPolar(pitch, yaw(delta)) : ordinary;
+    }
     public static Vec3d position(float delta) { return previousPosition.lerp(position, delta); }
     public static float yaw(float delta) { return MathHelper.lerpAngleDegrees(delta, previousYaw, yaw); }
     public static float pitch() { return pitch; }

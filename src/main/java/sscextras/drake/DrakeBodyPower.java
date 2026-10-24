@@ -55,7 +55,7 @@ public final class DrakeBodyPower extends Power {
         float width = switch (stage) { case 1 -> 0.7f; case 2 -> 0.95f; case 3 -> 1.92f; default -> 0.6f; };
         set(ScaleTypes.WIDTH, scale);
         set(ScaleTypes.HEIGHT, scale);
-        set(ScaleTypes.HITBOX_WIDTH, width / (0.6f * scale));
+        set(ScaleTypes.HITBOX_WIDTH, width * .75f / (0.6f * scale));
         set(ScaleTypes.HITBOX_HEIGHT, height / (1.8f * scale));
         set(ScaleTypes.EYE_HEIGHT, (stage == 3 ? 1.6368f : allFours ? height * 0.8f : height * 0.9f) / (1.62f * scale));
         // Origin changes synchronize the whole component after adding its powers.
