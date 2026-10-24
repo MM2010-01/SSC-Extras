@@ -15,6 +15,12 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.onixary.shapeShifterCurseFabric.util.Accessory.AccessoryUtils;
 import net.onixary.shapeShifterCurseFabric.items.accessory.AccessoryItem;
+import net.onixary.shapeShifterCurseFabric.player_form.RegPlayerForms;
+import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
+import net.onixary.shapeShifterCurseFabric.player_form.instinct.InstinctTicker;
+import net.onixary.shapeShifterCurseFabric.player_form.transform.TransformManager;
+import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManager;
+import sscextras.CreatureInstinct;
 import sscextras.collar.Collars;
 import sscextras.collar.AccessoryEquipment;
 import sscextras.collar.CuriosCompat;
@@ -93,6 +99,13 @@ public final class DrakeEquipment {
                 item == SADDLE ? DrakeEquipment::isSaddle : DrakeEquipment::isReins, player.getInventory()::offerOrDrop);
         if (fit == null) return false;
         if (fit.changed()) {
+            var pending = CreatureInstinct.getTarget(player);
+            // A successfully fitted harness starts its own curse, not an old species' buildup.
+            if (pending != null && pending.getGroup() != EarthenDrake.GROUP
+                    && FormAbilityManager.getForm(player) == RegPlayerForms.ORIGINAL_SHIFTER
+                    && !EffectManager.hasTransformativeEffect(player)
+                    && !TransformManager.getPlayerTransformData(player).isTransforming)
+                InstinctTicker.clearInstinct(player);
             item.onEquip(fit.stack(), player, new AccessoryItem.SlotData(new net.minecraft.util.Identifier(
                     CuriosCompat.instance == null ? "trinkets" : "curios",
                     CuriosCompat.instance == null ? group + "/" + name : name), fit.index()));

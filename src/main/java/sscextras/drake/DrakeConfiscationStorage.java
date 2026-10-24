@@ -69,22 +69,26 @@ final class DrakeConfiscationStorage {
     Destination destination(PillagerEntity guard) {
         var world = (ServerWorld)guard.getWorld();
         if (!resolveBuilding(world)) return null;
+        // Native mansion pieces start with the entrance; outposts store only their tower.
+        // Saved room order also lets existing depots use this area without moving their cargo/chests.
+        var area = rooms.isEmpty() ? building : rooms.get(0);
         for (var pos : chests) {
-            if (!world.isChunkLoaded(pos)) continue;
+            if (!area.contains(pos) || !world.isChunkLoaded(pos)) continue;
             var inventory = inventory(world, pos);
             if (inventory == null || cargo.stream().noneMatch(stack -> space(inventory, stack))) continue;
             var stand = approach(guard, pos);
             if (stand != null) return new Destination(pos, null, stand, false);
         }
-        var origin = chests.isEmpty() ? building.getCenter() : chests.get(chests.size() - 1);
+        var origin = chests.stream().filter(area::contains).reduce((first, last) -> last).orElse(null);
         var candidates = new ArrayList<BlockPos>();
-        // Search only the known building and loaded terrain, on real floors, preserving every existing block.
-        for (var mutable : BlockPos.iterate(building.getMinX(), building.getMinY(), building.getMinZ(),
-                building.getMaxX(), building.getMaxY(), building.getMaxZ())) {
-            if (free(world, mutable) && free(world, mutable.east())) candidates.add(mutable.toImmutable());
+        // Keep mansion deliveries at the entrance, on real floors and loaded terrain.
+        for (var mutable : BlockPos.iterate(area.getMinX(), area.getMinY(), area.getMinZ(),
+                area.getMaxX(), area.getMaxY(), area.getMaxZ())) {
+            if (area.contains(mutable.east()) && free(world, mutable) && free(world, mutable.east()))
+                candidates.add(mutable.toImmutable());
         }
-        candidates.sort(Comparator.comparingDouble(pos -> chests.isEmpty()
-                ? (pos.getY() - building.getMinY()) * 10000.0 + pos.getSquaredDistance(origin)
+        candidates.sort(Comparator.comparingDouble(pos -> origin == null
+                ? (pos.getY() - area.getMinY()) * 10000.0 + pos.getSquaredDistance(guard.getPos())
                 : pos.getSquaredDistance(origin)));
         for (var pos : candidates) {
             var stand = approach(guard, pos);

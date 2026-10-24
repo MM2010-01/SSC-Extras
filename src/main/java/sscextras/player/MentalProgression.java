@@ -55,7 +55,8 @@ public final class MentalProgression {
                 || !player.getWorld().getGameRules().getBoolean(SscExtrasGameRules.INSTINCT_GAIN_INT_DRAIN)) return;
         if (FormAbilityManager.getForm(player).getIndex() >= 2 && CreatureInstinct.permanentTarget(player) == null) return;
         var state = state(player);
-        double pending = state.instinctRemainder + amount / SscExtrasConfig.instinctPerIntLoss();
+        double pending = state.instinctRemainder
+                + amount / SscExtrasConfig.instinctPerIntLoss(CreatureInstinct.progressionForm(player));
         double loss = Math.floor(pending * 100 + 1e-8) / 100;
         state.instinctRemainder = Math.max(0, pending - loss);
         lose(player, loss);

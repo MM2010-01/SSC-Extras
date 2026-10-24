@@ -17,8 +17,8 @@ import net.minecraft.util.Formatting;
 import net.onixary.shapeShifterCurseFabric.util.AttackEntityDataTracker;
 import net.onixary.shapeShifterCurseFabric.util.ModTags;
 import net.onixary.shapeShifterCurseFabric.player_form.ability.FormAbilityManager;
+import net.onixary.shapeShifterCurseFabric.status_effects.attachment.EffectManager;
 import sscextras.SscExtrasGameRules;
-import sscextras.collar.Collars;
 import java.util.Comparator;
 import java.util.EnumSet;
 
@@ -181,7 +181,8 @@ public final class DrakeFaction {
         boolean drakeRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_DRAKE)
                 && (EarthenDrake.stage(player) >= 0 || cursedPiece || pendingDrake);
         boolean uncursedRecruiting = rules.getBoolean(SscExtrasGameRules.PILLAGER_RECRUIT_UNCURSED)
-                && (!Collars.isCursed(player) || (cursedPiece || pendingDrake) && FormAbilityManager.getForm(player).getIndex() < 0);
+                && FormAbilityManager.getForm(player).getIndex() < 0
+                && (!EffectManager.hasTransformativeEffect(player) || cursedPiece || pendingDrake);
         if (!drakeRecruiting && !uncursedRecruiting) return null;
         if (upgrade) return DrakeEquipment.BLINDING_REIN;
         if (!reins && !DrakeEquipment.stacks(player, DrakeEquipment.REINS).isEmpty())

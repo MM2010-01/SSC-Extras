@@ -126,4 +126,15 @@ public final class CreatureInstinct {
         Identifier id = ((InstinctTarget) RegPlayerInstinctComponent.PLAYER_INSTINCT_COMP.get(player)).sscExtras$getTarget();
         return id == null ? null : RegPlayerForms.playerForms.get(id);
     }
+
+    /** Current form, or the pending creature/curse form while still an Original Shifter. */
+    public static PlayerFormBase progressionForm(PlayerEntity player) {
+        PlayerFormBase current = FormAbilityManager.getForm(player);
+        if (!RegPlayerForms.ORIGINAL_SHIFTER.equals(current)) return current;
+        PlayerFormBase target = getTarget(player);
+        if (target != null) return target;
+        var curse = EffectManager.getTransformativeEffect(player);
+        target = curse == null ? null : curse.getTransformativeEffectType().getToForm(player);
+        return target == null ? current : target;
+    }
 }

@@ -115,8 +115,13 @@ public final class DrakeConfiscationGoal extends Goal {
         var position = Vec3d.ofBottomCenter(destination.stand());
         ((DrakeFaction.EquipmentDisplay)guard).sscExtras$showEquipment(new ItemStack(Items.CHEST));
         guard.getLookControl().lookAt(position.x, position.y + 1, position.z);
-        if (guard.squaredDistanceTo(position) > 2.25) {
-            if (guard.age >= nextPath) {
+        double distance = guard.squaredDistanceTo(position);
+        // Center on the adjacent block so the guard's own body clears both chest spaces.
+        if (distance > .01) {
+            if (distance < 4) {
+                guard.getNavigation().stop();
+                guard.getMoveControl().moveTo(position.x, position.y, position.z, .65);
+            } else if (guard.age >= nextPath) {
                 nextPath = guard.age + 20;
                 guard.getNavigation().startMovingTo(position.x, position.y, position.z, .8);
             }
